@@ -1,0 +1,217 @@
+---
+import "../styles/global.css";
+---
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>線上預訂 - 不遠露營度假山莊</title>
+  <meta name="description" content="立即預訂不遠山莊，選擇您喜歡的住宿類型與日期。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+  
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <a href="/" class="logo">
+        <span>🏕️</span>
+        <span>不遠山莊</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">首頁</a>
+        <a href="/about">關於我們</a>
+        <a href="/campsite">營區介紹</a>
+        <a href="/pricing">價格方案</a>
+        <a href="/gallery">圖庫</a>
+        <a href="/faq">常見問題</a>
+        <a href="/contact">聯絡我們</a>
+        <a href="/booking" class="btn btn-primary">立即預訂</a>
+      </div>
+      <div class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <section class="page-header">
+    <div class="container">
+      <h1>線上預訂</h1>
+      <p>填寫以下表單，我們將盡快與您確認訂房資訊</p>
+    </div>
+  </section>
+
+  <!-- 預訂表單 -->
+  <section class="section">
+    <div class="container">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+        <div>
+          <h2 style="font-size: 1.8rem; color: var(--primary-dark); margin-bottom: 24px;">📋 預訂資訊</h2>
+          
+          <form id="bookingForm" class="glass-card" style="padding: 32px;">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="checkin">入住日期 *</label>
+                <input type="date" id="checkin" name="checkin" required>
+              </div>
+              <div class="form-group">
+                <label for="checkout">退房日期 *</label>
+                <input type="date" id="checkout" name="checkout" required>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="accommodation">住宿類型 *</label>
+              <select id="accommodation" name="accommodation" required>
+                <option value="">請選擇住宿類型</option>
+                <option value="grass">草地營位</option>
+                <option value="cabin">小木屋</option>
+                <option value="pipe">水管屋</option>
+                <option value="hobbit">哈比屋</option>
+                <option value="stone">合掌村石茅屋</option>
+                <option value="luxury">野奢帳篷</option>
+                <option value="bus">巴士宅</option>
+              </select>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="adults">成人人數 *</label>
+                <input type="number" id="adults" name="adults" min="1" max="20" value="2" required>
+              </div>
+              <div class="form-group">
+                <label for="children">兒童人數</label>
+                <input type="number" id="children" name="children" min="0" max="20" value="0">
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="phone">聯絡電話 *</label>
+              <input type="tel" id="phone" name="phone" placeholder="例如：0912-345-678" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="email">電子郵件 *</label>
+              <input type="email" id="email" name="email" placeholder="example@email.com" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="name">聯絡人姓名 *</label>
+              <input type="text" id="name" name="name" placeholder="請輸入您的姓名" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="notes">特殊需求</label>
+              <textarea id="notes" name="notes" placeholder="如有特殊需求（例如：寵物同行、需要加床、飲食禁忌等），請在此備註。"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 16px; font-size: 1.1rem;">
+              📤 送出預訂申請
+            </button>
+            
+            <p style="text-align: center; color: var(--text-light); font-size: 0.85rem; margin-top: 12px;">
+              送出表單後，我們將在 24 小時內與您聯繫確認。
+            </p>
+          </form>
+        </div>
+        
+        <div>
+          <h2 style="font-size: 1.8rem; color: var(--primary-dark); margin-bottom: 24px;">💡 預訂須知</h2>
+          
+          <div class="glass-card" style="padding: 28px; margin-bottom: 24px;">
+            <h3 style="color: var(--primary-dark); margin-bottom: 16px;">📌 注意事項</h3>
+            <ul style="color: var(--text-light); line-height: 2.2;">
+              <li>✅ 入住時間：下午 15:00 後</li>
+              <li>✅ 退房時間：上午 11:00 前</li>
+              <li>✅ 夜衝入場：18:00-22:00（需提前告知）</li>
+              <li>✅ 營區禁止使用高功率電器</li>
+              <li>✅ 寵物入住請務必繫繩並清理便便</li>
+              <li>✅ 營區內請降低音量，尊重其他露友</li>
+              <li>✅ 取消政策：入住前 7 天可全額退款</li>
+            </ul>
+          </div>
+          
+          <div class="glass-card" style="padding: 28px; margin-bottom: 24px;">
+            <h3 style="color: var(--primary-dark); margin-bottom: 16px;">💰 付款方式</h3>
+            <ul style="color: var(--text-light); line-height: 2.2;">
+              <li>🏦 銀行轉帳 / ATM</li>
+              <li>💳 信用卡（Visa / MasterCard / JCB）</li>
+              <li>📱 Line Pay</li>
+              <li>💵 現場現金支付</li>
+            </ul>
+          </div>
+          
+          <div class="glass-card" style="padding: 28px;">
+            <h3 style="color: var(--primary-dark); margin-bottom: 16px;">📞 其他預訂方式</h3>
+            <p style="color: var(--text-light); line-height: 1.8;">
+              您也可以透過以下方式預訂：
+            </p>
+            <ul style="color: var(--text-light); line-height: 2.2; margin-top: 8px;">
+              <li>📞 電話：<a href="tel:+886918833021" style="color: var(--primary);">0918-833-021</a></li>
+              <li>📞 電話：<a href="tel:+88637870898" style="color: var(--primary);">037-870-898</a></li>
+              <li>💬 Line ID：<a href="https://line.me/ti/p/@paq1032x" target="_blank" style="color: var(--primary);">@paq1032x</a></li>
+              <li>🌐 官網：<a href="https://www.close-2.com" target="_blank" style="color: var(--primary);">www.close-2.com</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h3>🏕️ 不遠露營度假山莊</h3>
+          <p>前身為退役礦場，歷經生態再造，如今成為占地 3.5 公頃的綠色天堂。</p>
+          <div class="social-links">
+            <a href="https://www.facebook.com/close2camp" target="_blank" title="Facebook">📘</a>
+            <a href="https://www.instagram.com/" target="_blank" title="Instagram">📷</a>
+            <a href="https://line.me/ti/p/@paq1032x" target="_blank" title="Line">💬</a>
+            <a href="https://www.youtube.com/" target="_blank" title="YouTube">▶️</a>
+          </div>
+        </div>
+        <div>
+          <h3>快速連結</h3>
+          <div class="footer-links">
+            <a href="/about">關於我們</a>
+            <a href="/campsite">營區介紹</a>
+            <a href="/pricing">價格方案</a>
+            <a href="/gallery">圖庫</a>
+            <a href="/faq">常見問題</a>
+          </div>
+        </div>
+        <div>
+          <h3>服務項目</h3>
+          <div class="footer-links">
+            <a href="/booking">線上預訂</a>
+            <a href="campsite.html#accommodation">住宿選擇</a>
+            <a href="/contact">聯絡我們</a>
+          </div>
+        </div>
+        <div>
+          <h3>聯絡資訊</h3>
+          <div class="footer-links">
+            <a href="tel:+886918833021">📞 0918-833-021</a>
+            <a href="tel:+88637870898">📞 037-870-898</a>
+            <a href="mailto:info@close-2.com">✉️ info@close-2.com</a>
+            <a href="https://maps.google.com/?q=苗栗縣三義鄉雙連潭9鄰199號" target="_blank">📍 苗栗縣三義鄉雙連潭9鄰199號</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 不遠露營度假山莊 · 苗栗縣民宿353號 · All Rights Reserved</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/script.js" is:inline></script>
+</body>
+</html>

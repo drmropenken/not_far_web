@@ -1,0 +1,342 @@
+---
+import "../styles/global.css";
+---
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>營區介紹 - 不遠露營度假山莊</title>
+  <meta name="description" content="不遠山莊營區佔地約3.5公頃，提供草地營位、小木屋、水管屋、哈比屋、合掌村石茅屋等多元住宿，設施完善。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+  
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <a href="/" class="logo">
+        <span>🏕️</span>
+        <span>不遠山莊</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">首頁</a>
+        <a href="/about">關於我們</a>
+        <a href="/campsite" class="active">營區介紹</a>
+        <a href="/pricing">價格方案</a>
+        <a href="/gallery">圖庫</a>
+        <a href="/faq">常見問題</a>
+        <a href="/contact">聯絡我們</a>
+        <a href="/booking" class="btn btn-primary">立即預訂</a>
+      </div>
+      <div class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <section class="page-header">
+    <div class="container">
+      <h1>營區介紹</h1>
+      <p>占地 3.5 公頃的綠色天堂，探索不遠山莊的每一個角落</p>
+    </div>
+  </section>
+
+  <!-- 營區概覽 -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">營區概覽</h2>
+      <p class="section-subtitle">不遠山莊分為上營區、景觀區、下營區三大區域，每個區域各有特色</p>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+        <div class="glass-card fade-in" style="padding: 28px;">
+          <div style="font-size: 2.5rem; margin-bottom: 12px;">🌲</div>
+          <h3 style="color: var(--primary-dark); margin-bottom: 8px;">上營區</h3>
+          <p style="color: var(--text-light); line-height: 1.8;">最受歡迎的區域！樹多且遮蔭率高，有大草原供孩子奔跑。包含木棧板區、欖仁樹區、草原區、湖岸區。設有兒童遊憩空間（沙坑、鞦韆、彈跳床），衛浴較新穎寬敞。</p>
+        </div>
+        
+        <div class="glass-card fade-in" style="padding: 28px;">
+          <div style="font-size: 2.5rem; margin-bottom: 12px;">🏔️</div>
+          <h3 style="color: var(--primary-dark); margin-bottom: 8px;">景觀區</h3>
+          <p style="color: var(--text-light); line-height: 1.8;">位於上營區上方，四周樹多，可遠眺山景。包含景觀一區、景觀二區、水管屋、景觀碎石區。靠近營區吊橋與賞櫻位置，適合喜歡寧靜的露友。</p>
+        </div>
+        
+        <div class="glass-card fade-in" style="padding: 28px;">
+          <div style="font-size: 2.5rem; margin-bottom: 12px;">🌊</div>
+          <h3 style="color: var(--primary-dark); margin-bottom: 8px;">下營區</h3>
+          <p style="color: var(--text-light); line-height: 1.8;">營區最下方，進門最先抵達。設有晴雨教室、雅房大通鋪、草地E/F區。夏季放置超大型充氣滑水道泳池，適合喜歡玩水的家庭。雨棚區也在這裡。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 住宿類型 -->
+  <section class="section" style="background: #f0f7f4;" id="accommodation">
+    <div class="container">
+      <h2 class="section-title">住宿選擇</h2>
+      <p class="section-subtitle">從傳統露營到豪華住宿，滿足各種需求</p>
+      
+      <div class="accommodation-grid">
+        <div class="accommodation-card fade-in">
+          <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80" alt="合掌村石茅屋">
+          <div class="card-body">
+            <h3>🏘️ 合掌村石茅屋</h3>
+            <div class="price">NT$ 6,000 起 / 四人房</div>
+            <p>超夢幻的三角茅屋，外型像極了日本白川鄉合掌村。內部空間寬敞，標準配置四人房，還有驚喜的屋頂閣樓空間。每間都有乾濕分離浴室、冷氣，戶外有專屬桌椅區。含一泊二食（早餐+晚餐）。</p>
+            <div class="tags">
+              <span class="tag">可住 2-4 人</span>
+              <span class="tag">獨立衛浴</span>
+              <span class="tag">冷氣</span>
+              <span class="tag">一泊二食</span>
+              <span class="tag">閣樓空間</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accommodation-card fade-in">
+          <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80" alt="野奢帳篷">
+          <div class="card-body">
+            <h3>⛺ 野奢帳篷（懶人露營）</h3>
+            <div class="price">NT$ 1,250 / 人 起</div>
+            <p>免裝備懶人露營首選！帳內備有兩張雙人床墊、木頭桌、冷氣、電風扇，並貼心準備牙刷、牙膏、水和延長線。一卡皮箱即可入住，最低每人只要 1,250 元起（一泊二食）。</p>
+            <div class="tags">
+              <span class="tag">免裝備</span>
+              <span class="tag">可住 2-4 人</span>
+              <span class="tag">冷氣</span>
+              <span class="tag">一泊二食</span>
+              <span class="tag">公共衛浴</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accommodation-card fade-in">
+          <img src="https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?w=600&q=80" alt="水管屋">
+          <div class="card-body">
+            <h3>🛖 水管屋</h3>
+            <div class="price">NT$ 2,500 起</div>
+            <p>造型獨特的水管屋，共有五間，像極了可愛的汽水罐！車子可直接停在一旁，方便又特別。位於景觀區，適合情侶或小家庭體驗獨特的住宿樂趣。</p>
+            <div class="tags">
+              <span class="tag">可住 2 人</span>
+              <span class="tag">車位旁</span>
+              <span class="tag">公共衛浴</span>
+              <span class="tag">景觀區</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accommodation-card fade-in">
+          <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&q=80" alt="小木屋">
+          <div class="card-body">
+            <h3>🏡 小木屋</h3>
+            <div class="price">NT$ 3,500 起</div>
+            <p>位於草原五區、草原六區後方，有二人、四人等不同房型。空間寬敞舒適，適合帶長輩或不想搭帳的朋友入住。鄰近上營區衛浴，生活機能便利。</p>
+            <div class="tags">
+              <span class="tag">可住 2-4 人</span>
+              <span class="tag">獨立衛浴</span>
+              <span class="tag">冷氣</span>
+              <span class="tag">草原區</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accommodation-card fade-in">
+          <img src="https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=600&q=80" alt="哈比屋">
+          <div class="card-body">
+            <h3>🧙 哈比屋</h3>
+            <div class="price">NT$ 2,800 起</div>
+            <p>只有一間的限量哈比屋！位於湖畔二區旁，外型可愛獨特。內部溫馨舒適，適合喜歡與眾不同住宿體驗的朋友。</p>
+            <div class="tags">
+              <span class="tag">限量 1 間</span>
+              <span class="tag">可住 2 人</span>
+              <span class="tag">湖畔旁</span>
+              <span class="tag">公共衛浴</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accommodation-card fade-in">
+          <img src="https://images.unsplash.com/photo-1487730116645-74489c95b41b?w=600&q=80" alt="草地營位">
+          <div class="card-body">
+            <h3>🏕️ 草地營位</h3>
+            <div class="price">NT$ 800 / 帳 起</div>
+            <p>傳統露營玩家的最愛！全區分為草原區、欖仁樹區、湖岸區、景觀區等多個區域，每個區域都有大樹遮蔭。營位空間寬敞，適合自搭帳篷的露營愛好者。</p>
+            <div class="tags">
+              <span class="tag">自搭帳</span>
+              <span class="tag">樹蔭</span>
+              <span class="tag">公共衛浴</span>
+              <span class="tag">多區可選</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 設施介紹 -->
+  <section class="section" id="facilities">
+    <div class="container">
+      <h2 class="section-title">設施與服務</h2>
+      <p class="section-subtitle">完善的設施，讓您的露營體驗更加舒適</p>
+      
+      <div class="campsite-features">
+        <div class="feature-card fade-in">
+          <div class="icon">🚿</div>
+          <h4>公共衛浴</h4>
+          <p>全區多處衛浴設施，提供沐浴乳、洗髮精、吹風機、衛生紙。上營區衛浴較新穎寬敞。</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="icon">🎪</div>
+          <h4>滑草區</h4>
+          <p>天然坡度滑草場，大人小孩都能享受速度與歡笑。</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="icon">🤸</div>
+          <h4>跳跳床</h4>
+          <p>大型彈跳床，讓孩子們盡情放電，大人也玩瘋了！</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="icon">🏊</div>
+          <h4>充氣滑水道泳池</h4>
+          <p>夏季限定！下營區放置超大型充氣滑水道泳池，消暑必備。</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="icon">🌺</div>
+          <h4>蓮花池</h4>
+          <p>靜謐的蓮花池畔，早上還能看到紅面番鴨出來散步，超可愛！</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="icon">☕</div>
+          <h4>鹿角咖啡吧</h4>
+          <p>由復古巴士改造的森林系咖啡廳，提供精緻下午茶、炸物、飲品。</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="icon">🧒</div>
+          <h4>兒童遊戲區</h4>
+          <p>沙坑、鞦韆、溜滑梯、單槓，讓孩子們玩到不想回家。</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="icon">🥾</div>
+          <h4>健行步道</h4>
+          <p>營區周邊有自然步道，適合晨間散步，還能走到吊橋賞景。</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="icon">🌸</div>
+          <h4>賞櫻賞螢</h4>
+          <p>春季櫻花盛開、夏季螢火蟲飛舞，四季皆有不同自然美景。</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="icon">🔥</div>
+          <h4>營火區</h4>
+          <p>夜晚營火晚會，劈啪作響的火星伴隨著溫暖的火光，氣氛滿分。</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="icon">🐕</div>
+          <h4>寵物友善</h4>
+          <p>超大坪數場地，毛孩可以自由活動奔跑（請務必繫繩並清理便便）。</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="icon">🅿️</div>
+          <h4>免費停車場</h4>
+          <p>附設免費停車場，也可停放大型遊覽車，車位充足。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 位置與交通 -->
+  <section class="section" style="background: #f0f7f4;">
+    <div class="container">
+      <h2 class="section-title">位置與交通</h2>
+      <p class="section-subtitle">苗栗縣三義鄉雙連潭9鄰199號</p>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div class="glass-card fade-in" style="padding: 28px;">
+          <h3 style="color: var(--primary-dark); margin-bottom: 16px;">🚗 自行開車</h3>
+          <ul style="color: var(--text-light); line-height: 2;">
+            <li>📍 國道一號三義交流道下 → 往三義方向 → 約15分鐘車程</li>
+            <li>📍 沿途路況良好，路標清晰</li>
+            <li>📍 最後約300公尺路段較小，請減速慢行</li>
+            <li>📍 營區附設免費停車場</li>
+          </ul>
+        </div>
+        
+        <div class="glass-card fade-in" style="padding: 28px;">
+          <h3 style="color: var(--primary-dark); margin-bottom: 16px;">🚌 大眾運輸</h3>
+          <ul style="color: var(--text-light); line-height: 2;">
+            <li>🚄 高鐵苗栗站 → 轉乘計程車（約30分鐘）</li>
+            <li>🚂 台鐵三義站 → 轉乘計程車（約10分鐘）</li>
+            <li>🚌 可搭乘苗栗客運至三義，再轉乘計程車</li>
+            <li>💡 建議自行開車或共乘較為方便</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div style="border-radius: var(--radius); overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin-top: 24px;">
+        <iframe 
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3631.5!2d120.77!3d24.41!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjTCsDI0JzM2LjAiTiAxMjDCsDQ2JzEyLjAiRQ!5e0!3m2!1szh-TW!2stw!4v1" 
+          width="100%" 
+          height="400" 
+          style="border:0;" 
+          allowfullscreen="" 
+          loading="lazy">
+        </iframe>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h3>🏕️ 不遠露營度假山莊</h3>
+          <p>前身為退役礦場，歷經生態再造，如今成為占地 3.5 公頃的綠色天堂。</p>
+          <div class="social-links">
+            <a href="https://www.facebook.com/close2camp" target="_blank" title="Facebook">📘</a>
+            <a href="https://www.instagram.com/" target="_blank" title="Instagram">📷</a>
+            <a href="https://line.me/ti/p/@paq1032x" target="_blank" title="Line">💬</a>
+            <a href="https://www.youtube.com/" target="_blank" title="YouTube">▶️</a>
+          </div>
+        </div>
+        <div>
+          <h3>快速連結</h3>
+          <div class="footer-links">
+            <a href="/about">關於我們</a>
+            <a href="/campsite">營區介紹</a>
+            <a href="/pricing">價格方案</a>
+            <a href="/gallery">圖庫</a>
+            <a href="/faq">常見問題</a>
+          </div>
+        </div>
+        <div>
+          <h3>服務項目</h3>
+          <div class="footer-links">
+            <a href="/booking">線上預訂</a>
+            <a href="campsite.html#accommodation">住宿選擇</a>
+            <a href="/contact">聯絡我們</a>
+          </div>
+        </div>
+        <div>
+          <h3>聯絡資訊</h3>
+          <div class="footer-links">
+            <a href="tel:+886918833021">📞 0918-833-021</a>
+            <a href="tel:+88637870898">📞 037-870-898</a>
+            <a href="mailto:info@close-2.com">✉️ info@close-2.com</a>
+            <a href="https://maps.google.com/?q=苗栗縣三義鄉雙連潭9鄰199號" target="_blank">📍 苗栗縣三義鄉雙連潭9鄰199號</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 不遠露營度假山莊 · 苗栗縣民宿353號 · All Rights Reserved</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/script.js" is:inline></script>
+</body>
+</html>

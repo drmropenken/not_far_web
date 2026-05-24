@@ -13,12 +13,23 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# environment variables
+# environment variables - ALL .env files
 .env
-.env.production
+.env.*
+!.env.example
 
 # macOS-specific files
 .DS_Store
 
-# jetbrains setting folder
+# IDE settings
 .idea/
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Vercel
+.vercel/

@@ -1,0 +1,320 @@
+---
+import "../styles/global.css";
+---
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>圖庫 - 不遠露營度假山莊</title>
+  <meta name="description" content="不遠山莊精彩照片，欣賞營區美景、住宿與活動。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+  
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <a href="/" class="logo">
+        <span>🏕️</span>
+        <span>不遠山莊</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">首頁</a>
+        <a href="/about">關於我們</a>
+        <a href="/campsite">營區介紹</a>
+        <a href="/pricing">價格方案</a>
+        <a href="/gallery" class="active">圖庫</a>
+        <a href="/faq">常見問題</a>
+        <a href="/contact">聯絡我們</a>
+        <a href="/booking" class="btn btn-primary">立即預訂</a>
+      </div>
+      <div class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <section class="page-header">
+    <div class="container">
+      <h1>精彩圖庫</h1>
+      <p>一窺不遠山莊的美麗風貌</p>
+    </div>
+  </section>
+
+  <!-- 圖庫分類 -->
+  <section class="section">
+    <div class="container">
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px;">
+        <button class="btn btn-primary" onclick="filterGallery('all')">全部</button>
+        <button class="btn btn-outline" onclick="filterGallery('scenery')">營區景色</button>
+        <button class="btn btn-outline" onclick="filterGallery('room')">住宿</button>
+        <button class="btn btn-outline" onclick="filterGallery('activity')">活動</button>
+        <button class="btn btn-outline" onclick="filterGallery('food')">美食</button>
+      </div>
+      
+      <div class="gallery-grid" id="galleryGrid">
+        <!-- 營區景色 -->
+        <div class="gallery-item fade-in" data-category="scenery">
+          <img src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=600&q=80" alt="不遠山莊大草原">
+          <div class="overlay">
+            <h4>🌿 大草原</h4>
+            <p>孩子們奔跑的綠色天堂</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="scenery">
+          <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&q=80" alt="森林步道">
+          <div class="overlay">
+            <h4>🌲 森林步道</h4>
+            <p>漫步在芬多精的懷抱中</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="scenery">
+          <img src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600&q=80" alt="營區樹林">
+          <div class="overlay">
+            <h4>🌳 綠意盎然</h4>
+            <p>保留大量原生樹種</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="scenery">
+          <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=600&q=80" alt="營區夜景">
+          <div class="overlay">
+            <h4>🌙 夜景</h4>
+            <p>夜晚燈火點綴的夢幻森林</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="scenery">
+          <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80" alt="星空">
+          <div class="overlay">
+            <h4>⭐ 星空</h4>
+            <p>無光害的滿天星斗</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="scenery">
+          <img src="https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=600&q=80" alt="蓮花池">
+          <div class="overlay">
+            <h4>🌺 蓮花池</h4>
+            <p>靜謐的湖畔風光</p>
+          </div>
+        </div>
+        
+        <!-- 住宿 -->
+        <div class="gallery-item fade-in" data-category="room">
+          <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80" alt="合掌村石茅屋">
+          <div class="overlay">
+            <h4>🏘️ 合掌村石茅屋</h4>
+            <p>一秒踏進日本童話世界</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="room">
+          <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80" alt="野奢帳篷">
+          <div class="overlay">
+            <h4>⛺ 野奢帳篷</h4>
+            <p>免裝備的豪華露營體驗</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="room">
+          <img src="https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?w=600&q=80" alt="水管屋">
+          <div class="overlay">
+            <h4>🛖 水管屋</h4>
+            <p>獨特造型的住宿體驗</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="room">
+          <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&q=80" alt="小木屋">
+          <div class="overlay">
+            <h4>🏡 小木屋</h4>
+            <p>溫馨舒適的住宿空間</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="room">
+          <img src="https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=600&q=80" alt="哈比屋">
+          <div class="overlay">
+            <h4>🧙 哈比屋</h4>
+            <p>限量獨特的童話小屋</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="room">
+          <img src="https://images.unsplash.com/photo-1487730116645-74489c95b41b?w=600&q=80" alt="草地營位">
+          <div class="overlay">
+            <h4>🏕️ 草地營位</h4>
+            <p>傳統露營玩家的最愛</p>
+          </div>
+        </div>
+        
+        <!-- 活動 -->
+        <div class="gallery-item fade-in" data-category="activity">
+          <img src="https://images.unsplash.com/photo-1578898887932-dce23a595ad4?w=600&q=80" alt="跳跳床">
+          <div class="overlay">
+            <h4>🤸 跳跳床</h4>
+            <p>大人小孩都玩瘋了</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="activity">
+          <img src="https://images.unsplash.com/photo-1562774053-701939374585?w=600&q=80" alt="兒童遊戲區">
+          <div class="overlay">
+            <h4>🎠 兒童遊戲區</h4>
+            <p>沙坑、鞦韆、溜滑梯</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="activity">
+          <img src="https://images.unsplash.com/photo-1530541930197-ff16ac917b0e?w=600&q=80" alt="營火晚會">
+          <div class="overlay">
+            <h4>🔥 營火晚會</h4>
+            <p>星空下的溫暖時光</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="activity">
+          <img src="https://images.unsplash.com/photo-1529543544282-ea99407b2093?w=600&q=80" alt="賞螢">
+          <div class="overlay">
+            <h4>✨ 賞螢</h4>
+            <p>夏季限定的螢火蟲盛宴</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="activity">
+          <img src="https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&q=80" alt="賞櫻">
+          <div class="overlay">
+            <h4>🌸 賞櫻</h4>
+            <p>春季櫻花盛開美景</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="activity">
+          <img src="https://images.unsplash.com/photo-1576013551627-0cc20b5b5c5d?w=600&q=80" alt="健行">
+          <div class="overlay">
+            <h4>🥾 健行步道</h4>
+            <p>探索自然之美</p>
+          </div>
+        </div>
+        
+        <!-- 美食 -->
+        <div class="gallery-item fade-in" data-category="food">
+          <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&q=80" alt="烤肉">
+          <div class="overlay">
+            <h4>🍖 豪華烤肉</h4>
+            <p>生食級干貝、精選肉品</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="food">
+          <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80" alt="火鍋">
+          <div class="overlay">
+            <h4>🍲 暖心火鍋</h4>
+            <p>濃白雞湯與麻辣湯底</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="food">
+          <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80" alt="鹿角咖啡">
+          <div class="overlay">
+            <h4>☕ 鹿角咖啡</h4>
+            <p>森林系巴士咖啡廳</p>
+          </div>
+        </div>
+        
+        <div class="gallery-item fade-in" data-category="food">
+          <img src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600&q=80" alt="早餐">
+          <div class="overlay">
+            <h4>🥐 自助早餐</h4>
+            <p>豐盛的自助吧早餐</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h3>🏕️ 不遠露營度假山莊</h3>
+          <p>前身為退役礦場，歷經生態再造，如今成為占地 3.5 公頃的綠色天堂。</p>
+          <div class="social-links">
+            <a href="https://www.facebook.com/close2camp" target="_blank" title="Facebook">📘</a>
+            <a href="https://www.instagram.com/" target="_blank" title="Instagram">📷</a>
+            <a href="https://line.me/ti/p/@paq1032x" target="_blank" title="Line">💬</a>
+            <a href="https://www.youtube.com/" target="_blank" title="YouTube">▶️</a>
+          </div>
+        </div>
+        <div>
+          <h3>快速連結</h3>
+          <div class="footer-links">
+            <a href="/about">關於我們</a>
+            <a href="/campsite">營區介紹</a>
+            <a href="/pricing">價格方案</a>
+            <a href="/gallery">圖庫</a>
+            <a href="/faq">常見問題</a>
+          </div>
+        </div>
+        <div>
+          <h3>服務項目</h3>
+          <div class="footer-links">
+            <a href="/booking">線上預訂</a>
+            <a href="campsite.html#accommodation">住宿選擇</a>
+            <a href="/contact">聯絡我們</a>
+          </div>
+        </div>
+        <div>
+          <h3>聯絡資訊</h3>
+          <div class="footer-links">
+            <a href="tel:+886918833021">📞 0918-833-021</a>
+            <a href="tel:+88637870898">📞 037-870-898</a>
+            <a href="mailto:info@close-2.com">✉️ info@close-2.com</a>
+            <a href="https://maps.google.com/?q=苗栗縣三義鄉雙連潭9鄰199號" target="_blank">📍 苗栗縣三義鄉雙連潭9鄰199號</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 不遠露營度假山莊 · 苗栗縣民宿353號 · All Rights Reserved</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/script.js" is:inline></script>
+  <script>
+    // 圖庫篩選功能
+    function filterGallery(category) {
+      const items = document.querySelectorAll('.gallery-item');
+      const buttons = document.querySelectorAll('[onclick^="filterGallery"]');
+      
+      buttons.forEach(btn => {
+        if (btn.getAttribute('onclick').includes(category)) {
+          btn.className = 'btn btn-primary';
+        } else {
+          btn.className = 'btn btn-outline';
+        }
+      });
+      
+      items.forEach(item => {
+        if (category === 'all' || item.getAttribute('data-category') === category) {
+          item.style.display = 'block';
+          setTimeout(() => item.classList.add('visible'), 50);
+        } else {
+          item.style.display = 'none';
+          item.classList.remove('visible');
+        }
+      });
+    }
+  </script>
+</body>
+</html>

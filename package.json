@@ -12,6 +12,11 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^6.3.7"
+    "@supabase/supabase-js": "^2.106.1",
+    "astro": "^6.3.7",
+    "nodemailer": "^8.0.7"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^8.0.0"
   }
 }

@@ -1,0 +1,58 @@
+---
+import "../styles/global.css";
+---
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>付款失敗 - 不遠露營度假山莊</title>
+  <meta name="description" content="付款失敗頁面提醒使用者重新嘗試或聯絡客服。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <a href="/" class="logo"><span>🏕️</span><span>不遠山莊</span></a>
+      <div class="nav-links">
+        <a href="/">首頁</a>
+        <a href="/about">關於我們</a>
+        <a href="/campsite">營區介紹</a>
+        <a href="/pricing">價格方案</a>
+        <a href="/gallery">圖庫</a>
+        <a href="/faq">常見問題</a>
+        <a href="/contact">聯絡我們</a>
+        <a href="/booking" class="btn btn-primary">立即預訂</a>
+      </div>
+      <div class="hamburger"><span></span><span></span><span></span></div>
+    </div>
+  </nav>
+
+  <section class="section" style="min-height: 72vh; display: flex; align-items: center; justify-content: center;">
+    <div class="glass-card" style="max-width: 720px; width: 100%; padding: 48px; text-align: center;">
+      <div style="font-size: 4rem; margin-bottom: 24px;">⚠️</div>
+      <h1>付款未完成</h1>
+      <p style="margin-top: 16px; color: var(--text-light);">付款過程發生問題，請重新檢查資訊後再試一次。</p>
+      <p id="errorDetails" style="margin-top: 24px; font-size: 1rem; color: var(--text-dark);"></p>
+      <div style="margin-top: 36px; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+        <a href="/booking" class="btn btn-primary">返回預訂頁</a>
+        <a href="/contact" class="btn btn-outline">聯絡客服</a>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const errorDetails = document.getElementById('errorDetails');
+    const tradeNo = params.get('MerchantTradeNo') || params.get('orderNo') || '';
+    const message = params.get('RtnMsg') || '請稍候再試，或與我們聯絡尋求協助。';
+    if (errorDetails) {
+      errorDetails.textContent = tradeNo
+        ? `訂單編號：${tradeNo} · 系統回傳：${message}`
+        : `系統回傳：${message}`;
+    }
+  </script>
+</body>
+</html>
