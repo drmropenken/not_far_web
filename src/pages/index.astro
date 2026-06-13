@@ -1,22 +1,15 @@
 ---
 import "../styles/global.css";
+import SEO from "../components/public/SEO.astro";
 ---
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>不遠露營度假山莊 | 苗栗三義親子露營首選</title>
-  <meta name="description" content="苗栗三義不遠山莊露營區，前身為退役礦場，經生態再造後成為親子友善的露營勝地，提供多元住宿與豐富活動。">
-  <meta name="keywords" content="不遠山莊、苗栗露營、親子露營、生態復育、合掌村、石茅屋、水管屋、哈比屋">
-  <meta property="og:title" content="不遠露營度假山莊 | 苗栗三義親子露營首選">
-  <meta property="og:description" content="苗栗三義不遠山莊露營區，前身為退役礦場，經生態再造後成為親子友善的露營勝地，提供多元住宿與豐富活動。">
-  <meta property="og:image" content=""/images/cabin.jpg">
-  <meta property="og:type" content="website">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
-  
+  <SEO 
+    title="不遠露營度假山莊 | 苗栗三義親子露營首選" 
+    description="苗栗三義不遠山莊露營區，前身為退役礦場，經生態再造後成為親子友善的露營勝地，提供多元住宿與豐富活動。" 
+    isHome={true}
+  />
 </head>
 <body>
   <!-- Navbar -->

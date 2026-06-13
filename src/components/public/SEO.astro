@@ -1,0 +1,89 @@
+---
+export interface Props {
+  title: string;
+  description: string;
+  image?: string;
+  url?: string;
+  isHome?: boolean;
+}
+
+const { 
+  title, 
+  description, 
+  image = '/images/hero.jpg', 
+  url = Astro.url.href,
+  isHome = false
+} = Astro.props;
+
+// 網站共用資訊
+const siteName = '不遠露營度假山莊';
+const defaultKeywords = '不遠山莊, 苗栗露營, 親子露營, 苗栗三義, 生態復育, 豪華露營, 免裝備露營, 合掌村, 水管屋';
+
+// Schema.org JSON-LD
+const schema = isHome ? {
+  "@context": "https://schema.org",
+  "@type": ["Campground", "LocalBusiness"],
+  "name": "不遠露營度假山莊",
+  "image": new URL('/images/hero.jpg', Astro.url).toString(),
+  "@id": Astro.url.origin,
+  "url": Astro.url.origin,
+  "telephone": "0918-833-021",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "雙連潭9鄰199號",
+    "addressLocality": "三義鄉",
+    "addressRegion": "苗栗縣",
+    "postalCode": "367",
+    "addressCountry": "TW"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": 24.3941, 
+    "longitude": 120.7891
+  },
+  "openingHoursSpecification": {
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": [
+      "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+    ],
+    "opens": "00:00",
+    "closes": "23:59"
+  },
+  "priceRange": "$$"
+} : null;
+
+---
+
+<!-- Essential Meta Tags -->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="google-site-verification" content="6dQ1dv0b79UnC0OqYxLdwpDydp4IoytcTpH-HBUGEqs" />
+<title>{title}</title>
+<meta name="description" content={description} />
+<meta name="keywords" content={defaultKeywords} />
+<link rel="canonical" href={url} />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content={url} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={new URL(image, Astro.url)} />
+<meta property="og:site_name" content={siteName} />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:url" content={url} />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={new URL(image, Astro.url)} />
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
+
+<!-- Structured Data -->
+{schema && (
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+)}
