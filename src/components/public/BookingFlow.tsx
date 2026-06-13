@@ -35,23 +35,46 @@ export default function BookingFlow() {
   const [discountAppliedCode, setDiscountAppliedCode] = useState('');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    // 若網址帶有 Supabase 的登入回傳 token，保持 loading 狀態等待處理
+    if (window.location.hash.includes('access_token')) {
+      setLoading(true);
+    }
+
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) console.error("Session error:", error);
+
       if (session) {
+        setSession(session);
         setCustomerInfo(prev => ({ 
           ...prev, 
           email: session.user.email || '', 
           name: session.user.user_metadata?.full_name || '' 
         }));
-        setStep(prevStep => prevStep === 0 ? 1 : prevStep);
+        setStep(1);
       }
-      setLoading(false);
-    });
+      
+      if (!window.location.hash.includes('access_token') || session) {
+        setLoading(false);
+      }
+    };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        setStep(prevStep => prevStep === 0 ? 1 : prevStep);
+        setSession(session);
+        setCustomerInfo(prev => ({ 
+          ...prev, 
+          email: session.user.email || '', 
+          name: session.user.user_metadata?.full_name || '' 
+        }));
+        setStep(1);
+        setLoading(false);
+        // 清理網址列的 token，保持美觀並避免重複觸發
+        if (window.location.hash.includes('access_token')) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
       }
     });
 
