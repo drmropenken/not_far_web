@@ -35,26 +35,57 @@ export default function BookingFlow() {
   const [discountAppliedCode, setDiscountAppliedCode] = useState('');
 
   useEffect(() => {
+    let isMounted = true;
+    const hash = window.location.hash;
+
     // 若網址帶有 Supabase 的登入回傳 token，保持 loading 狀態等待處理
-    if (window.location.hash.includes('access_token')) {
+    if (hash.includes('access_token')) {
       setLoading(true);
     }
 
     const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) console.error("Session error:", error);
-
-      if (session) {
-        setSession(session);
-        setCustomerInfo(prev => ({ 
-          ...prev, 
-          email: session.user.email || '', 
-          name: session.user.user_metadata?.full_name || '' 
-        }));
-        setStep(1);
+      // 暴力破解法：手動解析 URL 裡的 Token！(避免 Vercel + Astro 導致的 SDK 解析失效)
+      if (hash.includes('access_token') && hash.includes('refresh_token')) {
+        try {
+          const hashParams = new URLSearchParams(hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          
+          if (accessToken && refreshToken) {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            });
+            
+            if (data?.session && isMounted) {
+              setSession(data.session);
+              setCustomerInfo(prev => ({ 
+                ...prev, 
+                email: data.session.user.email || '', 
+                name: data.session.user.user_metadata?.full_name || '' 
+              }));
+              setStep(1);
+              // 清理網址列
+              window.history.replaceState(null, '', window.location.pathname);
+            }
+          }
+        } catch (err) {
+          console.error("Manual session set error:", err);
+        }
       }
-      
-      if (!window.location.hash.includes('access_token') || session) {
+
+      // 如果手動解析沒成功，再試著用內建的方法抓抓看
+      if (isMounted) {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (session) {
+          setSession(session);
+          setCustomerInfo(prev => ({ 
+            ...prev, 
+            email: session.user.email || '', 
+            name: session.user.user_metadata?.full_name || '' 
+          }));
+          setStep(1);
+        }
         setLoading(false);
       }
     };
@@ -62,7 +93,7 @@ export default function BookingFlow() {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+      if (session && isMounted) {
         setSession(session);
         setCustomerInfo(prev => ({ 
           ...prev, 
@@ -71,14 +102,13 @@ export default function BookingFlow() {
         }));
         setStep(1);
         setLoading(false);
-        // 清理網址列的 token，保持美觀並避免重複觸發
-        if (window.location.hash.includes('access_token')) {
-          window.history.replaceState(null, '', window.location.pathname);
-        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
