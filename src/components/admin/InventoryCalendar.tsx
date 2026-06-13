@@ -185,7 +185,7 @@ export default function InventoryCalendar() {
           <table className="w-full text-center border-collapse text-sm">
             <thead className="sticky top-0 z-20 bg-slate-100/90 backdrop-blur-md shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
               <tr>
-                <th className="p-3 border-b border-r border-slate-200/80 bg-slate-100/90 backdrop-blur-md min-w-[120px] md:min-w-[180px] sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] text-slate-700 font-bold tracking-wider">項目名稱</th>
+                <th className="p-3 border-b border-r border-slate-200/80 bg-slate-100 min-w-[120px] md:min-w-[180px] sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] text-slate-700 font-bold tracking-wider">項目名稱</th>
                 {daysArray.map(day => {
                   const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
                   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -208,8 +208,8 @@ export default function InventoryCalendar() {
             </thead>
             <tbody className="bg-white">
               {items.map(item => (
-                <tr key={item.id} className="hover:bg-emerald-50/20 transition-colors group">
-                  <td className="p-2 md:p-3 border-b border-r border-slate-100 font-medium text-slate-800 text-left sticky left-0 bg-white group-hover:bg-emerald-50/20 z-10 whitespace-normal md:whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)]">
+                <tr key={item.id} className="hover:bg-emerald-50/40 transition-colors group">
+                  <td className="p-2 md:p-3 border-b border-r border-slate-100 font-medium text-slate-800 text-left sticky left-0 bg-white group-hover:bg-[#f0fdf4] z-10 whitespace-normal md:whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)]">
                     <div className="flex flex-col md:flex-row md:items-center gap-1.5">
                       <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md self-start shrink-0 font-semibold tracking-wide hidden md:inline-block">
                         {item.category === 'campsite' ? '⛺️ 營位' : item.category === 'equipment' ? '🪑 裝備' : '🍖 服務'}
