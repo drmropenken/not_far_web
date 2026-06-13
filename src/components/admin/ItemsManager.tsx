@@ -88,8 +88,10 @@ export default function ItemsManager() {
         .update(formData)
         .eq('id', editingItem.id);
       
-      if (error) alert('更新失敗！');
-      else {
+      if (error) {
+        console.error('Update error:', error);
+        alert(`更新失敗！\\n錯誤：${error.message}\\n詳情：${error.details || ''}`);
+      } else {
         handleCloseModal();
         fetchItems();
       }
@@ -99,8 +101,10 @@ export default function ItemsManager() {
         .from('nf_items')
         .insert([formData]);
       
-      if (error) alert('新增失敗！');
-      else {
+      if (error) {
+        console.error('Insert error:', error);
+        alert(`新增失敗！\\n錯誤：${error.message}\\n詳情：${error.details || ''}`);
+      } else {
         handleCloseModal();
         fetchItems();
       }

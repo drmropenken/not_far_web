@@ -1,0 +1,8 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import InventoryCalendar from "../../components/admin/InventoryCalendar";
+---
+
+<AdminLayout title="庫存行事曆">
+  <InventoryCalendar client:only="react" />
+</AdminLayout>
