@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import liff from '@line/liff';
 import { supabase } from '../../lib/supabase';
 
 type Item = {
@@ -43,8 +44,8 @@ export default function BookingFlow() {
       setLoading(true);
     }
 
-    const checkSession = async () => {
-      // 暴力破解法：手動解析 URL 裡的 Token！(避免 Vercel + Astro 導致的 SDK 解析失效)
+    const checkSessionAndLiff = async () => {
+      // 1. 處理 Google 登入 (Supabase OAuth Hash 回傳)
       if (hash.includes('access_token') && hash.includes('refresh_token')) {
         try {
           const hashParams = new URLSearchParams(hash.substring(1));
@@ -52,38 +53,59 @@ export default function BookingFlow() {
           const refreshToken = hashParams.get('refresh_token');
           
           if (accessToken && refreshToken) {
-            const { data, error } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken
-            });
-            
-            if (error) {
-              alert("登入憑證處理失敗 (A): " + error.message);
-            } else if (data?.session && isMounted) {
-              setSession(data.session);
-              setCustomerInfo(prev => ({ 
-                ...prev, 
-                email: data.session.user.email || '', 
-                name: data.session.user.user_metadata?.full_name || '' 
-              }));
-              setStep(1);
-              // 清理網址列
-              window.history.replaceState(null, '', window.location.pathname);
-              return; // 成功解析就提早結束
-            }
+            await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+            window.history.replaceState(null, '', window.location.pathname);
           }
-        } catch (err: any) {
+        } catch (err) {
           console.error("Manual session set error:", err);
-          alert("手動解析發生錯誤: " + err.message);
         }
       }
 
-      // 如果手動解析沒成功，再試著用內建的方法抓抓看
+      // 2. 初始化 LIFF 並處理 LINE 暗影登入
+      try {
+        await liff.init({ liffId: '2010317535-p1JobvGF' });
+        
+        if (liff.isLoggedIn()) {
+          setLoading(true);
+          const profile = await liff.getProfile();
+          const idToken = liff.getDecodedIDToken();
+          const realEmail = idToken?.email;
+          const fakeEmail = realEmail || `${profile.userId}@line.notfar.com`;
+          const fakePassword = `${profile.userId}_notfar_secret_2024!`;
+
+          // 嘗試暗影登入
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: fakeEmail,
+            password: fakePassword
+          });
+
+          if (signInError) {
+            // 如果失敗，代表是新用戶，自動註冊
+            await supabase.auth.signUp({
+              email: fakeEmail,
+              password: fakePassword,
+              options: {
+                data: {
+                  full_name: profile.displayName,
+                  avatar_url: profile.pictureUrl,
+                  line_id: profile.userId
+                }
+              }
+            });
+            // 註冊完重新登入一次確保拿到最新 Session
+            await supabase.auth.signInWithPassword({
+              email: fakeEmail,
+              password: fakePassword
+            });
+          }
+        }
+      } catch (err) {
+        console.error("LIFF Init/Login failed:", err);
+      }
+
+      // 3. 統一讀取最終的 Supabase Session
       if (isMounted) {
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          alert("讀取 Session 失敗 (B): " + error.message);
-        }
         if (session) {
           setSession(session);
           setCustomerInfo(prev => ({ 
@@ -97,7 +119,7 @@ export default function BookingFlow() {
       }
     };
 
-    checkSession();
+    checkSessionAndLiff();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && isMounted) {
@@ -364,10 +386,13 @@ export default function BookingFlow() {
   };
 
   const handleLineLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'custom:line' as any,
-      options: { redirectTo: window.location.origin + '/app' }
-    });
+    try {
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: window.location.origin + '/app' });
+      }
+    } catch (err: any) {
+      alert('LINE登入失敗: ' + err.message);
+    }
   };
 
   if (loading) {
@@ -382,7 +407,10 @@ export default function BookingFlow() {
           <span className="text-emerald-600 text-xl">🏕️</span> 不遠山莊預訂
         </div>
         {session && (
-          <button onClick={() => supabase.auth.signOut().then(() => setStep(0))} className="text-xs text-slate-400 font-bold hover:text-slate-600">
+          <button onClick={() => {
+            supabase.auth.signOut().then(() => setStep(0));
+            if (liff.isLoggedIn()) liff.logout();
+          }} className="text-xs text-slate-400 font-bold hover:text-slate-600">
             登出
           </button>
         )}
