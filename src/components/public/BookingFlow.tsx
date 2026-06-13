@@ -81,7 +81,7 @@ export default function BookingFlow() {
 
           if (signInError) {
             // 如果失敗，代表是新用戶，自動註冊
-            await supabase.auth.signUp({
+            const { error: signUpError } = await supabase.auth.signUp({
               email: fakeEmail,
               password: fakePassword,
               options: {
@@ -92,15 +92,25 @@ export default function BookingFlow() {
                 }
               }
             });
+            
+            if (signUpError) {
+              alert("自動註冊失敗：" + signUpError.message);
+            }
+
             // 註冊完重新登入一次確保拿到最新 Session
-            await supabase.auth.signInWithPassword({
+            const { error: retrySignInError } = await supabase.auth.signInWithPassword({
               email: fakeEmail,
               password: fakePassword
             });
+            
+            if (retrySignInError) {
+              alert("註冊後登入失敗：" + retrySignInError.message + " (請檢查 Supabase 是否開啟了 Email Confirmation)");
+            }
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("LIFF Init/Login failed:", err);
+        alert("LIFF 系統錯誤：" + err.message);
       }
 
       // 3. 統一讀取最終的 Supabase Session
