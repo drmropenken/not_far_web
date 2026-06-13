@@ -195,7 +195,7 @@ export default function BookingFlow() {
 
     for (const item of items) {
       let minRemaining = item.total_quantity;
-
+      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
         const isFirstNight = d.getTime() === start.getTime();
         const isSingleTime = item.name.includes('單次') || item.name.includes('次計費');
         if (item.category === 'service' && isSingleTime && !isFirstNight) {
