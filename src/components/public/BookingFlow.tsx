@@ -57,7 +57,9 @@ export default function BookingFlow() {
               refresh_token: refreshToken
             });
             
-            if (data?.session && isMounted) {
+            if (error) {
+              alert("登入憑證處理失敗 (A): " + error.message);
+            } else if (data?.session && isMounted) {
               setSession(data.session);
               setCustomerInfo(prev => ({ 
                 ...prev, 
@@ -67,16 +69,21 @@ export default function BookingFlow() {
               setStep(1);
               // 清理網址列
               window.history.replaceState(null, '', window.location.pathname);
+              return; // 成功解析就提早結束
             }
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error("Manual session set error:", err);
+          alert("手動解析發生錯誤: " + err.message);
         }
       }
 
       // 如果手動解析沒成功，再試著用內建的方法抓抓看
       if (isMounted) {
         const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          alert("讀取 Session 失敗 (B): " + error.message);
+        }
         if (session) {
           setSession(session);
           setCustomerInfo(prev => ({ 
