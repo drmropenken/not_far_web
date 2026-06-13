@@ -160,6 +160,22 @@ export default function OrdersManager() {
     }
   };
 
+  const updateOrderNote = async (orderId: number, currentNote: string) => {
+    const newNote = window.prompt('請輸入新的備註內容（若要清空請直接按確定）：', currentNote || '');
+    if (newNote === null) return; // 取消輸入
+
+    const { error } = await supabase
+      .from('nf_orders')
+      .update({ notes: newNote })
+      .eq('id', orderId);
+
+    if (error) {
+      alert('更新備註失敗: ' + error.message);
+    } else {
+      fetchOrders();
+    }
+  };
+
   const filteredOrders = orders.filter(order => {
     const matchesStatus = activeTab === 'all' || order.status === activeTab;
     const matchesSearch = searchTerm === '' || 
@@ -299,11 +315,12 @@ export default function OrdersManager() {
                           </li>
                         ))}
                       </ul>
-                      {order.notes && (
-                        <div className="mt-2 p-2 bg-amber-50/50 rounded text-xs text-amber-700 border border-amber-100/50">
-                          📝 {order.notes}
+                      <div className="mt-2 p-2 bg-amber-50/50 hover:bg-amber-100/50 rounded text-xs text-amber-700 border border-amber-100/50 cursor-pointer transition-colors group/note" onClick={() => updateOrderNote(order.id, order.notes)}>
+                        <div className="flex justify-between items-start">
+                          <span>📝 {order.notes || <span className="opacity-50 italic">點擊新增備註...</span>}</span>
+                          <span className="opacity-0 group-hover/note:opacity-100 text-amber-500">✏️</span>
                         </div>
-                      )}
+                      </div>
                     </div>
                     <div className="mt-auto">
                       <div className="text-right">
