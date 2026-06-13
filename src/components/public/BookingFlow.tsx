@@ -325,8 +325,6 @@ export default function BookingFlow() {
                 <button onClick={handleGoogleLogin} className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm">
                   <span className="text-xl">G</span> Google 登入
                 </button>
-                <button onClick={() => setStep(1)} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-xl transition-all text-sm mt-4">
-                  測試模式：略過登入
                 </button>
               </div>
             </div>
