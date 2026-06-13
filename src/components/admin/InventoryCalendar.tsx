@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 type Item = {
@@ -193,7 +193,7 @@ export default function InventoryCalendar() {
                   const isToday = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth() && day === today.getDate();
                   
                   return (
-                    <th key={day} id={isToday ? 'today-col-header' : undefined} className={`p-1.5 border-b border-r min-w-[45px] md:min-w-[55px] ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-slate-200/80' : 'text-slate-600 border-slate-200/80'}`}>
+                    <th key={day} id={isToday ? 'today-col-header' : undefined} className={`relative p-1.5 border-b border-r min-w-[45px] md:min-w-[55px] ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-slate-200/80' : 'text-slate-600 border-slate-200/80'}`}>
                       <div className="flex flex-col items-center justify-center space-y-0.5">
                         <span className={`font-bold text-base md:text-lg ${isToday ? 'text-amber-700' : ''}`}>{day}</span>
                         <span className={`text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-amber-200/80 text-amber-800' : isWeekend ? 'bg-rose-100/50 text-rose-600' : 'bg-slate-200/50 text-slate-500'}`}>
