@@ -436,6 +436,8 @@ ul {
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   transition: var(--transition);
+  display: flex;
+  flex-direction: column;
 }
 
 .accommodation-card:hover {
@@ -451,6 +453,9 @@ ul {
 
 .accommodation-card .card-body {
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .accommodation-card h3 {
@@ -469,6 +474,7 @@ ul {
 .accommodation-card p {
   color: var(--text-light);
   margin-bottom: 16px;
+  flex: 1;
 }
 
 .accommodation-card .tags {
