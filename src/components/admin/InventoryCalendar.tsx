@@ -23,6 +23,7 @@ export default function InventoryCalendar() {
   
   // 選擇月份
   const [currentDate, setCurrentDate] = useState(new Date());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // 取得當月的天數陣列
   const getDaysInMonth = (year: number, month: number) => {
@@ -35,6 +36,22 @@ export default function InventoryCalendar() {
   useEffect(() => {
     fetchData();
   }, [currentDate]);
+
+  useEffect(() => {
+    // 當月份切換為當月時，自動滾動到今天的日期
+    const today = new Date();
+    if (!loading && currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth()) {
+      setTimeout(() => {
+        const todayCell = document.getElementById('today-col-header');
+        if (todayCell && scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTo({
+            left: Math.max(0, todayCell.offsetLeft - scrollContainerRef.current.clientWidth / 2 + todayCell.clientWidth / 2),
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+    }
+  }, [currentDate, loading]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -164,7 +181,7 @@ export default function InventoryCalendar() {
           <p className="font-medium tracking-widest text-sm">載入中...</p>
         </div>
       ) : (
-        <div className="flex-1 overflow-auto border border-slate-200 rounded-2xl relative shadow-inner bg-slate-50/50">
+        <div ref={scrollContainerRef} className="flex-1 overflow-auto border border-slate-200 rounded-2xl relative shadow-inner bg-slate-50/50">
           <table className="w-full text-center border-collapse text-sm">
             <thead className="sticky top-0 z-20 bg-slate-100/90 backdrop-blur-md shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
               <tr>
@@ -172,13 +189,17 @@ export default function InventoryCalendar() {
                 {daysArray.map(day => {
                   const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
                   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                  const today = new Date();
+                  const isToday = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth() && day === today.getDate();
+                  
                   return (
-                    <th key={day} className={`p-1.5 border-b border-r border-slate-200/80 min-w-[45px] md:min-w-[55px] ${isWeekend ? 'text-rose-500 bg-rose-50/30' : 'text-slate-600'}`}>
+                    <th key={day} id={isToday ? 'today-col-header' : undefined} className={`p-1.5 border-b border-r min-w-[45px] md:min-w-[55px] ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-slate-200/80' : 'text-slate-600 border-slate-200/80'}`}>
                       <div className="flex flex-col items-center justify-center space-y-0.5">
-                        <span className="font-bold text-base md:text-lg">{day}</span>
-                        <span className={`text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isWeekend ? 'bg-rose-100/50 text-rose-600' : 'bg-slate-200/50 text-slate-500'}`}>
+                        <span className={`font-bold text-base md:text-lg ${isToday ? 'text-amber-700' : ''}`}>{day}</span>
+                        <span className={`text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-amber-200/80 text-amber-800' : isWeekend ? 'bg-rose-100/50 text-rose-600' : 'bg-slate-200/50 text-slate-500'}`}>
                           {['日', '一', '二', '三', '四', '五', '六'][date.getDay()]}
                         </span>
+                        {isToday && <div className="absolute top-0 w-full h-1 bg-amber-400 left-0"></div>}
                       </div>
                     </th>
                   );
@@ -220,8 +241,11 @@ export default function InventoryCalendar() {
                       </div>
                     );
 
+                    const today = new Date();
+                    const isToday = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth() && day === today.getDate();
+                    
                     return (
-                      <td key={day} className="p-1 md:p-1.5 border-b border-r border-slate-100/60 cursor-pointer group/cell" onClick={() => handleCellClick(item, day)} title={`點擊修改 ${day} 日庫存 | 已訂: ${booked} / 總量: ${totalAvailable}`}>
+                      <td key={day} className={`p-1 md:p-1.5 border-b border-r cursor-pointer group/cell ${isToday ? 'bg-amber-50/40 border-amber-200 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.3)]' : 'border-slate-100/60'}`} onClick={() => handleCellClick(item, day)} title={`點擊修改 ${day} 日庫存 | 已訂: ${booked} / 總量: ${totalAvailable}`}>
                         {cellContent}
                       </td>
                     );
