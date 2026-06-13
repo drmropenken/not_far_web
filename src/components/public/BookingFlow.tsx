@@ -648,15 +648,54 @@ export default function BookingFlow() {
                   const nights = Math.round((new Date(dates.checkOut).getTime() - new Date(dates.checkIn).getTime()) / (1000 * 60 * 60 * 24));
                   const isSingleTime = item.category === 'service' && (item.name.includes('單次') || item.name.includes('次計費'));
                   const unit = item.category === 'campsite' ? '帳' : '份';
+                  
+                  let itemTotal = 0;
+                  let weekdays = 0;
+                  let holidays = 0;
+                  
+                  if (isSingleTime) {
+                    itemTotal = item.price_weekday * quantity;
+                  } else if (item.category === 'service') {
+                    itemTotal = item.price_weekday * quantity * nights;
+                  } else {
+                    const start = new Date(dates.checkIn);
+                    const end = new Date(dates.checkOut);
+                    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+                      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                      if (isWeekend) {
+                        holidays++;
+                        itemTotal += item.price_holiday * quantity;
+                      } else {
+                        weekdays++;
+                        itemTotal += item.price_weekday * quantity;
+                      }
+                    }
+                  }
+
                   return (
-                    <div key={item.id} className="flex justify-between items-center">
-                      <span className="text-slate-700 font-bold">
-                        {item.name} 
-                        <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md text-xs ml-2 border border-emerald-100">
-                          {isSingleTime ? `${quantity} ${unit} (單次計費)` : `${quantity} ${unit} × ${nights} 晚`}
+                    <div key={item.id} className="flex justify-between items-start py-1">
+                      <div>
+                        <span className="text-slate-700 font-bold block">
+                          {item.name} 
+                          <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md text-xs ml-2 border border-emerald-100">
+                            {isSingleTime ? `${quantity} ${unit} (單次)` : `${quantity} ${unit} × ${nights} 晚`}
+                          </span>
                         </span>
-                      </span>
-                      <span className="text-slate-800 font-black text-sm">已計入</span>
+                        <span className="text-[11px] text-slate-400 mt-0.5 block font-medium">
+                          {isSingleTime ? (
+                            `NT$ ${item.price_weekday} × ${quantity} ${unit}`
+                          ) : item.category === 'service' ? (
+                            `NT$ ${item.price_weekday} × ${quantity} ${unit} × ${nights} 晚`
+                          ) : (
+                            holidays > 0 && weekdays > 0 
+                              ? `(平日 NT$ ${item.price_weekday} × ${weekdays}晚 + 假日 NT$ ${item.price_holiday} × ${holidays}晚) × ${quantity}${unit}`
+                              : holidays > 0 
+                                ? `假日 NT$ ${item.price_holiday} × ${holidays}晚 × ${quantity}${unit}`
+                                : `平日 NT$ ${item.price_weekday} × ${weekdays}晚 × ${quantity}${unit}`
+                          )}
+                        </span>
+                      </div>
+                      <span className="text-slate-800 font-black text-sm mt-0.5">NT$ {itemTotal.toLocaleString()}</span>
                     </div>
                   );
                 })}
