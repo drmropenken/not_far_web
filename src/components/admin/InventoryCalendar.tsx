@@ -20,6 +20,15 @@ export default function InventoryCalendar() {
   const [items, setItems] = useState<Item[]>([]);
   const [inventory, setInventory] = useState<InventoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingCell, setEditingCell] = useState<{
+    item: Item;
+    day: number;
+    dateStr: string;
+    currentOverride: number;
+    booked: number;
+    existingRecordId?: string;
+  } | null>(null);
+  const [newQuota, setNewQuota] = useState<string>('');
   
   // 選擇月份
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -96,8 +105,8 @@ export default function InventoryCalendar() {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
-  // 點擊格子修改覆蓋數量
-  const handleCellClick = async (item: Item, day: number) => {
+  // 點擊格子開啟編輯 Modal
+  const handleCellClick = (item: Item, day: number) => {
     const year = currentDate.getFullYear();
     const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
     const dateStr = `${year}-${month}-${day.toString().padStart(2, '0')}`;
@@ -105,37 +114,50 @@ export default function InventoryCalendar() {
     const existingRecord = inventory.find(i => i.item_id === item.id && i.date === dateStr);
     const currentOverride = existingRecord?.override_quantity ?? item.total_quantity;
     
-    const input = prompt(`【${item.name}】\\n日期：${dateStr}\\n目前預設數量：${item.total_quantity}\\n目前已被訂走數量：${existingRecord?.booked_quantity || 0}\\n\\n請輸入這天「實際可開放的總數」(輸入空值代表恢復預設)：`, currentOverride.toString());
+    setEditingCell({
+      item,
+      day,
+      dateStr,
+      currentOverride,
+      booked: existingRecord?.booked_quantity || 0,
+      existingRecordId: existingRecord?.id
+    });
+    setNewQuota(currentOverride.toString());
+  };
+
+  // 儲存修改的庫存
+  const handleSaveQuota = async () => {
+    if (!editingCell) return;
     
-    if (input === null) return; // 取消
-    
-    let newOverride = input.trim() === '' ? null : parseInt(input);
+    let newOverride = newQuota.trim() === '' ? null : parseInt(newQuota);
     if (newOverride !== null && isNaN(newOverride)) {
       alert('請輸入有效的數字！');
       return;
     }
 
     // 如果輸入的數字跟原本預設的數量一樣，那就當作取消 override (存成 null)，避免無謂的黃色標記
-    if (newOverride === item.total_quantity) {
+    if (newOverride === editingCell.item.total_quantity) {
       newOverride = null;
     }
 
     setLoading(true);
+    const savedEditingCell = { ...editingCell };
+    setEditingCell(null); // 先關閉 Modal
 
-    if (existingRecord) {
+    if (savedEditingCell.existingRecordId) {
       // Update
       const { error } = await supabase
         .from('nf_inventory')
         .update({ override_quantity: newOverride })
-        .eq('id', existingRecord.id);
+        .eq('id', savedEditingCell.existingRecordId);
       if (error) alert('更新失敗: ' + error.message);
     } else {
-      // Insert (booked_quantity defaults to 0 in DB)
+      // Insert
       const { error } = await supabase
         .from('nf_inventory')
         .insert([{
-          item_id: item.id,
-          date: dateStr,
+          item_id: savedEditingCell.item.id,
+          date: savedEditingCell.dateStr,
           override_quantity: newOverride
         }]);
       if (error) alert('新增失敗: ' + error.message);
@@ -254,6 +276,71 @@ export default function InventoryCalendar() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      
+      {/* 編輯庫存 Modal */}
+      {editingCell && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+              <h3 className="text-lg font-bold text-slate-800">修改單日庫存總量</h3>
+              <p className="text-sm text-slate-500 mt-1">強制覆蓋系統預設的營位/裝備數量</p>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="bg-slate-50 p-4 rounded-xl space-y-2 border border-slate-100 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">項目名稱</span>
+                  <span className="font-bold text-slate-700">{editingCell.item.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">指定日期</span>
+                  <span className="font-bold text-slate-700 font-mono">{editingCell.dateStr}</span>
+                </div>
+                <div className="flex justify-between border-t border-slate-200/60 pt-2 mt-2">
+                  <span className="text-slate-500">系統預設總量</span>
+                  <span className="font-bold text-slate-700">{editingCell.item.total_quantity}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">目前已被訂走</span>
+                  <span className="font-bold text-rose-500">{editingCell.booked}</span>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  實際可開放總數 <span className="text-slate-400 font-normal">(留空代表恢復預設)</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newQuota}
+                  onChange={(e) => setNewQuota(e.target.value)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors text-lg font-mono outline-none"
+                  placeholder={editingCell.item.total_quantity.toString()}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveQuota();
+                    if (e.key === 'Escape') setEditingCell(null);
+                  }}
+                />
+              </div>
+            </div>
+            <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
+              <button 
+                onClick={() => setEditingCell(null)}
+                className="px-5 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                取消
+              </button>
+              <button 
+                onClick={handleSaveQuota}
+                className="px-5 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex items-center gap-2"
+              >
+                儲存設定
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
