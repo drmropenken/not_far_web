@@ -365,7 +365,7 @@ export default function BookingFlow() {
 
   const handleLineLogin = async () => {
     await supabase.auth.signInWithOAuth({
-      provider: 'line',
+      provider: 'custom:line' as any,
       options: { redirectTo: window.location.origin + '/app' }
     });
   };
