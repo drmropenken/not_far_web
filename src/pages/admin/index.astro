@@ -1,0 +1,96 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="今日儀表板">
+  
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Stat Card 1 -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center gap-4">
+      <div class="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl">
+        ⛺️
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 font-medium">今日預計進場</p>
+        <p class="text-2xl font-bold text-gray-800" id="stat-checkin">...</p>
+      </div>
+    </div>
+    
+    <!-- Stat Card 2 -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center gap-4">
+      <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl">
+        🚗
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 font-medium">今日預計離場</p>
+        <p class="text-2xl font-bold text-gray-800" id="stat-checkout">...</p>
+      </div>
+    </div>
+
+    <!-- Stat Card 3 -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center gap-4">
+      <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-2xl">
+        💰
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 font-medium">本月累積營收</p>
+        <p class="text-2xl font-bold text-gray-800" id="stat-revenue">...</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- 左側：今日進場名單 -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <h3 class="font-semibold text-gray-800">📥 今日進場名單</h3>
+      </div>
+      <div class="p-6">
+        <div id="checkin-list" class="space-y-4">
+          <p class="text-gray-500 text-center py-4">載入中...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右側：今日離場名單 -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <h3 class="font-semibold text-gray-800">📤 今日離場名單</h3>
+      </div>
+      <div class="p-6">
+        <div id="checkout-list" class="space-y-4">
+          <p class="text-gray-500 text-center py-4">載入中...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { supabase } from "@/lib/supabase";
+
+    async function loadDashboard() {
+      // 這裡會實作抓取今日進退場名單的邏輯
+      // 由於目前資料庫是空的，我們先顯示 0
+      
+      const elCheckin = document.getElementById("stat-checkin");
+      const elCheckout = document.getElementById("stat-checkout");
+      const elRevenue = document.getElementById("stat-revenue");
+      const listCheckin = document.getElementById("checkin-list");
+      const listCheckout = document.getElementById("checkout-list");
+
+      if (elCheckin) elCheckin.innerText = "0 帳";
+      if (elCheckout) elCheckout.innerText = "0 帳";
+      if (elRevenue) elRevenue.innerText = "NT$ 0";
+      
+      if (listCheckin) listCheckin.innerHTML = '<p class="text-gray-400 text-sm text-center py-8">今日無人進場</p>';
+      if (listCheckout) listCheckout.innerHTML = '<p class="text-gray-400 text-sm text-center py-8">今日無人離場</p>';
+    }
+
+    // 確保登入後才載入資料
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        loadDashboard();
+      }
+    });
+  </script>
+</AdminLayout>
