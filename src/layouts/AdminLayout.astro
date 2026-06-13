@@ -3,8 +3,9 @@ import "../styles/tailwind.css";
 
 interface Props {
   title: string;
+  description?: string;
 }
-const { title } = Astro.props;
+const { title, description } = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -13,6 +14,9 @@ const { title } = Astro.props;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title} | 營主管理後台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800 flex overflow-hidden">
   
@@ -20,7 +24,7 @@ const { title } = Astro.props;
   <div class="md:hidden flex items-center justify-between bg-slate-900 text-white p-4 shrink-0 fixed top-0 left-0 w-full z-40 h-16 shadow-md">
     <div class="flex items-center gap-2">
       <span class="text-xl">⛺️</span>
-      <h1 class="text-lg font-bold tracking-widest text-emerald-400">不遠山莊</h1>
+      <h1 class="text-xl font-bold tracking-widest text-amber-200 font-sans">不遠山莊</h1>
     </div>
     <button id="mobile-menu-btn" class="p-2 focus:outline-none text-slate-300 hover:text-white transition-colors">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -31,46 +35,69 @@ const { title } = Astro.props;
   <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
   <!-- Sidebar -->
-  <aside id="sidebar" class="w-64 bg-slate-900 text-slate-300 min-h-screen flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full md:translate-x-0 md:static transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none font-sans">
-    <div class="p-8 hidden md:block border-b border-slate-800/50">
-      <div class="flex items-center gap-3 mb-1">
-        <span class="text-2xl drop-shadow-md">⛺️</span>
-        <h1 class="text-2xl font-bold tracking-widest text-emerald-400 drop-shadow-sm">不遠山莊</h1>
+  <aside id="sidebar" class="w-56 shrink-0 bg-slate-900 text-slate-300 min-h-screen flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full md:translate-x-0 md:static md:ml-0 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none font-sans">
+    <div class="p-6 hidden md:block border-b border-slate-800/50">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-xl drop-shadow-md">⛺️</span>
+        <h1 class="text-2xl font-black tracking-widest bg-gradient-to-r from-amber-200 to-amber-400 bg-clip-text text-transparent drop-shadow-sm font-sans">不遠山莊</h1>
       </div>
-      <p class="text-sm text-slate-500 tracking-wider font-medium ml-9">營主管理系統</p>
+      <p class="text-xs text-slate-500 tracking-wider font-medium ml-8 mt-1">營主管理系統</p>
     </div>
     <div class="p-4 md:hidden flex justify-between items-center border-b border-slate-800 bg-slate-900 h-16">
-      <h1 class="text-lg font-bold text-emerald-400 tracking-widest">系統選單</h1>
+      <h1 class="text-lg font-bold text-amber-300 tracking-widest">系統選單</h1>
       <button id="close-sidebar-btn" class="p-2 text-slate-400 hover:text-white transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
     </div>
-    <nav class="flex-1 px-4 py-8 space-y-3 overflow-y-auto">
-      <a href="/admin" class="flex items-center gap-4 px-4 py-3.5 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-emerald-300 transition-all group" id="nav-dashboard">
-        <span class="text-xl group-hover:scale-110 transition-transform">📊</span> <span class="font-medium tracking-wide">儀表板</span>
+    <nav class="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
+      <a href="/admin" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-amber-300 transition-all group" id="nav-dashboard">
+        <span class="text-lg group-hover:scale-110 transition-transform">📊</span> <span class="font-medium tracking-wide text-sm">儀表板</span>
       </a>
-      <a href="/admin/orders" class="flex items-center gap-4 px-4 py-3.5 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-emerald-300 transition-all group" id="nav-orders">
-        <span class="text-xl group-hover:scale-110 transition-transform">📝</span> <span class="font-medium tracking-wide">訂單管理</span>
+      <a href="/admin/orders" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-amber-300 transition-all group" id="nav-orders">
+        <span class="text-lg group-hover:scale-110 transition-transform">📝</span> <span class="font-medium tracking-wide text-sm">訂單管理</span>
       </a>
-      <a href="/admin/items" class="flex items-center gap-4 px-4 py-3.5 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-emerald-300 transition-all group" id="nav-items">
-        <span class="text-xl group-hover:scale-110 transition-transform">⛺️</span> <span class="font-medium tracking-wide">商品與營位</span>
+      <a href="/admin/items" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-amber-300 transition-all group" id="nav-items">
+        <span class="text-lg group-hover:scale-110 transition-transform">⛺️</span> <span class="font-medium tracking-wide text-sm">商品與營位</span>
       </a>
-      <a href="/admin/inventory" class="flex items-center gap-4 px-4 py-3.5 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-emerald-300 transition-all group" id="nav-inventory">
-        <span class="text-xl group-hover:scale-110 transition-transform">📅</span> <span class="font-medium tracking-wide">庫存行事曆</span>
+      <a href="/admin/inventory" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-amber-300 transition-all group" id="nav-inventory">
+        <span class="text-lg group-hover:scale-110 transition-transform">📅</span> <span class="font-medium tracking-wide text-sm">庫存行事曆</span>
       </a>
     </nav>
-    <div class="p-6 border-t border-slate-800/50">
-      <button id="logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-3.5 text-rose-400 bg-slate-800/30 hover:bg-rose-500/10 hover:text-rose-300 rounded-xl transition-all font-medium tracking-wide border border-transparent hover:border-rose-500/20">
+    <div class="p-4 border-t border-slate-800/50">
+      <div class="flex items-center gap-3 px-3 py-2.5 mb-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
+        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold border border-slate-600 shrink-0" id="user-avatar">
+          👤
+        </div>
+        <div class="overflow-hidden flex-1">
+          <p id="user-name-display" class="text-sm font-bold text-slate-200 truncate">載入中...</p>
+          <p id="user-email-display" class="text-xs text-slate-500 truncate">...</p>
+        </div>
+      </div>
+      <button id="logout-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-rose-400 bg-slate-800/30 hover:bg-rose-500/10 hover:text-rose-300 rounded-xl transition-all font-medium tracking-wide border border-transparent hover:border-rose-500/20 text-sm">
         <span>🚪</span> <span>登出系統</span>
       </button>
     </div>
   </aside>
 
-  <!-- Main Content -->
   <main class="flex-1 flex flex-col h-screen overflow-hidden pt-16 md:pt-0 w-full relative bg-slate-50/50">
     <!-- Top Header (Desktop only) -->
-    <header class="bg-white/80 backdrop-blur-xl shadow-sm h-16 hidden md:flex items-center px-10 border-b border-slate-200 z-10 sticky top-0">
-      <h2 class="text-xl font-bold text-slate-800 tracking-wide">{title}</h2>
+    <header class="bg-white/80 backdrop-blur-xl shadow-sm h-16 hidden md:flex items-center px-6 border-b border-slate-200 z-40 sticky top-0 gap-4">
+      <button id="desktop-menu-btn" class="p-2 text-slate-400 hover:text-amber-600 transition-colors rounded-lg hover:bg-amber-50">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+      </button>
+      <div class="flex items-center gap-2">
+        <h2 class="text-xl font-bold text-slate-800 tracking-wide">{title}</h2>
+        {description && (
+          <div class="relative group flex items-center">
+            <div class="w-5 h-5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center cursor-help transition-colors border border-slate-200 ml-1">
+              <span class="font-bold text-xs">?</span>
+            </div>
+            <div class="absolute top-full -left-2 mt-3 w-72 bg-slate-800 text-white text-xs leading-relaxed p-3.5 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none origin-top-left before:content-[''] before:absolute before:bottom-full before:left-[12px] before:border-[6px] before:border-transparent before:border-b-slate-800">
+              {description}
+            </div>
+          </div>
+        )}
+      </div>
     </header>
     
     <!-- Content Area -->
@@ -102,6 +129,22 @@ const { title } = Astro.props;
       if (!userEmail || !ADMIN_EMAILS.includes(userEmail)) {
         await supabase.auth.signOut();
         window.location.href = "/admin/login?error=unauthorized";
+        return;
+      }
+
+      // 渲染使用者資訊
+      const userNameDisplay = document.getElementById("user-name-display");
+      const userEmailDisplay = document.getElementById("user-email-display");
+      const userAvatar = document.getElementById("user-avatar");
+
+      if (userNameDisplay) {
+        userNameDisplay.textContent = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '營區管理員';
+      }
+      if (userEmailDisplay) {
+        userEmailDisplay.textContent = userEmail;
+      }
+      if (userAvatar && session.user.user_metadata?.avatar_url) {
+        userAvatar.innerHTML = `<img src="${session.user.user_metadata.avatar_url}" alt="Avatar" class="w-full h-full rounded-full object-cover" />`;
       }
     }
     
@@ -119,7 +162,7 @@ const { title } = Astro.props;
 
     // 高亮當前選單
     const path = window.location.pathname;
-    const activeClasses = ["bg-slate-800", "text-emerald-400", "font-bold", "border-l-4", "border-emerald-500", "shadow-sm"];
+    const activeClasses = ["bg-slate-800", "text-amber-300", "font-bold", "border-l-4", "border-amber-500", "shadow-sm"];
     if (path === "/admin" || path === "/admin/") {
       document.getElementById("nav-dashboard")?.classList.add(...activeClasses);
     } else if (path.includes("/admin/orders")) {
@@ -130,31 +173,30 @@ const { title } = Astro.props;
       document.getElementById("nav-inventory")?.classList.add(...activeClasses);
     }
 
-    // 手機版側邊欄開關邏輯
+    // 側邊欄開關邏輯
     const mobileMenuBtn = document.getElementById("mobile-menu-btn");
     const closeSidebarBtn = document.getElementById("close-sidebar-btn");
     const sidebar = document.getElementById("sidebar");
     const sidebarOverlay = document.getElementById("sidebar-overlay");
+    const desktopMenuBtn = document.getElementById("desktop-menu-btn");
 
-    function toggleSidebar() {
-      if (sidebar && sidebarOverlay) {
-        const isClosed = sidebar.classList.contains("-translate-x-full");
-        if (isClosed) {
-          sidebar.classList.remove("-translate-x-full");
-          sidebarOverlay.classList.remove("hidden");
-          document.body.style.overflow = "hidden"; // 避免背後滾動
-        } else {
-          sidebar.classList.add("-translate-x-full");
-          sidebarOverlay.classList.add("hidden");
-          document.body.style.overflow = "";
-        }
-      }
+    function openMobileSidebar() {
+      sidebar?.classList.remove("-translate-x-full");
+      sidebarOverlay?.classList.remove("hidden");
     }
 
-    if (mobileMenuBtn) mobileMenuBtn.addEventListener("click", toggleSidebar);
-    if (closeSidebarBtn) closeSidebarBtn.addEventListener("click", toggleSidebar);
-    if (sidebarOverlay) sidebarOverlay.addEventListener("click", toggleSidebar);
+    function closeMobileSidebar() {
+      sidebar?.classList.add("-translate-x-full");
+      sidebarOverlay?.classList.add("hidden");
+    }
 
+    mobileMenuBtn?.addEventListener("click", openMobileSidebar);
+    closeSidebarBtn?.addEventListener("click", closeMobileSidebar);
+    sidebarOverlay?.addEventListener("click", closeMobileSidebar);
+
+    desktopMenuBtn?.addEventListener("click", () => {
+      sidebar?.classList.toggle("md:-ml-56");
+    });
   </script>
 </body>
 </html>

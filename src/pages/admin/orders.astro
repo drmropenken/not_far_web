@@ -1,0 +1,13 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import OrdersManager from '../../components/admin/OrdersManager';
+---
+
+<AdminLayout 
+  title="訂單管理"
+  description="散客訂單與手動接單的控制中心。您可在此手動幫客人建立預訂（會自動連動扣除行事曆庫存）。若客人退訂，只要點擊「取消訂單」就會自動退還該日期的庫存數量喔！"
+>
+  <div class="h-full bg-slate-50/50 md:p-6 p-3 overflow-hidden">
+    <OrdersManager client:load />
+  </div>
+</AdminLayout>

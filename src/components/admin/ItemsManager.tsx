@@ -18,6 +18,7 @@ export default function ItemsManager() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'campsite' | 'equipment' | 'service'>('all');
 
   // Form states
   const [formData, setFormData] = useState<Partial<Item>>({
@@ -131,24 +132,59 @@ export default function ItemsManager() {
     service: '🍖 餐飲與服務'
   };
 
+  const filteredItems = items.filter(item => {
+    if (activeTab === 'all') return true;
+    return item.category === activeTab;
+  }).sort((a, b) => a.sort_order - b.sort_order);
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">商品與營位管理</h2>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-        >
-          <span>+</span> 新增項目
-        </button>
+    <div className="bg-white md:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-48px)] w-full">
+      {/* 工具列與篩選標籤 (緊湊設計) */}
+      <div className="px-4 md:px-6 pt-3 md:pt-4 border-b border-slate-200 shrink-0 flex flex-col-reverse md:flex-row justify-between md:items-end gap-3 bg-white md:rounded-t-2xl z-10">
+        
+        {/* 篩選標籤 */}
+        <div className="flex gap-2 md:gap-4 overflow-x-auto hide-scrollbar">
+          {[
+            { id: 'all', label: '全部項目' },
+            { id: 'campsite', label: '⛺️ 營位' },
+            { id: 'equipment', label: '🪑 裝備' },
+            { id: 'service', label: '🍖 服務' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`px-4 py-2 md:px-5 md:py-2.5 rounded-t-lg font-bold text-sm transition-all border-b-2 whitespace-nowrap ${
+                activeTab === tab.id 
+                  ? 'border-amber-500 text-amber-600 bg-amber-50/50' 
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 新增項目按鈕 */}
+        <div className="pb-2 flex justify-end">
+          <button 
+            onClick={() => handleOpenModal()}
+            className="bg-slate-800 text-amber-300 hover:bg-slate-700 px-5 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-slate-700 flex items-center justify-center gap-2"
+          >
+            <span className="text-base leading-none mb-0.5">+</span> 新增項目
+          </button>
+        </div>
       </div>
 
       {loading && !showModal ? (
-        <div className="text-center py-10 text-gray-500">載入中...</div>
+        <div className="flex-1 flex flex-col items-center justify-center text-amber-600/60 space-y-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500"></div>
+          <p className="font-medium tracking-widest text-sm">載入項目資料中...</p>
+        </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+        <div className="flex-1 overflow-auto bg-slate-50 p-4 md:p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-sm">
                   <th className="p-4 font-semibold">分類</th>
@@ -161,13 +197,13 @@ export default function ItemsManager() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {items.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center text-gray-400">尚無資料，請點擊右上角新增。</td>
-                  </tr>
-                ) : (
-                  items.map(item => (
-                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                  {filteredItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-gray-400">目前沒有符合條件的項目</td>
+                    </tr>
+                  ) : (
+                    filteredItems.map((item) => (
+                      <tr key={item.id} className="border-b border-gray-100 hover:bg-amber-50/30 transition-colors">
                       <td className="p-4 text-sm">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium 
                           ${item.category === 'campsite' ? 'bg-green-100 text-green-700' : 
@@ -191,6 +227,7 @@ export default function ItemsManager() {
               </tbody>
             </table>
           </div>
+        </div>
         </div>
       )}
 

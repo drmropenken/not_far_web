@@ -1,0 +1,28 @@
+---
+import "../styles/tailwind.css";
+
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{title}</title>
+  <meta name="description" content="不遠露營度假山莊線上預訂系統">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+  <!-- LINE LIFF SDK -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js" is:inline></script>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 font-sans selection:bg-amber-200 selection:text-amber-900 overscroll-none">
+  <main class="w-full max-w-md mx-auto min-h-screen bg-white shadow-2xl overflow-hidden flex flex-col relative">
+    <slot />
+  </main>
+</body>
+</html>

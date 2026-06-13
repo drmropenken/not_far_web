@@ -3,6 +3,9 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 import ItemsManager from "../../components/admin/ItemsManager";
 ---
 
-<AdminLayout title="商品與營位">
+<AdminLayout 
+  title="商品與營位" 
+  description="統一管理營區內的所有可預訂項目。您可以在此新增或修改「營位」、「裝備」或「餐飲」，設定平日與假日價格以及預設每日的供應數量。"
+>
   <ItemsManager client:load />
 </AdminLayout>
