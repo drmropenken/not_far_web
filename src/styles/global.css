@@ -786,10 +786,14 @@ ul {
 }
 
 .footer-links a {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   padding: 6px 0;
   opacity: 0.8;
   transition: var(--transition);
+  word-break: keep-all;
+  line-height: 1.5;
 }
 
 .footer-links a:hover {

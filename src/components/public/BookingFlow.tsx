@@ -317,7 +317,8 @@ export default function BookingFlow() {
           total_amount: totalAmount,
           discount_code: discountAppliedCode || null,
           discount_amount: discountAmount,
-          status: 'pending'
+          status: 'pending',
+          line_user_id: session?.user?.user_metadata?.line_id || null
         }])
         .select('id')
         .single();
