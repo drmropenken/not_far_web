@@ -198,9 +198,6 @@ export default function BookingFlow() {
 
       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
         const isFirstNight = d.getTime() === start.getTime();
-        if (item.category === 'service' && !isFirstNight) {
-          continue; // 食物與服務是單次計費，只要確保第一天有庫存即可，不需要每天檢查
-        }
 
         const dateStr = d.toISOString().split('T')[0];
         const record = inventory?.find(i => i.item_id === item.id && i.date === dateStr);
@@ -248,9 +245,10 @@ export default function BookingFlow() {
       });
     }
 
+    const nights = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
     selectedItems.forEach(({ item, quantity }) => {
       if (item.category === 'service') {
-        total += item.price_weekday * quantity;
+        total += item.price_weekday * quantity * nights;
       }
     });
 
@@ -271,9 +269,10 @@ export default function BookingFlow() {
       });
     }
 
+    const nights = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
     selectedItems.forEach(({ item, quantity }) => {
       if (item.category === 'service') {
-        total += item.price_weekday * quantity;
+        total += item.price_weekday * quantity * nights;
       }
     });
 
@@ -542,6 +541,19 @@ export default function BookingFlow() {
                   })}
                 </div>
               )}
+
+              {/* 服務/餐飲區塊提示 */}
+              {availableItems.filter(a => a.item.category === 'service').length > 0 && (
+                <div className="mt-6 mb-2 p-4 bg-amber-50 border border-amber-200 rounded-xl shadow-sm">
+                  <p className="text-sm text-amber-800 font-bold flex items-start gap-2 leading-relaxed">
+                    <span className="text-lg leading-none">💡</span> 
+                    <span>
+                      貼心提醒：在此加購的餐飲服務將直接套用於<strong className="text-amber-900 border-b border-amber-900/30 pb-0.5 mx-1">所有住宿天數</strong>。<br/>
+                      若您僅需加購「單日」餐飲，請勿在此勾選，請於下一步的「特殊需求備註」中說明，並於入住時現場加購結帳即可！
+                    </span>
+                  </p>
+                </div>
+              )}
             </div>
             <div className="pt-6 mt-auto border-t border-slate-100 shrink-0">
               <button 
@@ -627,12 +639,21 @@ export default function BookingFlow() {
 
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
                 <h3 className="font-bold text-slate-500 uppercase tracking-wider text-xs border-b border-slate-100 pb-2">預訂明細</h3>
-                {selectedItems.map(({ item, quantity }) => (
-                  <div key={item.id} className="flex justify-between items-center">
-                    <span className="text-slate-700 font-bold">{item.name} <span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-xs ml-1">x {quantity}</span></span>
-                    <span className="text-slate-800 font-black text-sm">已計入</span>
-                  </div>
-                ))}
+                {selectedItems.map(({ item, quantity }) => {
+                  const nights = Math.round((new Date(dates.checkOut).getTime() - new Date(dates.checkIn).getTime()) / (1000 * 60 * 60 * 24));
+                  const unit = item.category === 'campsite' ? '帳' : '份';
+                  return (
+                    <div key={item.id} className="flex justify-between items-center">
+                      <span className="text-slate-700 font-bold">
+                        {item.name} 
+                        <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md text-xs ml-2 border border-emerald-100">
+                          {quantity} {unit} × {nights} 晚
+                        </span>
+                      </span>
+                      <span className="text-slate-800 font-black text-sm">已計入</span>
+                    </div>
+                  );
+                })}
                 
                 <div className="space-y-2 mt-4 pt-4 border-t border-emerald-100/50 text-slate-700 font-medium">
                   <div className="flex justify-between items-center text-sm">
