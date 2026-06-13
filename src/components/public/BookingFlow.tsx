@@ -165,6 +165,11 @@ export default function BookingFlow() {
       let minRemaining = item.total_quantity;
 
       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+        const isFirstNight = d.getTime() === start.getTime();
+        if (item.category === 'service' && !isFirstNight) {
+          continue; // 食物與服務是單次計費，只要確保第一天有庫存即可，不需要每天檢查
+        }
+
         const dateStr = d.toISOString().split('T')[0];
         const record = inventory?.find(i => i.item_id === item.id && i.date === dateStr);
         
@@ -317,7 +322,13 @@ export default function BookingFlow() {
       const end = new Date(dates.checkOut);
       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
         const dStr = d.toISOString().split('T')[0];
+        const isFirstNight = d.getTime() === start.getTime();
+
         for (const { item, quantity } of selectedItems) {
+          if (item.category === 'service' && !isFirstNight) {
+            continue; // 食物與服務只扣第一天的庫存，避免佔用多天
+          }
+
           // Fetch existing inventory record
           const { data: invData } = await supabase
             .from('nf_inventory')
@@ -352,6 +363,13 @@ export default function BookingFlow() {
     });
   };
 
+  const handleLineLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'line',
+      options: { redirectTo: window.location.origin + '/app' }
+    });
+  };
+
   if (loading) {
     return <div className="flex-1 flex items-center justify-center min-h-screen bg-slate-50"><div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full"></div></div>;
   }
@@ -379,7 +397,7 @@ export default function BookingFlow() {
               <p className="text-sm text-slate-500 font-medium">請先登入以繼續您的預訂流程或查詢訂單</p>
               
               <div className="space-y-3 pt-4">
-                <button className="w-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-[#06C755]/20">
+                <button onClick={handleLineLogin} className="w-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-[#06C755]/20">
                   <span className="text-xl">💬</span> LINE 快速登入
                 </button>
                 <button onClick={handleGoogleLogin} className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm">
