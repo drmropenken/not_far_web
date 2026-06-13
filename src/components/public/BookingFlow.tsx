@@ -28,29 +28,35 @@ export default function BookingFlow() {
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [fetchingItems, setFetchingItems] = useState(false);
   
+  // Discount states
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountPercent, setDiscountPercent] = useState(1);
+  const [discountError, setDiscountError] = useState('');
+  const [discountAppliedCode, setDiscountAppliedCode] = useState('');
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
-        setStep(1);
         setCustomerInfo(prev => ({ 
           ...prev, 
           email: session.user.email || '', 
           name: session.user.user_metadata?.full_name || '' 
         }));
+        setStep(prevStep => prevStep === 0 ? 1 : prevStep);
       }
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session && step === 0) {
-        setStep(1);
+      if (session) {
+        setStep(prevStep => prevStep === 0 ? 1 : prevStep);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [step]);
+  }, []);
 
   useEffect(() => {
     if (step === 2 && dates.checkIn && dates.checkOut) {
@@ -132,37 +138,86 @@ export default function BookingFlow() {
   };
 
   const calculateTotal = () => {
-    if (!dates.checkIn || !dates.checkOut) return 0;
+    let total = 0;
     const start = new Date(dates.checkIn);
     const end = new Date(dates.checkOut);
-    
-    let total = 0;
+
     for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
       const isWeekend = d.getDay() === 0 || d.getDay() === 6;
       selectedItems.forEach(({ item, quantity }) => {
-        if (item.category === 'service') return; // Services are charged once per order
-        total += (isWeekend ? item.price_holiday : item.price_weekday) * quantity;
+        if (item.category === 'campsite' || item.category === 'equipment') {
+          total += (isWeekend ? item.price_holiday : item.price_weekday) * quantity;
+        }
       });
     }
 
     selectedItems.forEach(({ item, quantity }) => {
       if (item.category === 'service') {
-        total += item.price_weekday * quantity; // Assuming service price is fixed
+        total += item.price_weekday * quantity;
       }
     });
 
-    return total;
+    return Math.round(total * discountPercent);
+  };
+
+  const calculateDiscountAmount = () => {
+    let total = 0;
+    const start = new Date(dates.checkIn);
+    const end = new Date(dates.checkOut);
+
+    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+      selectedItems.forEach(({ item, quantity }) => {
+        if (item.category === 'campsite' || item.category === 'equipment') {
+          total += (isWeekend ? item.price_holiday : item.price_weekday) * quantity;
+        }
+      });
+    }
+
+    selectedItems.forEach(({ item, quantity }) => {
+      if (item.category === 'service') {
+        total += item.price_weekday * quantity;
+      }
+    });
+
+    return Math.round(total * (1 - discountPercent));
+  };
+
+  const handleVerifyDiscount = async () => {
+    if (!discountCode.trim()) {
+      setDiscountPercent(1);
+      setDiscountError('');
+      setDiscountAppliedCode('');
+      return;
+    }
+    const { data } = await supabase
+      .from('nf_discount_codes')
+      .select('*')
+      .eq('code', discountCode.trim().toUpperCase())
+      .eq('is_active', true)
+      .single();
+      
+    if (data) {
+      setDiscountPercent(data.discount_percent);
+      setDiscountError('');
+      setDiscountAppliedCode(data.code);
+    } else {
+      setDiscountPercent(1);
+      setDiscountError('無效的折扣碼或已停用');
+      setDiscountAppliedCode('');
+    }
   };
 
   const handleCheckout = async () => {
     setLoading(true);
     try {
-      // 1. Generate Order Number
-      const dateStr = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
-      const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
-      const orderNo = `ORD-${dateStr}-${randomStr}`;
+      // 1. Generate Order Number (Max 20 chars for ECPay)
+      const dateStr = new Date().toISOString().replace(/[-:T.]/g, '').slice(2, 14); // YYMMDDHHMMSS (12 chars)
+      const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase(); // 4 chars
+      const orderNo = `N${dateStr}${randomStr}`; // 17 chars total
 
       const totalAmount = calculateTotal();
+      const discountAmount = calculateDiscountAmount();
 
       // 2. Create Order
       const { data: orderData, error: orderError } = await supabase
@@ -176,6 +231,8 @@ export default function BookingFlow() {
           license_plate: customerInfo.license_plate,
           notes: `[Email: ${customerInfo.email}] ${customerInfo.notes}`,
           total_amount: totalAmount,
+          discount_code: discountAppliedCode || null,
+          discount_amount: discountAmount,
           status: 'pending'
         }])
         .select('id')
@@ -189,7 +246,7 @@ export default function BookingFlow() {
         order_id: orderId,
         item_id: item.id,
         quantity: quantity,
-        price_at_booking: item.price_weekday // Simplified for now
+        unit_price: item.price_weekday // Simplified for now
       }));
 
       const { error: itemsError } = await supabase.from('nf_order_items').insert(orderItemsToInsert);
@@ -280,7 +337,6 @@ export default function BookingFlow() {
           <div className="flex-1 p-6 flex flex-col">
             <h2 className="text-2xl font-black text-slate-800 mb-6">選擇入住日期</h2>
             <div className="space-y-6 flex-1">
-              {/* Date pickers will go here */}
               <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">入住日期 (Check-in)</label>
                 <input 
@@ -391,26 +447,39 @@ export default function BookingFlow() {
              <button onClick={() => setStep(2)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改方案</button>
             <h2 className="text-2xl font-black text-slate-800 mb-6">填寫聯絡資料</h2>
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
-              <div className="space-y-4">
+              <div className="bg-white p-5 rounded-2xl shadow-sm space-y-4">
+                <h3 className="font-bold text-slate-800 text-lg">聯絡資訊</h3>
+                
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">聯絡人姓名 *</label>
-                  <input type="text" value={customerInfo.name} onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})} className="w-full font-bold text-slate-800 bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors" placeholder="請輸入姓名" />
+                  <label className="block text-sm font-bold text-slate-600 mb-1.5">聯絡人姓名 <span className="text-rose-500">*</span></label>
+                  <input required type="text" value={customerInfo.name} onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="例如：王小明"/>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">聯絡電話 *</label>
-                  <input type="tel" value={customerInfo.phone} onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})} className="w-full font-bold text-slate-800 bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors" placeholder="0912345678" />
+                  <label className="block text-sm font-bold text-slate-600 mb-1.5">手機號碼 <span className="text-rose-500">*</span></label>
+                  <input required type="tel" value={customerInfo.phone} onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="例如：0912345678"/>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">電子郵件 *</label>
-                  <input type="email" value={customerInfo.email} onChange={e => setCustomerInfo({...customerInfo, email: e.target.value})} className="w-full font-bold text-slate-800 bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors" placeholder="example@gmail.com" />
+                  <label className="block text-sm font-bold text-slate-600 mb-1.5">電子郵件 <span className="text-rose-500">*</span></label>
+                  <input required type="email" value={customerInfo.email} onChange={e => setCustomerInfo({...customerInfo, email: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="用於寄送訂單通知"/>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">車牌號碼</label>
-                  <input type="text" value={customerInfo.license_plate} onChange={e => setCustomerInfo({...customerInfo, license_plate: e.target.value})} className="w-full font-bold text-slate-800 bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors" placeholder="AB-1234 (選填)" />
+                  <label className="block text-sm font-bold text-slate-600 mb-1.5">車牌號碼 (選填)</label>
+                  <input type="text" value={customerInfo.license_plate} onChange={e => setCustomerInfo({...customerInfo, license_plate: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="如有開車請填寫，方便辨識進場"/>
                 </div>
+                
+                <div className="pt-2 border-t border-slate-100">
+                  <label className="block text-sm font-bold text-slate-600 mb-1.5">折扣碼 (選填)</label>
+                  <div className="flex gap-2">
+                    <input type="text" value={discountCode} onChange={e => setDiscountCode(e.target.value.toUpperCase())} className="flex-1 border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none uppercase font-mono tracking-wider" placeholder="請輸入折扣代碼"/>
+                    <button type="button" onClick={handleVerifyDiscount} className="bg-slate-800 text-white px-5 rounded-xl font-bold hover:bg-slate-700 transition-colors whitespace-nowrap text-sm">套用</button>
+                  </div>
+                  {discountError && <p className="text-rose-500 text-sm mt-1.5 font-bold">{discountError}</p>}
+                  {discountPercent < 1 && <p className="text-emerald-600 text-sm mt-1.5 font-bold">成功套用 {discountAppliedCode}，享 {(discountPercent * 10).toFixed(1).replace('.0', '')} 折優惠！</p>}
+                </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">備註 / 特殊需求</label>
-                  <textarea value={customerInfo.notes} onChange={e => setCustomerInfo({...customerInfo, notes: e.target.value})} className="w-full font-bold text-slate-800 bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors min-h-[100px]" placeholder="(選填)"></textarea>
+                  <label className="block text-sm font-bold text-slate-600 mb-1.5">特殊需求備註 (選填)</label>
+                  <textarea value={customerInfo.notes} onChange={e => setCustomerInfo({...customerInfo, notes: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none h-24 resize-none" placeholder="有任何需要我們協助的地方嗎？"/>
                 </div>
               </div>
             </div>
@@ -448,14 +517,25 @@ export default function BookingFlow() {
                 {selectedItems.map(({ item, quantity }) => (
                   <div key={item.id} className="flex justify-between items-center">
                     <span className="text-slate-700 font-bold">{item.name} <span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-xs ml-1">x {quantity}</span></span>
-                    {/* Assuming displaying a simplified price calculation summary */}
                     <span className="text-slate-800 font-black text-sm">已計入</span>
                   </div>
                 ))}
                 
-                <div className="pt-4 mt-4 border-t border-slate-200 flex justify-between items-end">
-                  <span className="text-slate-500 font-bold">總金額</span>
-                  <span className="text-3xl font-black text-emerald-600">NT$ {calculateTotal().toLocaleString()}</span>
+                <div className="space-y-2 mt-4 pt-4 border-t border-emerald-100/50 text-slate-700 font-medium">
+                  <div className="flex justify-between items-center text-sm">
+                    <span>原價總計</span>
+                    <span>NT$ {(calculateTotal() / discountPercent).toLocaleString()}</span>
+                  </div>
+                  {discountPercent < 1 && (
+                    <div className="flex justify-between items-center text-sm text-rose-500 font-bold">
+                      <span>折扣金額 ({discountAppliedCode})</span>
+                      <span>- NT$ {calculateDiscountAmount().toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-end mt-2 pt-2 border-t border-emerald-200/50">
+                    <span>最終結帳金額</span>
+                    <span className="text-3xl font-black text-emerald-700">NT$ {calculateTotal().toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
             </div>

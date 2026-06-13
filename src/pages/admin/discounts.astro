@@ -1,0 +1,18 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import DiscountsManager from '../../components/admin/DiscountsManager';
+---
+
+<AdminLayout 
+  title="折扣碼管理"
+  description="設定或管理專屬折扣代碼，吸引更多顧客預訂。"
+>
+  <div class="p-6 max-w-5xl mx-auto w-full">
+    <DiscountsManager client:only="react" />
+  </div>
+
+  <script>
+    // Set active nav
+    document.getElementById('nav-discounts')?.classList.add('bg-slate-800', 'text-amber-300', 'border-l-4', 'border-amber-400');
+  </script>
+</AdminLayout>

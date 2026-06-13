@@ -171,7 +171,9 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     const discountAmount = calculateDiscountAmount();
     
     // 1. 建立訂單
-    const orderNo = `ORD-${formData.check_in_date.replace(/-/g, '')}-${Math.random().toString(36).substring(2,6).toUpperCase()}`;
+    const dateStr = new Date().toISOString().replace(/[-:T.]/g, '').slice(2, 14);
+    const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const orderNo = `N${dateStr}${randomStr}`;
     
     const { data: newOrder, error: orderError } = await supabase
       .from('nf_orders')

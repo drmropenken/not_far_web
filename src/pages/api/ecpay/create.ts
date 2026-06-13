@@ -22,7 +22,10 @@ function generateCheckMacValue(params: Record<string, string>, hashKey: string, 
     .replace(/%21/g, '!')
     .replace(/%2a/g, '*')
     .replace(/%28/g, '(')
-    .replace(/%29/g, ')');
+    .replace(/%29/g, ')')
+    .replace(/%20/g, '+')
+    .replace(/'/g, '%27')
+    .replace(/~/g, '%7e');
 
   // 4. SHA256 and UpperCase
   return crypto.createHash('sha256').update(encoded).digest('hex').toUpperCase();
@@ -64,7 +67,10 @@ export const GET: APIRoute = async ({ request, url }) => {
   const hashIv = import.meta.env.ECPAY_HASH_IV;
   const endpoint = import.meta.env.ECPAY_ENDPOINT;
 
-  const tradeDate = new Date().toLocaleString('zh-TW', { hour12: false, timeZone: 'Asia/Taipei' }).replace(/-/g, '/');
+  const now = new Date();
+  const twTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const tradeDate = `${twTime.getUTCFullYear()}/${pad(twTime.getUTCMonth() + 1)}/${pad(twTime.getUTCDate())} ${pad(twTime.getUTCHours())}:${pad(twTime.getUTCMinutes())}:${pad(twTime.getUTCSeconds())}`;
 
   const params: Record<string, string> = {
     MerchantID: merchantId,
@@ -82,6 +88,14 @@ export const GET: APIRoute = async ({ request, url }) => {
 
   const macValue = generateCheckMacValue(params, hashKey, hashIv);
   params.CheckMacValue = macValue;
+
+  console.log("=== ECPay MAC Debug ===");
+  console.log("MerchantID:", merchantId);
+  console.log("HashKey:", hashKey ? "EXISTS" : "MISSING");
+  console.log("HashIV:", hashIv ? "EXISTS" : "MISSING");
+  console.log("Params:", params);
+  console.log("MAC:", macValue);
+  console.log("=======================");
 
   // Build Auto-Submit HTML Form
   const inputs = Object.entries(params).map(([key, val]) => 

@@ -40,6 +40,7 @@ export default function OrdersManager() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'paid' | 'cancelled'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchOrders = async () => {
@@ -160,8 +161,12 @@ export default function OrdersManager() {
   };
 
   const filteredOrders = orders.filter(order => {
-    if (activeTab === 'all') return true;
-    return order.status === activeTab;
+    const matchesStatus = activeTab === 'all' || order.status === activeTab;
+    const matchesSearch = searchTerm === '' || 
+      order.order_no.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer_phone.includes(searchTerm);
+    return matchesStatus && matchesSearch;
   });
 
   const getStatusBadge = (status: string) => {
@@ -177,10 +182,10 @@ export default function OrdersManager() {
     <div className="bg-white md:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-48px)] w-full">
       
       {/* 工具列與篩選標籤 (緊湊設計) */}
-      <div className="px-4 md:px-6 pt-3 md:pt-4 border-b border-slate-200 shrink-0 flex flex-col-reverse md:flex-row justify-between md:items-end gap-3 bg-white md:rounded-t-2xl z-10">
+      <div className="px-4 md:px-6 pt-3 md:pt-4 border-b border-slate-200 shrink-0 flex flex-col md:flex-row justify-between md:items-end gap-3 bg-white md:rounded-t-2xl z-10">
         
         {/* 篩選標籤 */}
-        <div className="flex gap-2 md:gap-4 overflow-x-auto hide-scrollbar">
+        <div className="flex gap-2 md:gap-4 overflow-x-auto hide-scrollbar w-full md:w-auto pb-1 md:pb-0">
           {[
             { id: 'all', label: '全部訂單' },
             { id: 'pending', label: '待付款' },
@@ -201,13 +206,23 @@ export default function OrdersManager() {
           ))}
         </div>
 
-        {/* 新增訂單按鈕 */}
-        <div className="pb-2 flex justify-end">
+        {/* 搜尋列與新增訂單按鈕 */}
+        <div className="pb-3 md:pb-2 flex flex-col sm:flex-row w-full md:w-auto justify-end gap-3 items-stretch sm:items-center">
+          <div className="relative flex-1 sm:w-64">
+            <input 
+              type="text" 
+              placeholder="搜尋姓名、電話、訂單編號..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50">🔍</span>
+          </div>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-slate-800 text-amber-300 hover:bg-slate-700 px-5 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-slate-700 flex items-center justify-center gap-2"
+            className="bg-slate-800 text-amber-300 hover:bg-slate-700 px-5 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-slate-700 flex items-center justify-center gap-2 whitespace-nowrap"
           >
-            <span className="text-base leading-none mb-0.5">+</span> 手動新增訂單
+            <span className="text-base leading-none mb-0.5">+</span> 手動接單
           </button>
         </div>
       </div>
