@@ -196,8 +196,11 @@ export default function BookingFlow() {
     for (const item of items) {
       let minRemaining = item.total_quantity;
 
-      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
         const isFirstNight = d.getTime() === start.getTime();
+        const isSingleTime = item.name.includes('單次') || item.name.includes('次計費');
+        if (item.category === 'service' && isSingleTime && !isFirstNight) {
+          continue; // 單次服務只需檢查第一天入住時的庫存
+        }
 
         const dateStr = d.toISOString().split('T')[0];
         const record = inventory?.find(i => i.item_id === item.id && i.date === dateStr);
@@ -248,7 +251,8 @@ export default function BookingFlow() {
     const nights = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
     selectedItems.forEach(({ item, quantity }) => {
       if (item.category === 'service') {
-        total += item.price_weekday * quantity * nights;
+        const isSingleTime = item.name.includes('單次') || item.name.includes('次計費');
+        total += item.price_weekday * quantity * (isSingleTime ? 1 : nights);
       }
     });
 
@@ -272,7 +276,8 @@ export default function BookingFlow() {
     const nights = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
     selectedItems.forEach(({ item, quantity }) => {
       if (item.category === 'service') {
-        total += item.price_weekday * quantity * nights;
+        const isSingleTime = item.name.includes('單次') || item.name.includes('次計費');
+        total += item.price_weekday * quantity * (isSingleTime ? 1 : nights);
       }
     });
 
@@ -641,13 +646,14 @@ export default function BookingFlow() {
                 <h3 className="font-bold text-slate-500 uppercase tracking-wider text-xs border-b border-slate-100 pb-2">預訂明細</h3>
                 {selectedItems.map(({ item, quantity }) => {
                   const nights = Math.round((new Date(dates.checkOut).getTime() - new Date(dates.checkIn).getTime()) / (1000 * 60 * 60 * 24));
+                  const isSingleTime = item.category === 'service' && (item.name.includes('單次') || item.name.includes('次計費'));
                   const unit = item.category === 'campsite' ? '帳' : '份';
                   return (
                     <div key={item.id} className="flex justify-between items-center">
                       <span className="text-slate-700 font-bold">
                         {item.name} 
                         <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md text-xs ml-2 border border-emerald-100">
-                          {quantity} {unit} × {nights} 晚
+                          {isSingleTime ? `${quantity} ${unit} (單次計費)` : `${quantity} ${unit} × ${nights} 晚`}
                         </span>
                       </span>
                       <span className="text-slate-800 font-black text-sm">已計入</span>
