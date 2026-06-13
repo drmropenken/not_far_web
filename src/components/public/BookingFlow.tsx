@@ -234,7 +234,7 @@ export default function BookingFlow() {
     });
   };
 
-  const calculateTotal = () => {
+  const calculateOriginalTotal = () => {
     let total = 0;
     const start = new Date(dates.checkIn);
     const end = new Date(dates.checkOut);
@@ -256,32 +256,15 @@ export default function BookingFlow() {
       }
     });
 
-    return Math.round(total * discountPercent);
+    return total;
+  };
+
+  const calculateTotal = () => {
+    return Math.round(calculateOriginalTotal() * discountPercent);
   };
 
   const calculateDiscountAmount = () => {
-    let total = 0;
-    const start = new Date(dates.checkIn);
-    const end = new Date(dates.checkOut);
-
-    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-      selectedItems.forEach(({ item, quantity }) => {
-        if (item.category === 'campsite' || item.category === 'equipment') {
-          total += (isWeekend ? item.price_holiday : item.price_weekday) * quantity;
-        }
-      });
-    }
-
-    const nights = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    selectedItems.forEach(({ item, quantity }) => {
-      if (item.category === 'service') {
-        const isSingleTime = item.name.includes('單次') || item.name.includes('次計費');
-        total += item.price_weekday * quantity * (isSingleTime ? 1 : nights);
-      }
-    });
-
-    return Math.round(total * (1 - discountPercent));
+    return Math.round(calculateOriginalTotal() * (1 - discountPercent));
   };
 
   const handleVerifyDiscount = async () => {
@@ -673,15 +656,15 @@ export default function BookingFlow() {
                   }
 
                   return (
-                    <div key={item.id} className="flex justify-between items-start py-1">
-                      <div>
-                        <span className="text-slate-700 font-bold block">
+                    <div key={item.id} className="flex justify-between items-start py-3 border-b border-slate-50 last:border-0">
+                      <div className="flex-1 pr-4">
+                        <span className="text-slate-700 font-bold block leading-snug">
                           {item.name} 
-                          <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md text-xs ml-2 border border-emerald-100">
+                          <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md text-xs ml-2 border border-emerald-100 inline-block align-middle">
                             {isSingleTime ? `${quantity} ${unit} (單次)` : `${quantity} ${unit} × ${nights} 晚`}
                           </span>
                         </span>
-                        <span className="text-[11px] text-slate-400 mt-0.5 block font-medium">
+                        <span className="text-[11px] text-slate-400 mt-1.5 block font-medium leading-relaxed">
                           {isSingleTime ? (
                             `NT$ ${item.price_weekday} × ${quantity} ${unit}`
                           ) : item.category === 'service' ? (
@@ -695,7 +678,9 @@ export default function BookingFlow() {
                           )}
                         </span>
                       </div>
-                      <span className="text-slate-800 font-black text-sm mt-0.5">NT$ {itemTotal.toLocaleString()}</span>
+                      <div className="shrink-0 text-right mt-0.5">
+                        <span className="text-slate-800 font-black text-sm whitespace-nowrap">NT$ {itemTotal.toLocaleString()}</span>
+                      </div>
                     </div>
                   );
                 })}
@@ -703,7 +688,7 @@ export default function BookingFlow() {
                 <div className="space-y-2 mt-4 pt-4 border-t border-emerald-100/50 text-slate-700 font-medium">
                   <div className="flex justify-between items-center text-sm">
                     <span>原價總計</span>
-                    <span>NT$ {(calculateTotal() / discountPercent).toLocaleString()}</span>
+                    <span>NT$ {calculateOriginalTotal().toLocaleString()}</span>
                   </div>
                   {discountPercent < 1 && (
                     <div className="flex justify-between items-center text-sm text-rose-500 font-bold">
