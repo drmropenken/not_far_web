@@ -102,61 +102,38 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     }));
   };
 
-  // 簡單計算價格：週六週日算假日價
-  const calculateTotal = () => {
+  const calculateOriginalTotal = () => {
     if (!formData.check_in_date || !formData.check_out_date) return 0;
     const start = new Date(formData.check_in_date);
     const end = new Date(formData.check_out_date);
+    const nights = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
     let total = 0;
 
-    // 計算總晚數
-    let nights = 0;
-    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-      nights++;
-      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+    selectedItems.forEach(si => {
+      const isSingleTime = si.item.category === 'service' && (si.item.name.includes('單次') || si.item.name.includes('次計費'));
       
-      selectedItems.forEach(si => {
-        // 營位與裝備：依天數與平假日計費
-        if (si.item.category === 'campsite' || si.item.category === 'equipment') {
+      if (isSingleTime) {
+        total += si.item.price_weekday * si.quantity;
+      } else if (si.item.category === 'service') {
+        total += si.item.price_weekday * si.quantity * nights;
+      } else {
+        for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
           const price = isWeekend ? si.item.price_holiday : si.item.price_weekday;
           total += price * si.quantity;
         }
-      });
-    }
-
-    // 服務類別：一次性計費 (不管住幾晚，只收一次)，以平日價為基準
-    selectedItems.forEach(si => {
-      if (si.item.category === 'service') {
-        total += si.item.price_weekday * si.quantity;
       }
     });
 
-    return Math.floor(total * discountPercent);
+    return total;
+  };
+
+  const calculateTotal = () => {
+    return Math.floor(calculateOriginalTotal() * discountPercent);
   };
 
   const calculateDiscountAmount = () => {
-    if (!formData.check_in_date || !formData.check_out_date) return 0;
-    const start = new Date(formData.check_in_date);
-    const end = new Date(formData.check_out_date);
-    let total = 0;
-
-    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-      selectedItems.forEach(si => {
-        if (si.item.category === 'campsite' || si.item.category === 'equipment') {
-          const price = isWeekend ? si.item.price_holiday : si.item.price_weekday;
-          total += price * si.quantity;
-        }
-      });
-    }
-
-    selectedItems.forEach(si => {
-      if (si.item.category === 'service') {
-        total += si.item.price_weekday * si.quantity;
-      }
-    });
-
-    return Math.floor(total * (1 - discountPercent));
+    return Math.floor(calculateOriginalTotal() * (1 - discountPercent));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -341,6 +318,49 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
                     {items.map(item => {
                       const isSelected = selectedItems.some(i => i.item.id === item.id);
                       const selectedData = selectedItems.find(i => i.item.id === item.id);
+                      const quantity = selectedData?.quantity || 0;
+                      
+                      let breakdownText = "";
+                      let itemTotalStr = "";
+
+                      if (isSelected && formData.check_in_date && formData.check_out_date) {
+                        const nights = Math.round((new Date(formData.check_out_date).getTime() - new Date(formData.check_in_date).getTime()) / (1000 * 60 * 60 * 24));
+                        const isSingleTime = item.category === 'service' && (item.name.includes('單次') || item.name.includes('次計費'));
+                        const unit = item.category === 'campsite' ? '帳' : '份';
+                        
+                        let itemTotal = 0;
+                        let weekdays = 0;
+                        let holidays = 0;
+                        
+                        if (isSingleTime) {
+                          itemTotal = item.price_weekday * quantity;
+                          breakdownText = `NT$ ${item.price_weekday} × ${quantity} ${unit}`;
+                        } else if (item.category === 'service') {
+                          itemTotal = item.price_weekday * quantity * nights;
+                          breakdownText = `NT$ ${item.price_weekday} × ${quantity} ${unit} × ${nights} 晚`;
+                        } else {
+                          const start = new Date(formData.check_in_date);
+                          const end = new Date(formData.check_out_date);
+                          for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+                            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                            if (isWeekend) {
+                              holidays++;
+                              itemTotal += item.price_holiday * quantity;
+                            } else {
+                              weekdays++;
+                              itemTotal += item.price_weekday * quantity;
+                            }
+                          }
+                          if (holidays > 0 && weekdays > 0) {
+                            breakdownText = `(平日 $${item.price_weekday} × ${weekdays}晚 + 假日 $${item.price_holiday} × ${holidays}晚) × ${quantity}${unit}`;
+                          } else if (holidays > 0) {
+                            breakdownText = `假日 $${item.price_holiday} × ${holidays}晚 × ${quantity}${unit}`;
+                          } else {
+                            breakdownText = `平日 $${item.price_weekday} × ${weekdays}晚 × ${quantity}${unit}`;
+                          }
+                        }
+                        itemTotalStr = `NT$ ${itemTotal.toLocaleString()}`;
+                      }
                       
                       return (
                         <div key={item.id} className={`p-3 rounded-xl border-2 transition-all ${isSelected ? 'border-amber-400 bg-amber-50/30' : 'border-stone-100 hover:border-stone-300'}`}>
@@ -357,13 +377,21 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
                           </div>
                           
                           {isSelected && (
-                            <div className="mt-3 pt-3 border-t border-amber-200/50 flex justify-between items-center">
-                              <span className="text-sm font-semibold text-stone-600">數量</span>
-                              <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-lg p-1 shadow-sm">
-                                <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, -1); }} className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-stone-100 text-stone-600 font-bold">-</button>
-                                <span className="w-8 text-center font-bold text-amber-600">{selectedData?.quantity}</span>
-                                <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1); }} className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-stone-100 text-stone-600 font-bold">+</button>
+                            <div className="mt-3 pt-3 border-t border-amber-200/50">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm font-semibold text-stone-600">數量</span>
+                                <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-lg p-1 shadow-sm">
+                                  <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, -1); }} className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-stone-100 text-stone-600 font-bold">-</button>
+                                  <span className="w-8 text-center font-bold text-amber-600">{selectedData?.quantity}</span>
+                                  <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1); }} className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-stone-100 text-stone-600 font-bold">+</button>
+                                </div>
                               </div>
+                              {formData.check_in_date && formData.check_out_date && (
+                                <div className="flex justify-between items-start text-xs bg-white p-2 rounded border border-amber-100">
+                                  <span className="text-stone-500 font-medium leading-relaxed max-w-[70%]">{breakdownText}</span>
+                                  <span className="text-stone-700 font-bold text-right ml-2">{itemTotalStr}</span>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -375,7 +403,7 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
                 <div className="mt-4 pt-4 border-t-2 border-stone-100 border-dashed shrink-0">
                   <div className="flex justify-between text-sm text-stone-500 mb-1">
                     <span>原價總計</span>
-                    <span>NT$ {(calculateTotal() / discountPercent).toLocaleString()}</span>
+                    <span>NT$ {calculateOriginalTotal().toLocaleString()}</span>
                   </div>
                   {discountPercent < 1 && (
                     <div className="flex justify-between text-sm text-rose-500 font-bold mb-1">
