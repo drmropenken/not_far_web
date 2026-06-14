@@ -12,15 +12,17 @@ function generateCheckMacValue(params: Record<string, string>, hashKey: string, 
   }
   str += `&HashIV=${hashIV}`;
 
-  let encoded = encodeURIComponent(str).toLowerCase();
-  encoded = encoded
+  let encoded = encodeURIComponent(str).toLowerCase()
     .replace(/%2d/g, '-')
     .replace(/%5f/g, '_')
     .replace(/%2e/g, '.')
     .replace(/%21/g, '!')
     .replace(/%2a/g, '*')
     .replace(/%28/g, '(')
-    .replace(/%29/g, ')');
+    .replace(/%29/g, ')')
+    .replace(/%20/g, '+')
+    .replace(/'/g, '%27')
+    .replace(/~/g, '%7e');
 
   return crypto.createHash('sha256').update(encoded).digest('hex').toUpperCase();
 }
