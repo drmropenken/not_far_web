@@ -77,7 +77,7 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     await transporter.sendMail({
       from: GMAIL_USER,
-      to: `${GMAIL_USER}, info@close-2.com`,
+      to: `${GMAIL_USER}, close2.tw@gmail.com`,
       replyTo: email,
       subject: `【不遠山莊官網聯絡表單】${subject}`,
       html: mailHtml,
