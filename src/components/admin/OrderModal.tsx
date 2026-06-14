@@ -230,18 +230,20 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
           .single();
 
         if (existingInv) {
-          await supabase
+          const { error: updErr } = await supabase
             .from('nf_inventory')
             .update({ booked_quantity: existingInv.booked_quantity + si.quantity })
             .eq('id', existingInv.id);
+          if (updErr) alert(`更新庫存失敗 (${dateStr}): ${updErr.message}`);
         } else {
-          await supabase
+          const { error: insErr } = await supabase
             .from('nf_inventory')
             .insert([{
               date: dateStr,
               item_id: si.item.id,
               booked_quantity: si.quantity
             }]);
+          if (insErr) alert(`新增庫存失敗 (${dateStr}): ${insErr.message} (可能是 Supabase RLS 權限問題)`);
         }
       }
     }

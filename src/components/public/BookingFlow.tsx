@@ -359,12 +359,14 @@ export default function BookingFlow() {
             .single();
 
           if (invData) {
-            await supabase.from('nf_inventory')
+            const { error: updErr } = await supabase.from('nf_inventory')
               .update({ booked_quantity: invData.booked_quantity + quantity })
               .eq('id', invData.id);
+            if (updErr) throw new Error(`更新庫存失敗 (${dStr}): ${updErr.message}`);
           } else {
-            await supabase.from('nf_inventory')
+            const { error: insErr } = await supabase.from('nf_inventory')
               .insert([{ date: dStr, item_id: item.id, booked_quantity: quantity }]);
+            if (insErr) throw new Error(`新增庫存失敗 (${dStr}): ${insErr.message} (可能是 Supabase RLS 權限問題)`);
           }
         }
       }
