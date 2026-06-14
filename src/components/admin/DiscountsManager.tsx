@@ -103,12 +103,12 @@ export default function DiscountsManager() {
     <div className="space-y-6">
       {/* Header Actions */}
       <div className="flex justify-between items-center">
-        <div className="text-slate-500 font-medium">
+        <div className="text-stone-500 font-medium">
           共 {discounts.length} 組折扣碼
         </div>
         <button 
           onClick={() => setIsAdding(!isAdding)}
-          className={`px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-sm ${isAdding ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-md'}`}
+          className={`px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-sm ${isAdding ? 'bg-stone-200 text-stone-700 hover:bg-stone-300' : 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-md'}`}
         >
           {isAdding ? '取消新增' : <><span>+</span> 新增折扣碼</>}
         </button>
@@ -116,20 +116,20 @@ export default function DiscountsManager() {
 
       {/* Add Form */}
       {isAdding && (
-        <form onSubmit={handleAddDiscount} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-end animate-in slide-in-from-top-4 duration-200">
+        <form onSubmit={handleAddDiscount} className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex flex-col md:flex-row gap-4 items-end animate-in slide-in-from-top-4 duration-200">
           <div className="flex-1 w-full">
-            <label className="block text-sm font-bold text-slate-600 mb-1.5">折扣碼名稱 <span className="text-rose-500">*</span></label>
+            <label className="block text-sm font-bold text-stone-600 mb-1.5">折扣碼名稱 <span className="text-rose-500">*</span></label>
             <input 
               required 
               type="text" 
               value={newCode} 
               onChange={e => setNewCode(e.target.value.toUpperCase())} 
-              className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-amber-500 outline-none font-mono uppercase tracking-widest text-slate-800" 
+              className="w-full border border-stone-300 rounded-xl p-3 focus:ring-2 focus:ring-amber-500 outline-none font-mono uppercase tracking-widest text-stone-800" 
               placeholder="例如：SUMMER2026"
             />
           </div>
           <div className="flex-1 w-full">
-            <label className="block text-sm font-bold text-slate-600 mb-1.5">折扣比例 <span className="text-rose-500">*</span></label>
+            <label className="block text-sm font-bold text-stone-600 mb-1.5">折扣比例 <span className="text-rose-500">*</span></label>
             <div className="flex items-center gap-3">
               <input 
                 required 
@@ -139,9 +139,9 @@ export default function DiscountsManager() {
                 max="1"
                 value={newPercent} 
                 onChange={e => setNewPercent(parseFloat(e.target.value))} 
-                className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-amber-500 outline-none font-mono text-slate-800" 
+                className="w-full border border-stone-300 rounded-xl p-3 focus:ring-2 focus:ring-amber-500 outline-none font-mono text-stone-800" 
               />
-              <span className="text-slate-500 font-bold whitespace-nowrap text-sm">
+              <span className="text-stone-500 font-bold whitespace-nowrap text-sm">
                 = {newPercent === 1 ? '無折扣' : newPercent < 1 && newPercent > 0 ? `打 ${newPercent * 10} 折` : '錯誤數值'}
               </span>
             </div>
@@ -149,7 +149,7 @@ export default function DiscountsManager() {
           <button 
             type="submit" 
             disabled={saving}
-            className="w-full md:w-auto px-8 py-3 bg-slate-800 hover:bg-slate-900 text-amber-300 rounded-xl font-bold transition-all disabled:opacity-50 whitespace-nowrap shadow-md"
+            className="w-full md:w-auto px-8 py-3 bg-emerald-700 hover:bg-emerald-800 text-emerald-50 rounded-xl font-bold transition-all disabled:opacity-50 whitespace-nowrap shadow-md"
           >
             {saving ? '儲存中...' : '確定新增'}
           </button>
@@ -157,11 +157,11 @@ export default function DiscountsManager() {
       )}
 
       {/* List */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center text-slate-400 font-bold animate-pulse">載入中...</div>
+          <div className="p-12 text-center text-stone-400 font-bold animate-pulse">載入中...</div>
         ) : discounts.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 font-bold flex flex-col items-center">
+          <div className="p-12 text-center text-stone-400 font-bold flex flex-col items-center">
             <span className="text-4xl mb-3">🏷️</span>
             目前沒有任何折扣碼
           </div>
@@ -169,19 +169,19 @@ export default function DiscountsManager() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                <tr className="bg-stone-50 border-b border-stone-200 text-stone-500">
                   <th className="p-4 font-bold text-sm tracking-widest whitespace-nowrap">折扣碼 (CODE)</th>
                   <th className="p-4 font-bold text-sm tracking-widest whitespace-nowrap text-center">折數</th>
                   <th className="p-4 font-bold text-sm tracking-widest whitespace-nowrap text-center">狀態</th>
                   <th className="p-4 font-bold text-sm tracking-widest whitespace-nowrap text-right">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-stone-100">
                 {discounts.map(discount => (
-                  <tr key={discount.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={discount.id} className="hover:bg-stone-50/50 transition-colors">
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-lg text-slate-800 bg-slate-100 px-3 py-1 rounded-lg tracking-widest border border-slate-200">
+                        <span className="font-mono font-black text-lg text-stone-800 bg-stone-100 px-3 py-1 rounded-lg tracking-widest border border-stone-200">
                           {discount.code}
                         </span>
                       </div>
@@ -190,23 +190,23 @@ export default function DiscountsManager() {
                       <span className="font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
                         {(discount.discount_percent * 10).toFixed(1).replace('.0', '')} 折
                       </span>
-                      <div className="text-[10px] text-slate-400 mt-1 font-mono">({discount.discount_percent})</div>
+                      <div className="text-[10px] text-stone-400 mt-1 font-mono">({discount.discount_percent})</div>
                     </td>
                     <td className="p-4 text-center">
                       <button 
                         onClick={() => toggleActive(discount.id, discount.is_active)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${discount.is_active ? 'bg-amber-500' : 'bg-slate-300'}`}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${discount.is_active ? 'bg-amber-500' : 'bg-stone-300'}`}
                       >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${discount.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${discount.is_active ? 'transtone-x-6' : 'transtone-x-1'}`} />
                       </button>
-                      <div className={`text-[10px] font-bold mt-1 ${discount.is_active ? 'text-amber-600' : 'text-slate-400'}`}>
+                      <div className={`text-[10px] font-bold mt-1 ${discount.is_active ? 'text-amber-600' : 'text-stone-400'}`}>
                         {discount.is_active ? '啟用中' : '已停用'}
                       </div>
                     </td>
                     <td className="p-4 text-right">
                       <button 
                         onClick={() => handleDelete(discount.id)}
-                        className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center"
+                        className="p-2 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center"
                         title="刪除"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>

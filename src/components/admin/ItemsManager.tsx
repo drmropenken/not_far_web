@@ -138,9 +138,9 @@ export default function ItemsManager() {
   }).sort((a, b) => a.sort_order - b.sort_order);
 
   return (
-    <div className="bg-white md:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-48px)] w-full">
+    <div className="bg-white md:rounded-2xl shadow-sm border border-stone-200 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-48px)] w-full">
       {/* 工具列與篩選標籤 (緊湊設計) */}
-      <div className="px-4 md:px-6 pt-3 md:pt-4 border-b border-slate-200 shrink-0 flex flex-col-reverse md:flex-row justify-between md:items-end gap-3 bg-white md:rounded-t-2xl z-10">
+      <div className="px-4 md:px-6 pt-3 md:pt-4 border-b border-stone-200 shrink-0 flex flex-col-reverse md:flex-row justify-between md:items-end gap-3 bg-white md:rounded-t-2xl z-10">
         
         {/* 篩選標籤 */}
         <div className="flex gap-2 md:gap-4 overflow-x-auto hide-scrollbar">
@@ -156,7 +156,7 @@ export default function ItemsManager() {
               className={`px-4 py-2 md:px-5 md:py-2.5 rounded-t-lg font-bold text-sm transition-all border-b-2 whitespace-nowrap ${
                 activeTab === tab.id 
                   ? 'border-amber-500 text-amber-600 bg-amber-50/50' 
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                  : 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-50'
               }`}
             >
               {tab.label}
@@ -168,7 +168,7 @@ export default function ItemsManager() {
         <div className="pb-2 flex justify-end">
           <button 
             onClick={() => handleOpenModal()}
-            className="bg-slate-800 text-amber-300 hover:bg-slate-700 px-5 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-slate-700 flex items-center justify-center gap-2"
+            className="bg-emerald-700 text-emerald-50 hover:bg-stone-700 px-5 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-stone-700 flex items-center justify-center gap-2"
           >
             <span className="text-base leading-none mb-0.5">+</span> 新增項目
           </button>
@@ -181,8 +181,8 @@ export default function ItemsManager() {
           <p className="font-medium tracking-widest text-sm">載入項目資料中...</p>
         </div>
       ) : (
-        <div className="flex-1 overflow-auto bg-slate-50 p-4 md:p-6">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="flex-1 overflow-auto bg-stone-50 p-4 md:p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
               <thead>

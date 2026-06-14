@@ -195,10 +195,10 @@ export default function OrdersManager() {
   };
 
   return (
-    <div className="bg-white md:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-48px)] w-full">
+    <div className="bg-white md:rounded-2xl shadow-sm border border-stone-200 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-48px)] w-full">
       
       {/* 工具列與篩選標籤 (緊湊設計) */}
-      <div className="px-4 md:px-6 pt-3 md:pt-4 border-b border-slate-200 shrink-0 flex flex-col md:flex-row justify-between md:items-end gap-3 bg-white md:rounded-t-2xl z-10">
+      <div className="px-4 md:px-6 pt-3 md:pt-4 border-b border-stone-200 shrink-0 flex flex-col md:flex-row justify-between md:items-end gap-3 bg-white md:rounded-t-2xl z-10">
         
         {/* 篩選標籤 */}
         <div className="flex gap-2 md:gap-4 overflow-x-auto hide-scrollbar w-full md:w-auto pb-1 md:pb-0">
@@ -214,7 +214,7 @@ export default function OrdersManager() {
               className={`px-4 py-2 md:px-5 md:py-2.5 rounded-t-lg font-bold text-sm transition-all border-b-2 whitespace-nowrap ${
                 activeTab === tab.id 
                   ? 'border-amber-500 text-amber-600 bg-amber-50/50' 
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                  : 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-50'
               }`}
             >
               {tab.label}
@@ -230,13 +230,13 @@ export default function OrdersManager() {
               placeholder="搜尋姓名、電話、訂單編號..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
             />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50">🔍</span>
+            <span className="absolute left-3 top-1/2 -transtone-y-1/2 opacity-50">🔍</span>
           </div>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-slate-800 text-amber-300 hover:bg-slate-700 px-5 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-slate-700 flex items-center justify-center gap-2 whitespace-nowrap"
+            className="bg-emerald-700 text-emerald-50 hover:bg-stone-700 px-5 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-stone-700 flex items-center justify-center gap-2 whitespace-nowrap"
           >
             <span className="text-base leading-none mb-0.5">+</span> 手動接單
           </button>
@@ -244,30 +244,30 @@ export default function OrdersManager() {
       </div>
 
       {/* 訂單列表區域 */}
-      <div className="flex-1 overflow-auto bg-slate-50 p-4 md:p-6">
+      <div className="flex-1 overflow-auto bg-stone-50 p-4 md:p-6">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-full text-amber-600/60 space-y-4">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500"></div>
             <p className="font-medium tracking-widest text-sm">載入訂單資料中...</p>
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-4 bg-white rounded-xl border border-slate-200/50 border-dashed min-h-[300px]">
+          <div className="flex flex-col items-center justify-center h-full text-stone-400 space-y-4 bg-white rounded-xl border border-stone-200/50 border-dashed min-h-[300px]">
             <span className="text-5xl opacity-50">🏕️</span>
             <p className="font-medium tracking-wider">目前沒有符合條件的訂單</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 align-top">
             {filteredOrders.map(order => (
-              <div key={order.id} className={`bg-white rounded-xl border ${order.status === 'cancelled' ? 'border-rose-100 opacity-75' : 'border-slate-200'} shadow-sm overflow-hidden hover:shadow-md transition-all group`}>
+              <div key={order.id} className={`bg-white rounded-xl border ${order.status === 'cancelled' ? 'border-rose-100 opacity-75' : 'border-stone-200'} shadow-sm overflow-hidden hover:shadow-md transition-all group`}>
                 {/* 訂單表頭 */}
-                <div className={`bg-slate-100/50 border-b ${order.status === 'cancelled' ? 'border-rose-100' : 'border-slate-100'} px-5 py-3 flex justify-between items-center`}>
+                <div className={`bg-stone-100/50 border-b ${order.status === 'cancelled' ? 'border-rose-100' : 'border-stone-100'} px-5 py-3 flex justify-between items-center`}>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs text-slate-500 bg-slate-200/70 px-2 py-1 rounded">
+                    <span className="font-mono text-xs text-stone-500 bg-stone-200/70 px-2 py-1 rounded">
                       {order.order_no}
                     </span>
                     {getStatusBadge(order.status)}
                   </div>
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-stone-400">
                     下單時間: {new Date(order.created_at).toLocaleString('zh-TW')}
                   </div>
                 </div>
@@ -281,23 +281,23 @@ export default function OrdersManager() {
                         {order.customer_name.charAt(0)}
                       </div>
                       <div>
-                        <h3 className={`font-bold text-lg ${order.status === 'cancelled' ? 'text-slate-500 line-through' : 'text-slate-800'}`}>{order.customer_name}</h3>
-                        <p className="text-sm text-slate-500 font-mono">{order.customer_phone}</p>
+                        <h3 className={`font-bold text-lg ${order.status === 'cancelled' ? 'text-stone-500 line-through' : 'text-stone-800'}`}>{order.customer_name}</h3>
+                        <p className="text-sm text-stone-500 font-mono">{order.customer_phone}</p>
                       </div>
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3 text-sm space-y-1.5 border border-slate-100">
+                    <div className="bg-stone-50 rounded-lg p-3 text-sm space-y-1.5 border border-stone-100">
                       <div className="flex justify-between">
-                        <span className="text-slate-500">入住日期</span>
-                        <span className="font-bold text-slate-700">{order.check_in_date}</span>
+                        <span className="text-stone-500">入住日期</span>
+                        <span className="font-bold text-stone-700">{order.check_in_date}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">退營日期</span>
-                        <span className="font-bold text-slate-700">{order.check_out_date}</span>
+                        <span className="text-stone-500">退營日期</span>
+                        <span className="font-bold text-stone-700">{order.check_out_date}</span>
                       </div>
                       {order.license_plate && (
-                        <div className="flex justify-between border-t border-slate-200/60 pt-1.5 mt-1.5">
-                          <span className="text-slate-500">車牌號碼</span>
-                          <span className="font-mono text-slate-700">{order.license_plate}</span>
+                        <div className="flex justify-between border-t border-stone-200/60 pt-1.5 mt-1.5">
+                          <span className="text-stone-500">車牌號碼</span>
+                          <span className="font-mono text-stone-700">{order.license_plate}</span>
                         </div>
                       )}
                     </div>
@@ -306,12 +306,12 @@ export default function OrdersManager() {
                   {/* 項目與金額 */}
                   <div className="flex-1 flex flex-col justify-between">
                     <div className="space-y-2 mb-4">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">預訂內容</h4>
+                      <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider">預訂內容</h4>
                       <ul className="space-y-1.5">
                         {order.nf_order_items?.map(item => (
                           <li key={item.id} className="text-sm flex justify-between items-start">
-                            <span className="text-slate-700 line-clamp-1">{item.nf_items?.name}</span>
-                            <span className="text-slate-500 font-mono ml-2 shrink-0">x {item.quantity}</span>
+                            <span className="text-stone-700 line-clamp-1">{item.nf_items?.name}</span>
+                            <span className="text-stone-500 font-mono ml-2 shrink-0">x {item.quantity}</span>
                           </li>
                         ))}
                       </ul>
@@ -330,8 +330,8 @@ export default function OrdersManager() {
                           </div>
                         )}
                         <div className="flex justify-end items-end gap-2">
-                          <span className="text-xs text-slate-500 mb-1">總金額</span>
-                          <span className={`text-2xl font-bold tracking-tight ${order.status === 'cancelled' ? 'text-slate-400' : 'text-emerald-600'}`}>
+                          <span className="text-xs text-stone-500 mb-1">總金額</span>
+                          <span className={`text-2xl font-bold tracking-tight ${order.status === 'cancelled' ? 'text-stone-400' : 'text-emerald-600'}`}>
                             NT$ {order.total_amount?.toLocaleString()}
                           </span>
                         </div>
@@ -341,7 +341,7 @@ export default function OrdersManager() {
                 </div>
 
                 {/* 操作按鈕 */}
-                <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors mr-auto">
                     刪除紀錄
                   </button>
@@ -351,7 +351,7 @@ export default function OrdersManager() {
                     </button>
                   )}
                   {order.status !== 'cancelled' && (
-                    <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="px-4 py-1.5 text-xs font-bold text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 rounded-md transition-colors">
+                    <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="px-4 py-1.5 text-xs font-bold text-stone-600 bg-white hover:bg-stone-100 border border-stone-200 rounded-md transition-colors">
                       取消訂單 (退還庫存)
                     </button>
                   )}

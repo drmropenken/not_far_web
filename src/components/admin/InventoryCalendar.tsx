@@ -167,31 +167,31 @@ export default function InventoryCalendar() {
   };
 
   return (
-    <div className="bg-white md:rounded-2xl shadow-sm border border-slate-200 md:p-5 p-3 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-80px)] w-full relative">
+    <div className="bg-white md:rounded-2xl shadow-sm border border-stone-200 md:p-5 p-3 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-80px)] w-full relative">
       
       {/* 頂部控制列 (極致緊湊設計) */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 shrink-0">
         
         {/* 提示說明 (縮小至一行) */}
-        <div className="text-xs text-slate-600 bg-gradient-to-r from-emerald-50 to-teal-50/30 px-4 py-2 rounded-lg border border-emerald-100/60 flex items-center gap-3 shadow-sm flex-1 overflow-x-auto whitespace-nowrap hide-scrollbar">
+        <div className="text-xs text-stone-600 bg-gradient-to-r from-emerald-50 to-teal-50/30 px-4 py-2 rounded-lg border border-emerald-100/60 flex items-center gap-3 shadow-sm flex-1 overflow-x-auto whitespace-nowrap hide-scrollbar">
           <span className="text-emerald-500 text-base leading-none">💡</span>
-          <span className="text-slate-700 font-medium mr-2 hidden md:inline">點擊格子可強制修改當天總量。</span>
+          <span className="text-stone-700 font-medium mr-2 hidden md:inline">點擊格子可強制修改當天總量。</span>
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-white border border-slate-300 rounded-full"></div> 正常可訂</span>
+            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-white border border-stone-300 rounded-full"></div> 正常可訂</span>
             <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-amber-50 border border-amber-300 rounded-full"></div> 手動調整</span>
             <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-rose-50 border border-rose-300 rounded-full"></div> 滿帳</span>
           </div>
         </div>
 
         {/* 月份切換 */}
-        <div className="flex items-center justify-between gap-1 bg-slate-100/80 p-1 rounded-lg border border-slate-200 shadow-inner shrink-0">
-          <button onClick={handlePrevMonth} className="px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-white hover:text-emerald-600 hover:shadow-sm rounded transition-all">
+        <div className="flex items-center justify-between gap-1 bg-stone-100/80 p-1 rounded-lg border border-stone-200 shadow-inner shrink-0">
+          <button onClick={handlePrevMonth} className="px-3 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-sm rounded transition-all">
             &lt; 上個月
           </button>
-          <span className="font-bold text-sm min-w-[100px] text-center text-slate-800 tracking-wider">
+          <span className="font-bold text-sm min-w-[100px] text-center text-stone-800 tracking-wider">
             {currentDate.getFullYear()} 年 {currentDate.getMonth() + 1} 月
           </span>
-          <button onClick={handleNextMonth} className="px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-white hover:text-emerald-600 hover:shadow-sm rounded transition-all">
+          <button onClick={handleNextMonth} className="px-3 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-sm rounded transition-all">
             下個月 &gt;
           </button>
         </div>
@@ -203,11 +203,11 @@ export default function InventoryCalendar() {
           <p className="font-medium tracking-widest text-sm">載入中...</p>
         </div>
       ) : (
-        <div ref={scrollContainerRef} className="flex-1 overflow-auto border border-slate-200 rounded-2xl relative shadow-inner bg-slate-50/50">
+        <div ref={scrollContainerRef} className="flex-1 overflow-auto border border-stone-200 rounded-2xl relative shadow-inner bg-stone-50/50">
           <table className="w-full text-center border-collapse text-sm">
-            <thead className="sticky top-0 z-20 bg-slate-100/90 backdrop-blur-md shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+            <thead className="sticky top-0 z-20 bg-stone-100/90 backdrop-blur-md shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
               <tr>
-                <th className="p-3 border-b border-r border-slate-200/80 bg-slate-100 min-w-[120px] md:min-w-[180px] sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] text-slate-700 font-bold tracking-wider">項目名稱</th>
+                <th className="p-3 border-b border-r border-stone-200/80 bg-stone-100 min-w-[120px] md:min-w-[180px] sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] text-stone-700 font-bold tracking-wider">項目名稱</th>
                 {daysArray.map(day => {
                   const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
                   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -215,10 +215,10 @@ export default function InventoryCalendar() {
                   const isToday = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth() && day === today.getDate();
                   
                   return (
-                    <th key={day} id={isToday ? 'today-col-header' : undefined} className={`relative p-1.5 border-b border-r min-w-[45px] md:min-w-[55px] ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-slate-200/80' : 'text-slate-600 border-slate-200/80'}`}>
+                    <th key={day} id={isToday ? 'today-col-header' : undefined} className={`relative p-1.5 border-b border-r min-w-[45px] md:min-w-[55px] ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-stone-200/80' : 'text-stone-600 border-stone-200/80'}`}>
                       <div className="flex flex-col items-center justify-center space-y-0.5">
                         <span className={`font-bold text-base md:text-lg ${isToday ? 'text-amber-700' : ''}`}>{day}</span>
-                        <span className={`text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-amber-200/80 text-amber-800' : isWeekend ? 'bg-rose-100/50 text-rose-600' : 'bg-slate-200/50 text-slate-500'}`}>
+                        <span className={`text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-amber-200/80 text-amber-800' : isWeekend ? 'bg-rose-100/50 text-rose-600' : 'bg-stone-200/50 text-stone-500'}`}>
                           {['日', '一', '二', '三', '四', '五', '六'][date.getDay()]}
                         </span>
                         {isToday && <div className="absolute top-0 w-full h-1 bg-amber-400 left-0"></div>}
@@ -231,14 +231,14 @@ export default function InventoryCalendar() {
             <tbody className="bg-white">
               {items.map(item => (
                 <tr key={item.id} className="hover:bg-emerald-50/40 transition-colors group">
-                  <td className="p-2 md:p-3 border-b border-r border-slate-100 font-medium text-slate-800 text-left sticky left-0 bg-white group-hover:bg-[#f0fdf4] z-10 whitespace-normal md:whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)]">
+                  <td className="p-2 md:p-3 border-b border-r border-stone-100 font-medium text-stone-800 text-left sticky left-0 bg-white group-hover:bg-[#f0fdf4] z-10 whitespace-normal md:whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)]">
                     <div className="flex flex-col md:flex-row md:items-center gap-1.5">
-                      <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md self-start shrink-0 font-semibold tracking-wide hidden md:inline-block">
+                      <span className="text-[10px] text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded-md self-start shrink-0 font-semibold tracking-wide hidden md:inline-block">
                         {item.category === 'campsite' ? '⛺️ 營位' : item.category === 'equipment' ? '🪑 裝備' : '🍖 服務'}
                       </span>
-                      <span className="leading-tight text-sm md:leading-normal truncate max-w-[120px] md:max-w-none text-slate-700 font-bold" title={item.name}>{item.name}</span>
+                      <span className="leading-tight text-sm md:leading-normal truncate max-w-[120px] md:max-w-none text-stone-700 font-bold" title={item.name}>{item.name}</span>
                     </div>
-                    <div className="text-[9px] md:text-[10px] text-slate-400 font-medium mt-1 tracking-wider">預設: {item.total_quantity}</div>
+                    <div className="text-[9px] md:text-[10px] text-stone-400 font-medium mt-1 tracking-wider">預設: {item.total_quantity}</div>
                   </td>
                   
                   {daysArray.map(day => {
@@ -256,7 +256,7 @@ export default function InventoryCalendar() {
                       <div className={`w-full h-full min-h-[32px] md:min-h-[40px] flex items-center justify-center rounded-lg mx-auto text-xs md:text-sm font-bold shadow-sm transition-all duration-200 transform group-hover/cell:scale-110 active:scale-95
                         ${isFull ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-rose-100/30' :
                           isOverridden ? 'bg-amber-50 text-amber-600 border border-amber-300 shadow-amber-100/30' :
-                          'bg-white text-slate-700 border border-slate-200 hover:border-emerald-400 hover:text-emerald-600 hover:shadow-emerald-100/40'
+                          'bg-white text-stone-700 border border-stone-200 hover:border-emerald-400 hover:text-emerald-600 hover:shadow-emerald-100/40'
                         }
                       `}>
                         {remaining > 0 ? (
@@ -264,7 +264,7 @@ export default function InventoryCalendar() {
                             <span className="text-[10px] opacity-60">{booked}/</span>
                             <span>{remaining}</span>
                           </div>
-                        ) : (totalAvailable === 0 ? <span className="text-slate-300 font-normal">-</span> : '滿')}
+                        ) : (totalAvailable === 0 ? <span className="text-stone-300 font-normal">-</span> : '滿')}
                       </div>
                     );
 
@@ -272,7 +272,7 @@ export default function InventoryCalendar() {
                     const isToday = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth() && day === today.getDate();
                     
                     return (
-                      <td key={day} className={`p-1 md:p-1.5 border-b border-r cursor-pointer group/cell ${isToday ? 'bg-amber-50/40 border-amber-200 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.3)]' : 'border-slate-100/60'}`} onClick={() => handleCellClick(item, day)} title={`點擊修改 ${day} 日庫存 | 已訂: ${booked} / 總量: ${totalAvailable}`}>
+                      <td key={day} className={`p-1 md:p-1.5 border-b border-r cursor-pointer group/cell ${isToday ? 'bg-amber-50/40 border-amber-200 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.3)]' : 'border-stone-100/60'}`} onClick={() => handleCellClick(item, day)} title={`點擊修改 ${day} 日庫存 | 已訂: ${booked} / 總量: ${totalAvailable}`}>
                         {cellContent}
                       </td>
                     );
@@ -286,42 +286,42 @@ export default function InventoryCalendar() {
       
       {/* 編輯庫存 Modal */}
       {editingCell && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-              <h3 className="text-lg font-bold text-slate-800">修改單日庫存總量</h3>
-              <p className="text-sm text-slate-500 mt-1">強制覆蓋系統預設的營位/裝備數量</p>
+            <div className="p-5 border-b border-stone-100 bg-stone-50/50">
+              <h3 className="text-lg font-bold text-stone-800">修改單日庫存總量</h3>
+              <p className="text-sm text-stone-500 mt-1">強制覆蓋系統預設的營位/裝備數量</p>
             </div>
             <div className="p-5 space-y-4">
-              <div className="bg-slate-50 p-4 rounded-xl space-y-2 border border-slate-100 text-sm">
+              <div className="bg-stone-50 p-4 rounded-xl space-y-2 border border-stone-100 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">項目名稱</span>
-                  <span className="font-bold text-slate-700">{editingCell.item.name}</span>
+                  <span className="text-stone-500">項目名稱</span>
+                  <span className="font-bold text-stone-700">{editingCell.item.name}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">指定日期</span>
-                  <span className="font-bold text-slate-700 font-mono">{editingCell.dateStr}</span>
+                  <span className="text-stone-500">指定日期</span>
+                  <span className="font-bold text-stone-700 font-mono">{editingCell.dateStr}</span>
                 </div>
-                <div className="flex justify-between border-t border-slate-200/60 pt-2 mt-2">
-                  <span className="text-slate-500">系統預設總量</span>
-                  <span className="font-bold text-slate-700">{editingCell.item.total_quantity}</span>
+                <div className="flex justify-between border-t border-stone-200/60 pt-2 mt-2">
+                  <span className="text-stone-500">系統預設總量</span>
+                  <span className="font-bold text-stone-700">{editingCell.item.total_quantity}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">目前已被訂走</span>
+                  <span className="text-stone-500">目前已被訂走</span>
                   <span className="font-bold text-rose-500">{editingCell.booked}</span>
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  實際可開放總數 <span className="text-slate-400 font-normal">(留空代表恢復預設)</span>
+                <label className="block text-sm font-bold text-stone-700 mb-2">
+                  實際可開放總數 <span className="text-stone-400 font-normal">(留空代表恢復預設)</span>
                 </label>
                 <input
                   type="number"
                   min="0"
                   value={newQuota}
                   onChange={(e) => setNewQuota(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors text-lg font-mono outline-none"
+                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors text-lg font-mono outline-none"
                   placeholder={editingCell.item.total_quantity.toString()}
                   autoFocus
                   onKeyDown={(e) => {
@@ -331,10 +331,10 @@ export default function InventoryCalendar() {
                 />
               </div>
             </div>
-            <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
+            <div className="p-5 border-t border-stone-100 flex justify-end gap-3 bg-stone-50/50">
               <button 
                 onClick={() => setEditingCell(null)}
-                className="px-5 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded-lg transition-colors"
+                className="px-5 py-2 text-stone-600 font-bold hover:bg-stone-200 rounded-lg transition-colors"
               >
                 取消
               </button>

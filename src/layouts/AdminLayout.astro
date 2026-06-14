@@ -16,86 +16,86 @@ const { title, description } = Astro.props;
   <title>{title} | 營主管理後台</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-100 min-h-screen text-gray-800 flex overflow-hidden">
+<body class="bg-stone-50 min-h-screen text-stone-800 flex overflow-hidden font-sans">
   
   <!-- Mobile Header -->
-  <div class="md:hidden flex items-center justify-between bg-slate-900 text-white p-4 shrink-0 fixed top-0 left-0 w-full z-40 h-16 shadow-md">
+  <div class="md:hidden flex items-center justify-between bg-emerald-950 text-white p-4 shrink-0 fixed top-0 left-0 w-full z-40 h-16 shadow-md">
     <div class="flex items-center gap-2">
       <span class="text-xl">⛺️</span>
       <h1 class="text-xl font-bold tracking-widest text-amber-200 font-sans">不遠山莊</h1>
     </div>
-    <button id="mobile-menu-btn" class="p-2 focus:outline-none text-slate-300 hover:text-white transition-colors">
+    <button id="mobile-menu-btn" class="p-2 focus:outline-none text-emerald-100 hover:text-white transition-colors">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
   </div>
 
   <!-- Sidebar overlay for mobile -->
-  <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
+  <div id="sidebar-overlay" class="fixed inset-0 bg-emerald-950/60 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
   <!-- Sidebar -->
-  <aside id="sidebar" class="w-56 shrink-0 bg-slate-900 text-slate-300 min-h-screen flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full md:translate-x-0 md:static md:ml-0 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none font-sans">
-    <div class="p-6 hidden md:block border-b border-slate-800/50">
+  <aside id="sidebar" class="w-56 shrink-0 bg-emerald-950 text-stone-300 min-h-screen flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full md:translate-x-0 md:static md:ml-0 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none font-sans border-r border-emerald-900/50">
+    <div class="p-6 hidden md:block border-b border-emerald-900/50">
       <div class="flex items-center gap-2 mb-1">
         <span class="text-xl drop-shadow-md">⛺️</span>
         <h1 class="text-2xl font-black tracking-widest bg-gradient-to-r from-amber-200 to-amber-400 bg-clip-text text-transparent drop-shadow-sm font-sans">不遠山莊</h1>
       </div>
-      <p class="text-xs text-slate-500 tracking-wider font-medium ml-8 mt-1">營主管理系統</p>
+      <p class="text-xs text-emerald-500/70 tracking-wider font-medium ml-8 mt-1">營主管理系統</p>
     </div>
-    <div class="p-4 md:hidden flex justify-between items-center border-b border-slate-800 bg-slate-900 h-16">
+    <div class="p-4 md:hidden flex justify-between items-center border-b border-emerald-900 bg-emerald-950 h-16">
       <h1 class="text-lg font-bold text-amber-300 tracking-widest">系統選單</h1>
-      <button id="close-sidebar-btn" class="p-2 text-slate-400 hover:text-white transition-colors">
+      <button id="close-sidebar-btn" class="p-2 text-emerald-400 hover:text-white transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
     </div>
     <nav class="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
-      <a href="/admin" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-amber-300 transition-all group" id="nav-dashboard">
+      <a href="/admin" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/70 hover:bg-emerald-900 hover:text-amber-300 transition-all group" id="nav-dashboard">
         <span class="text-lg group-hover:scale-110 transition-transform">📊</span> <span class="font-medium tracking-wide text-sm">儀表板</span>
       </a>
-      <a href="/admin/orders" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-amber-300 transition-all group" id="nav-orders">
+      <a href="/admin/orders" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/70 hover:bg-emerald-900 hover:text-amber-300 transition-all group" id="nav-orders">
         <span class="text-lg group-hover:scale-110 transition-transform">📝</span> <span class="font-medium tracking-wide text-sm">訂單管理</span>
       </a>
-      <a href="/admin/items" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-amber-300 transition-all group" id="nav-items">
+      <a href="/admin/items" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/70 hover:bg-emerald-900 hover:text-amber-300 transition-all group" id="nav-items">
         <span class="text-lg group-hover:scale-110 transition-transform">⛺️</span> <span class="font-medium tracking-wide text-sm">商品與營位</span>
       </a>
-      <a href="/admin/discounts" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-amber-300 transition-all group" id="nav-discounts">
+      <a href="/admin/discounts" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/70 hover:bg-emerald-900 hover:text-amber-300 transition-all group" id="nav-discounts">
         <span class="text-lg group-hover:scale-110 transition-transform">🏷️</span> <span class="font-medium tracking-wide text-sm">折扣碼管理</span>
       </a>
-      <a href="/admin/inventory" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-slate-300 hover:bg-slate-800 hover:text-amber-300 transition-all group" id="nav-inventory">
+      <a href="/admin/inventory" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/70 hover:bg-emerald-900 hover:text-amber-300 transition-all group" id="nav-inventory">
         <span class="text-lg group-hover:scale-110 transition-transform">📅</span> <span class="font-medium tracking-wide text-sm">庫存行事曆</span>
       </a>
     </nav>
-    <div class="p-4 border-t border-slate-800/50">
-      <div class="flex items-center gap-3 px-3 py-2.5 mb-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
-        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold border border-slate-600 shrink-0" id="user-avatar">
+    <div class="p-4 border-t border-emerald-900/50">
+      <div class="flex items-center gap-3 px-3 py-2.5 mb-3 rounded-xl bg-emerald-900/50 border border-emerald-800/50">
+        <div class="w-8 h-8 rounded-full bg-emerald-800 flex items-center justify-center text-emerald-200 font-bold border border-emerald-700 shrink-0" id="user-avatar">
           👤
         </div>
         <div class="overflow-hidden flex-1">
-          <p id="user-name-display" class="text-sm font-bold text-slate-200 truncate">載入中...</p>
-          <p id="user-email-display" class="text-xs text-slate-500 truncate">...</p>
+          <p id="user-name-display" class="text-sm font-bold text-stone-200 truncate">載入中...</p>
+          <p id="user-email-display" class="text-xs text-emerald-500 truncate">...</p>
         </div>
       </div>
-      <button id="logout-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-rose-400 bg-slate-800/30 hover:bg-rose-500/10 hover:text-rose-300 rounded-xl transition-all font-medium tracking-wide border border-transparent hover:border-rose-500/20 text-sm">
+      <button id="logout-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-rose-300 bg-emerald-900/30 hover:bg-rose-500/10 hover:text-rose-200 rounded-xl transition-all font-medium tracking-wide border border-transparent hover:border-rose-500/20 text-sm">
         <span>🚪</span> <span>登出系統</span>
       </button>
     </div>
   </aside>
 
-  <main class="flex-1 flex flex-col h-screen overflow-hidden pt-16 md:pt-0 w-full relative bg-slate-50/50">
+  <main class="flex-1 flex flex-col h-screen overflow-hidden pt-16 md:pt-0 w-full relative bg-stone-50">
     <!-- Top Header (Desktop only) -->
-    <header class="bg-white/80 backdrop-blur-xl shadow-sm h-16 hidden md:flex items-center px-6 border-b border-slate-200 z-40 sticky top-0 gap-4">
-      <button id="desktop-menu-btn" class="p-2 text-slate-400 hover:text-amber-600 transition-colors rounded-lg hover:bg-amber-50">
+    <header class="bg-white/80 backdrop-blur-xl shadow-sm h-16 hidden md:flex items-center px-6 border-b border-stone-200 z-40 sticky top-0 gap-4">
+      <button id="desktop-menu-btn" class="p-2 text-stone-400 hover:text-emerald-700 transition-colors rounded-lg hover:bg-stone-100">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
       </button>
       <div class="flex items-center gap-2">
-        <h2 class="text-xl font-bold text-slate-800 tracking-wide">{title}</h2>
+        <h2 class="text-xl font-bold text-stone-800 tracking-wide">{title}</h2>
         {description && (
           <div class="relative group flex items-center">
-            <div class="w-5 h-5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center cursor-help transition-colors border border-slate-200 ml-1">
+            <div class="w-5 h-5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-400 hover:text-stone-600 flex items-center justify-center cursor-help transition-colors border border-stone-200 ml-1">
               <span class="font-bold text-xs">?</span>
             </div>
-            <div class="absolute top-full -left-2 mt-3 w-72 bg-slate-800 text-white text-xs leading-relaxed p-3.5 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none origin-top-left before:content-[''] before:absolute before:bottom-full before:left-[12px] before:border-[6px] before:border-transparent before:border-b-slate-800">
+            <div class="absolute top-full -left-2 mt-3 w-72 bg-emerald-950 text-white text-xs leading-relaxed p-3.5 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none origin-top-left before:content-[''] before:absolute before:bottom-full before:left-[12px] before:border-[6px] before:border-transparent before:border-b-emerald-950">
               {description}
             </div>
           </div>
