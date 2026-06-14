@@ -254,8 +254,77 @@ import "../styles/global.css";
           <p>附設免費停車場，也可停放大型遊覽車，車位充足。</p>
         </div>
       </div>
+
+      <!-- 鹿角咖啡特寫 -->
+      <div class="cafe-highlight fade-in" style="margin-top: 80px;">
+        <div class="cafe-grid">
+          <div class="cafe-content" style="text-align: left;">
+            <h3 style="color: var(--primary-dark); font-size: 2rem; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+              ☕ 鹿角 Café (森林系巴士咖啡廳)
+            </h3>
+            <p style="color: var(--text-light); line-height: 1.8; margin-bottom: 20px; font-size: 1.1rem;">
+              隱身於不遠山莊內的魔幻秘境！由退役巴士改造而成，車體內外種滿了鹿角蕨與各式觀葉植物。在充滿綠意的森林包圍下，點一杯香醇咖啡與精緻甜點，享受悠閒的午後時光。
+            </p>
+            <ul style="color: var(--text-light); line-height: 2.2; margin-bottom: 24px; list-style: none; padding: 0;">
+              <li><strong>📍 位置：</strong> 位於營區內部，步行即可抵達</li>
+              <li><strong>⏰ 營業時間：</strong> 12:00–17:00 (週一至週三公休)</li>
+              <li><strong>🌿 特色：</strong> 滿滿植栽佈置、精緻甜點、拉花咖啡</li>
+            </ul>
+          </div>
+          <div class="cafe-images">
+            <img src="/images/antler_cafe_bus.png" alt="鹿角咖啡巴士外觀" class="cafe-img img-main" />
+            <img src="/images/antler_cafe_coffee.png" alt="鹿角咖啡甜點特寫" class="cafe-img img-offset" />
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
+
+  <style>
+    .cafe-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: center;
+      background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,247,244,0.9));
+      padding: 40px;
+      border-radius: 20px;
+      border: 2px solid rgba(46, 125, 50, 0.1);
+    }
+    .cafe-images {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .cafe-img {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      aspect-ratio: 1;
+      object-fit: cover;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .cafe-img:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    }
+    .img-offset {
+      margin-top: 40px;
+    }
+    @media (max-width: 768px) {
+      .cafe-grid {
+        grid-template-columns: 1fr;
+        padding: 24px;
+      }
+      .cafe-images {
+        margin-top: 24px;
+      }
+      .img-offset {
+        margin-top: 20px;
+      }
+    }
+  </style>
 
   <!-- 周邊推薦 -->
   <section class="section">
