@@ -42,14 +42,14 @@ export default function DashboardStats() {
 
   // 取得當地時間的 YYYY-MM-DD
   const today = new Date().toLocaleDateString('en-CA'); 
-  const next7DaysDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
+  const next14DaysDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
   const currentMonthStr = today.substring(0, 7); // YYYY-MM
 
   const checkinsToday = orders
-    .filter(o => o.check_in_date >= today && o.check_in_date <= next7DaysDate)
+    .filter(o => o.check_in_date >= today && o.check_in_date <= next14DaysDate)
     .sort((a, b) => a.check_in_date.localeCompare(b.check_in_date));
   const checkoutsToday = orders
-    .filter(o => o.check_out_date >= today && o.check_out_date <= next7DaysDate)
+    .filter(o => o.check_out_date >= today && o.check_out_date <= next14DaysDate)
     .sort((a, b) => a.check_out_date.localeCompare(b.check_out_date));
   
   // 計算本月已收帳款 (狀態為 paid，且在當月建立的訂單)
@@ -74,13 +74,13 @@ export default function DashboardStats() {
         {/* Stat Cards */}
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-all">
           <div className="absolute -right-4 -bottom-4 text-emerald-500/10 text-8xl transition-transform group-hover:scale-110">⛺️</div>
-          <p className="text-sm text-stone-500 font-bold tracking-wider mb-2 z-10">近期進場 (未來 7 天)</p>
+          <p className="text-sm text-stone-500 font-bold tracking-wider mb-2 z-10">近期進場 (未來 14 天)</p>
           <p className="text-3xl font-black text-stone-800 z-10">{checkinsToday.length} <span className="text-base font-medium text-stone-400">組</span></p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-all">
           <div className="absolute -right-4 -bottom-4 text-blue-500/10 text-8xl transition-transform group-hover:scale-110">🚗</div>
-          <p className="text-sm text-stone-500 font-bold tracking-wider mb-2 z-10">近期離場 (未來 7 天)</p>
+          <p className="text-sm text-stone-500 font-bold tracking-wider mb-2 z-10">近期離場 (未來 14 天)</p>
           <p className="text-3xl font-black text-stone-800 z-10">{checkoutsToday.length} <span className="text-base font-medium text-stone-400">組</span></p>
         </div>
 
@@ -102,7 +102,7 @@ export default function DashboardStats() {
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden flex flex-col h-[400px]">
           <div className="px-6 py-4 border-b border-stone-100 flex justify-between items-center bg-stone-50 shrink-0">
             <h3 className="font-bold text-stone-800 tracking-wide flex items-center gap-2">
-              <span className="text-emerald-500">📥</span> 近期進場名單 <span className="text-xs text-stone-400 font-normal ml-1">(含未來 7 天)</span>
+              <span className="text-emerald-500">📥</span> 近期進場名單 <span className="text-xs text-stone-400 font-normal ml-1">(含未來 14 天)</span>
             </h3>
             <span className="text-xs font-bold bg-stone-200 text-stone-600 px-2 py-1 rounded-full">{checkinsToday.length} 組</span>
           </div>
@@ -148,7 +148,7 @@ export default function DashboardStats() {
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden flex flex-col h-[400px]">
           <div className="px-6 py-4 border-b border-stone-100 flex justify-between items-center bg-stone-50 shrink-0">
             <h3 className="font-bold text-stone-800 tracking-wide flex items-center gap-2">
-              <span className="text-blue-500">📤</span> 近期離場名單 <span className="text-xs text-stone-400 font-normal ml-1">(含未來 7 天)</span>
+              <span className="text-blue-500">📤</span> 近期離場名單 <span className="text-xs text-stone-400 font-normal ml-1">(含未來 14 天)</span>
             </h3>
             <span className="text-xs font-bold bg-stone-200 text-stone-600 px-2 py-1 rounded-full">{checkoutsToday.length} 組</span>
           </div>
