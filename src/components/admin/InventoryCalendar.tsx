@@ -259,7 +259,12 @@ export default function InventoryCalendar() {
                           'bg-white text-slate-700 border border-slate-200 hover:border-emerald-400 hover:text-emerald-600 hover:shadow-emerald-100/40'
                         }
                       `}>
-                        {remaining > 0 ? remaining : (totalAvailable === 0 ? <span className="text-slate-300 font-normal">-</span> : '滿')}
+                        {remaining > 0 ? (
+                          <div className="flex items-baseline gap-0.5">
+                            <span className="text-[10px] opacity-60">{booked}/</span>
+                            <span>{remaining}</span>
+                          </div>
+                        ) : (totalAvailable === 0 ? <span className="text-slate-300 font-normal">-</span> : '滿')}
                       </div>
                     );
 
