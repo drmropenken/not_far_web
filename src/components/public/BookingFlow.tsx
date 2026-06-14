@@ -24,7 +24,7 @@ export default function BookingFlow() {
 
   // Form states
   const [dates, setDates] = useState({ checkIn: '', checkOut: '' });
-  const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '', email: '', license_plate: '', notes: '' });
+  const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '', email: '', license_plate: '', adults: '2', children: '0', notes: '' });
   const [availableItems, setAvailableItems] = useState<{item: Item, remaining: number}[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [fetchingItems, setFetchingItems] = useState(false);
@@ -313,7 +313,7 @@ export default function BookingFlow() {
           customer_name: customerInfo.name,
           customer_phone: customerInfo.phone,
           license_plate: customerInfo.license_plate,
-          notes: `[Email: ${customerInfo.email}] ${customerInfo.notes}`,
+          notes: `[Email: ${customerInfo.email}] [人數: ${customerInfo.adults}大 ${customerInfo.children}小] ${customerInfo.notes}`,
           total_amount: totalAmount,
           discount_code: discountAppliedCode || null,
           discount_amount: discountAmount,
@@ -598,6 +598,17 @@ export default function BookingFlow() {
                 <div>
                   <label className="block text-sm font-bold text-slate-600 mb-1.5">車牌號碼 (選填)</label>
                   <input type="text" value={customerInfo.license_plate} onChange={e => setCustomerInfo({...customerInfo, license_plate: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="如有開車請填寫，方便辨識進場"/>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-bold text-slate-600 mb-1.5">成人人數 <span className="text-rose-500">*</span></label>
+                    <input required type="number" min="1" value={customerInfo.adults} onChange={e => setCustomerInfo({...customerInfo, adults: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"/>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-bold text-slate-600 mb-1.5">兒童人數</label>
+                    <input type="number" min="0" value={customerInfo.children} onChange={e => setCustomerInfo({...customerInfo, children: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"/>
+                  </div>
                 </div>
                 
                 <div className="pt-2 border-t border-slate-100">
