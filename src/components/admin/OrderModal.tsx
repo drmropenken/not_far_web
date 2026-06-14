@@ -215,8 +215,12 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     
     for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
+      const isFirstNight = d.getTime() === start.getTime();
       
       for (const si of selectedItems) {
+        const isSingleTime = si.item.category === 'service' && (si.item.name.includes('單次') || si.item.name.includes('次計費'));
+        if (isSingleTime && !isFirstNight) continue;
+
         // 先讀取當天該項目是否有紀錄
         const { data: existingInv } = await supabase
           .from('nf_inventory')
