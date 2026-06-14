@@ -345,8 +345,9 @@ export default function BookingFlow() {
         const isFirstNight = d.getTime() === start.getTime();
 
         for (const { item, quantity } of selectedItems) {
-          if (item.category === 'service' && !isFirstNight) {
-            continue; // 食物與服務只扣第一天的庫存，避免佔用多天
+          const isSingleTime = item.category === 'service' && (item.name.includes('單次') || item.name.includes('次計費'));
+          if (isSingleTime && !isFirstNight) {
+            continue; // 單次服務只扣第一天的庫存，多天服務每天扣
           }
 
           // Fetch existing inventory record

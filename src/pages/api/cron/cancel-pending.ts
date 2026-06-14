@@ -9,7 +9,7 @@ export const GET: APIRoute = async () => {
     // 尋找超過 1 小時未付款的訂單
     const { data: expiredOrders, error: fetchError } = await supabase
       .from('nf_orders')
-      .select('id, check_in_date, check_out_date, nf_order_items(item_id, quantity)')
+      .select('id, check_in_date, check_out_date, nf_order_items(item_id, quantity, nf_items(category, name))')
       .eq('status', 'pending')
       .lt('created_at', oneHourAgo);
 
@@ -31,8 +31,12 @@ export const GET: APIRoute = async () => {
 
       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0];
+        const isFirstNight = d.getTime() === start.getTime();
         
         for (const oi of order.nf_order_items) {
+          const isSingleTime = oi.nf_items?.category === 'service' && (oi.nf_items?.name.includes('單次') || oi.nf_items?.name.includes('次計費'));
+          if (isSingleTime && !isFirstNight) continue;
+
           // 取得目前庫存紀錄
           const { data: inv } = await supabase
             .from('nf_inventory')

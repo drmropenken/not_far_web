@@ -81,8 +81,12 @@ export default function OrdersManager() {
         
         for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
           const dateStr = d.toISOString().split('T')[0];
+          const isFirstNight = d.getTime() === start.getTime();
           
           for (const oi of order.nf_order_items) {
+            const isSingleTime = oi.nf_items?.category === 'service' && (oi.nf_items?.name.includes('單次') || oi.nf_items?.name.includes('次計費'));
+            if (isSingleTime && !isFirstNight) continue;
+
             const { data: inv } = await supabase
               .from('nf_inventory')
               .select('id, booked_quantity')
@@ -127,7 +131,12 @@ export default function OrdersManager() {
       
       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0];
+        const isFirstNight = d.getTime() === start.getTime();
+
         for (const oi of order.nf_order_items) {
+          const isSingleTime = oi.nf_items?.category === 'service' && (oi.nf_items?.name.includes('單次') || oi.nf_items?.name.includes('次計費'));
+          if (isSingleTime && !isFirstNight) continue;
+
           const { data: inv } = await supabase
             .from('nf_inventory')
             .select('id, booked_quantity')
