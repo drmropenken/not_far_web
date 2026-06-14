@@ -81,7 +81,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     TradeDesc: '不遠露營度假山莊線上預訂',
     ItemName: itemName || '線上預訂費用',
     ReturnURL: returnUrl,
-    ChoosePayment: 'ALL',
+    ChoosePayment: 'Credit', // 只開放信用卡，避免虛擬帳號佔用庫存且退款麻煩
     EncryptType: '1',
     ClientBackURL: clientBackUrl,
   };
