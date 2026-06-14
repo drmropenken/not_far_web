@@ -123,7 +123,7 @@ export default function BookingFlow() {
             email: session.user.email || '', 
             name: session.user.user_metadata?.full_name || '' 
           }));
-          setStep(1);
+          setStep(prev => prev === 0 ? 1 : prev);
         }
         setLoading(false);
       }
@@ -139,7 +139,7 @@ export default function BookingFlow() {
           email: session.user.email || '', 
           name: session.user.user_metadata?.full_name || '' 
         }));
-        setStep(1);
+        setStep(prev => prev === 0 ? 1 : prev);
         setLoading(false);
       }
     });
