@@ -28,8 +28,9 @@ type Order = {
   check_in_date: string;
   check_out_date: string;
   total_amount: number;
-  status: 'pending' | 'paid' | 'cancelled';
+  status: 'pending' | 'paid' | 'checked_in' | 'cancelled';
   notes: string | null;
+  admin_notes: string | null;
   discount_code: string | null;
   discount_amount: number;
   created_at: string;
@@ -39,7 +40,7 @@ type Order = {
 export default function OrdersManager() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'paid' | 'cancelled'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'paid' | 'checked_in' | 'cancelled'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -68,8 +69,8 @@ export default function OrdersManager() {
     fetchOrders();
   }, []);
 
-  const updateOrderStatus = async (orderId: string, newStatus: 'pending' | 'paid' | 'cancelled') => {
-    if (!confirm(`確定要將此訂單標記為「${newStatus === 'paid' ? '已付款' : newStatus === 'cancelled' ? '已取消' : '待付款'}」嗎？`)) return;
+  const updateOrderStatus = async (orderId: string, newStatus: 'pending' | 'paid' | 'checked_in' | 'cancelled') => {
+    if (!confirm(`確定要將此訂單標記為「${newStatus === 'paid' ? '已付款' : newStatus === 'cancelled' ? '已取消' : newStatus === 'checked_in' ? '已報到' : '待付款'}」嗎？`)) return;
 
     // 如果是取消訂單，退還庫存
     if (newStatus === 'cancelled') {
@@ -176,6 +177,22 @@ export default function OrdersManager() {
     }
   };
 
+  const updateAdminNote = async (orderId: string, currentNote: string) => {
+    const newNote = window.prompt('📝 請輸入營主內部備註（給自己或員工看的）：', currentNote || '');
+    if (newNote === null) return; // 取消輸入
+
+    const { error } = await supabase
+      .from('nf_orders')
+      .update({ admin_notes: newNote })
+      .eq('id', orderId);
+
+    if (error) {
+      alert('更新內部備註失敗: ' + error.message);
+    } else {
+      fetchOrders();
+    }
+  };
+
   const filteredOrders = orders.filter(order => {
     const matchesStatus = activeTab === 'all' || order.status === activeTab;
     const matchesSearch = searchTerm === '' || 
@@ -188,10 +205,41 @@ export default function OrdersManager() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid': return <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold border border-emerald-200">已付款</span>;
+      case 'checked_in': return <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">✅ 已報到</span>;
       case 'pending': return <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-200">待付款</span>;
       case 'cancelled': return <span className="px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold border border-rose-200">已取消</span>;
       default: return null;
     }
+  };
+
+  const handleExportCSV = () => {
+    const headers = ['訂單編號', '訂購人姓名', '聯絡電話', '車牌號碼', '入住日期', '退房日期', '訂單狀態', '總金額(元)', '客人備註', '營主內部備註', '折扣碼', '折扣金額', '下單時間'];
+    
+    const rows = filteredOrders.map(order => [
+      order.order_no,
+      order.customer_name,
+      order.customer_phone,
+      order.license_plate || '',
+      order.check_in_date,
+      order.check_out_date,
+      order.status === 'paid' ? '已付款' : order.status === 'pending' ? '待付款' : order.status === 'checked_in' ? '已報到' : '已取消',
+      order.total_amount,
+      `"${(order.notes || '').replace(/"/g, '""')}"`,
+      `"${(order.admin_notes || '').replace(/"/g, '""')}"`,
+      order.discount_code || '',
+      order.discount_amount || 0,
+      new Date(order.created_at).toLocaleString('zh-TW')
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `orders_${new Date().toISOString().split('T')[0].replace(/-/g, '')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -206,6 +254,7 @@ export default function OrdersManager() {
             { id: 'all', label: '全部訂單' },
             { id: 'pending', label: '待付款' },
             { id: 'paid', label: '已付款' },
+            { id: 'checked_in', label: '已報到' },
             { id: 'cancelled', label: '已取消' }
           ].map(tab => (
             <button
@@ -234,6 +283,12 @@ export default function OrdersManager() {
             />
             <span className="absolute left-3 top-1/2 -transtone-y-1/2 opacity-50">🔍</span>
           </div>
+          <button 
+            onClick={handleExportCSV}
+            className="bg-white text-emerald-700 hover:bg-emerald-50 px-4 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-emerald-200 flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            📥 匯出 Excel
+          </button>
           <button 
             onClick={() => setIsModalOpen(true)}
             className="bg-emerald-700 text-emerald-50 hover:bg-stone-700 px-5 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-stone-700 flex items-center justify-center gap-2 whitespace-nowrap"
@@ -315,10 +370,16 @@ export default function OrdersManager() {
                           </li>
                         ))}
                       </ul>
-                      <div className="mt-2 p-2 bg-amber-50/50 hover:bg-amber-100/50 rounded text-xs text-amber-700 border border-amber-100/50 cursor-pointer transition-colors group/note" onClick={() => updateOrderNote(order.id, order.notes)}>
+                      <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note" onClick={() => updateOrderNote(order.id as unknown as number, order.notes || '')}>
                         <div className="flex justify-between items-start">
-                          <span>📝 {order.notes || <span className="opacity-50 italic">點擊新增備註...</span>}</span>
-                          <span className="opacity-0 group-hover/note:opacity-100 text-amber-500">✏️</span>
+                          <span>💬 客人備註：{order.notes || <span className="opacity-50 italic">無</span>}</span>
+                          <span className="opacity-0 group-hover/note:opacity-100 text-stone-500">✏️</span>
+                        </div>
+                      </div>
+                      <div className="mt-2 p-2 bg-amber-50 hover:bg-amber-100/80 rounded text-xs text-amber-800 border border-amber-200 cursor-pointer transition-colors group/note" onClick={() => updateAdminNote(order.id, order.admin_notes || '')}>
+                        <div className="flex justify-between items-start font-medium">
+                          <span>📝 營主備註：{order.admin_notes || <span className="opacity-50 italic">點擊新增內部備註...</span>}</span>
+                          <span className="opacity-0 group-hover/note:opacity-100 text-amber-600">✏️</span>
                         </div>
                       </div>
                     </div>
@@ -345,9 +406,14 @@ export default function OrdersManager() {
                   <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors mr-auto">
                     刪除紀錄
                   </button>
-                  {order.status !== 'paid' && order.status !== 'cancelled' && (
+                  {order.status === 'pending' && (
                     <button onClick={() => updateOrderStatus(order.id, 'paid')} className="px-4 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
                       標記為已付款
+                    </button>
+                  )}
+                  {order.status === 'paid' && (
+                    <button onClick={() => updateOrderStatus(order.id, 'checked_in')} className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors shadow-sm">
+                      ✅ 標記已報到
                     </button>
                   )}
                   {order.status !== 'cancelled' && (

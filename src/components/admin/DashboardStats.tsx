@@ -9,7 +9,7 @@ type Order = {
   check_in_date: string;
   check_out_date: string;
   total_amount: number;
-  status: 'pending' | 'paid' | 'cancelled';
+  status: 'pending' | 'paid' | 'checked_in' | 'cancelled';
   created_at: string;
   nf_order_items: { quantity: number; nf_items: { name: string } }[];
 };
@@ -38,6 +38,21 @@ export default function DashboardStats() {
       setOrders(data);
     }
     setLoading(false);
+  };
+
+  const handleCheckIn = async (orderId: string) => {
+    if (!confirm('確定要將此訂單標記為「已報到」嗎？')) return;
+    
+    const { error } = await supabase
+      .from('nf_orders')
+      .update({ status: 'checked_in' })
+      .eq('id', orderId);
+
+    if (error) {
+      alert('報到失敗: ' + error.message);
+    } else {
+      fetchData();
+    }
   };
 
   // 取得當地時間的 YYYY-MM-DD
@@ -120,9 +135,20 @@ export default function DashboardStats() {
                       <div className="font-bold text-stone-800 text-lg flex items-center gap-2">
                         {order.customer_name}
                         {order.status === 'pending' && <span className="px-2 py-0.5 bg-rose-100 text-rose-600 text-[10px] rounded border border-rose-200">尚未付款</span>}
+                        {order.status === 'checked_in' && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] rounded border border-blue-200">✅ 已報到</span>}
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">{order.check_in_date.slice(5)} 進場</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">{order.check_in_date.slice(5)} 進場</span>
+                          {order.status === 'paid' && (
+                            <button 
+                              onClick={() => handleCheckIn(order.id)}
+                              className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-0.5 px-3 rounded-full transition-colors shadow-sm"
+                            >
+                              報到
+                            </button>
+                          )}
+                        </div>
                         <div className="text-[10px] font-mono text-stone-400 px-1 py-0.5">{order.order_no}</div>
                       </div>
                     </div>
