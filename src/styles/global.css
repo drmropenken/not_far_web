@@ -978,6 +978,14 @@ ul {
     display: flex;
   }
   
+  .navbar .nav-links a {
+    color: var(--text-dark);
+  }
+  
+  .navbar .nav-links a.btn-primary {
+    color: white;
+  }
+  
   .hamburger {
     display: flex;
   }
