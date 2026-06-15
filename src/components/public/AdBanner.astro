@@ -12,28 +12,28 @@ const { className = "" } = Astro.props;
 const affiliateLink = "https://www.orest.com.tw/products/sidepillw"; 
 ---
 
-<div class={`ad-container ${className}`}>
+<div class={`promo-container ${className}`}>
   <!-- 未來可替換為 Google AdSense 程式碼 -->
   <!-- <ins class="adsbygoogle" ...></ins> -->
   
-  <a href={affiliateLink} target="_blank" rel="noopener noreferrer" class="ad-link-wrapper">
-    <div class="ad-content">
-      <div class="ad-badge">贊助廣告</div>
-      <div class="ad-flex">
-        <div class="ad-image-wrapper">
+  <a href={affiliateLink} target="_blank" rel="noopener noreferrer" class="promo-link-wrapper">
+    <div class="promo-content">
+      <div class="promo-badge">贊助廣告</div>
+      <div class="promo-flex">
+        <div class="promo-image-wrapper">
           <img 
             src="https://www.orest.com.tw/wp-content/uploads/2021/04/%E5%81%B4%E7%9D%A1%E8%A8%98%E6%86%B6%E6%9E%95-1-1-600x600.jpg" 
             alt="o'rest 側睡記憶枕" 
-            class="ad-image"
+            class="promo-image"
             loading="lazy"
           />
         </div>
-        <div class="ad-text">
-          <h4 class="ad-title">o'rest 側睡記憶枕</h4>
-          <p class="ad-description">
+        <div class="promo-text">
+          <h4 class="promo-title">o'rest 側睡記憶枕</h4>
+          <p class="promo-description">
             三層針織布柔軟親膚，德國技術 100D 記憶綿，慢回彈優秀釋壓。給您舒適的支撐，不論正睡或側睡都好眠！全程 100% 台灣製造，抗菌防霉好安心。
           </p>
-          <span class="ad-action">了解詳情 &rarr;</span>
+          <span class="promo-action">了解詳情 &rarr;</span>
         </div>
       </div>
     </div>
@@ -41,7 +41,7 @@ const affiliateLink = "https://www.orest.com.tw/products/sidepillw";
 </div>
 
 <style>
-  .ad-container {
+  .promo-container {
     width: 100%;
     max-width: 800px;
     margin: 2rem auto;
@@ -49,7 +49,7 @@ const affiliateLink = "https://www.orest.com.tw/products/sidepillw";
     box-sizing: border-box;
   }
   
-  .ad-link-wrapper {
+  .promo-link-wrapper {
     display: block;
     text-decoration: none;
     color: inherit;
@@ -62,13 +62,13 @@ const affiliateLink = "https://www.orest.com.tw/products/sidepillw";
     position: relative;
   }
 
-  .ad-link-wrapper:hover {
+  .promo-link-wrapper:hover {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     transform: translateY(-2px);
     border-color: #cbd5e1;
   }
 
-  .ad-badge {
+  .promo-badge {
     position: absolute;
     top: 0;
     right: 0;
@@ -80,19 +80,19 @@ const affiliateLink = "https://www.orest.com.tw/products/sidepillw";
     z-index: 10;
   }
 
-  .ad-flex {
+  .promo-flex {
     display: flex;
     flex-direction: column;
   }
 
   @media (min-width: 640px) {
-    .ad-flex {
+    .promo-flex {
       flex-direction: row;
       align-items: center;
     }
   }
 
-  .ad-image-wrapper {
+  .promo-image-wrapper {
     width: 100%;
     aspect-ratio: 16 / 9;
     overflow: hidden;
@@ -101,7 +101,7 @@ const affiliateLink = "https://www.orest.com.tw/products/sidepillw";
   }
 
   @media (min-width: 640px) {
-    .ad-image-wrapper {
+    .promo-image-wrapper {
       width: 200px;
       aspect-ratio: 1 / 1;
       border-bottom: none;
@@ -110,25 +110,25 @@ const affiliateLink = "https://www.orest.com.tw/products/sidepillw";
     }
   }
 
-  .ad-image {
+  .promo-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
 
-  .ad-text {
+  .promo-text {
     padding: 1.25rem;
     flex-grow: 1;
   }
 
-  .ad-title {
+  .promo-title {
     font-size: 1.125rem;
     font-weight: 600;
     color: #1e293b;
     margin: 0 0 0.5rem 0;
   }
 
-  .ad-description {
+  .promo-description {
     font-size: 0.875rem;
     color: #475569;
     line-height: 1.5;
@@ -139,7 +139,7 @@ const affiliateLink = "https://www.orest.com.tw/products/sidepillw";
     overflow: hidden;
   }
 
-  .ad-action {
+  .promo-action {
     display: inline-block;
     font-size: 0.875rem;
     font-weight: 500;
