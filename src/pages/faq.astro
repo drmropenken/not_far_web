@@ -1,6 +1,7 @@
 ---
 import SEO from "../components/public/SEO.astro";
 import "../styles/global.css";
+import AdBanner from "../components/public/AdBanner.astro";
 ---
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -269,6 +270,13 @@ import "../styles/global.css";
         <a href="/contact" class="btn btn-primary">📝 聯絡我們</a>
         <a href="tel:+886911233810" class="btn btn-secondary"><span class="shrink-0">📞</span> <span>撥打電話</span></a>
       </div>
+    </div>
+  </section>
+
+  <!-- 廣告區塊 -->
+  <section class="section" style="padding-top: 0;">
+    <div class="container">
+      <AdBanner />
     </div>
   </section>
 
