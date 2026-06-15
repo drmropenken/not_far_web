@@ -4,7 +4,7 @@ import "../styles/global.css";
 import { supabase } from '../lib/supabase';
 
 // Fetch all active products
-const { data: products, error } = await supabase
+const { data: productsData, error } = await supabase
   .from('products')
   .select('*')
   .eq('is_active', true)
@@ -13,6 +13,12 @@ const { data: products, error } = await supabase
 if (error) {
   console.error("Error fetching products:", error);
 }
+
+// 將「贊助廣告」排在最前面
+const products = productsData ? [
+  ...productsData.filter(p => p.category === '贊助廣告'),
+  ...productsData.filter(p => p.category !== '贊助廣告')
+] : [];
 
 // Extract unique categories, removing nulls or empty strings
 const categories = Array.from(new Set(products?.map(p => p.category).filter(Boolean))) as string[];
@@ -271,11 +277,11 @@ const categories = Array.from(new Set(products?.map(p => p.category).filter(Bool
           btn.style.border = 'none';
 
           // Filter products
-          const selectedCategory = btn.getAttribute('data-category');
+            const selectedCategory = btn.getAttribute('data-category');
           
           productCards.forEach(card => {
             const cardCategory = card.getAttribute('data-category');
-            if (selectedCategory === '全部' || cardCategory === selectedCategory) {
+            if (selectedCategory === '全部' || cardCategory === selectedCategory || cardCategory === '贊助廣告') {
               card.style.display = 'flex';
             } else {
               card.style.display = 'none';
