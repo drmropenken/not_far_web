@@ -21,12 +21,12 @@ const { title, description } = Astro.props;
 <body class="bg-stone-50 min-h-screen text-stone-800 flex overflow-hidden font-sans">
   
   <!-- Mobile Header -->
-  <div class="md:hidden flex items-center justify-between bg-white text-stone-800 border-b border-stone-200 p-4 shrink-0 fixed top-0 left-0 w-full z-40 h-16 shadow-sm">
+  <div class="md:hidden flex items-center justify-between bg-emerald-900 text-white border-b border-emerald-800 p-4 shrink-0 fixed top-0 left-0 w-full z-40 h-16 shadow-sm">
     <div class="flex items-center gap-2">
       <span class="text-xl">⛺️</span>
-      <h1 class="text-xl font-bold tracking-widest text-emerald-800 font-sans">不遠山莊</h1>
+      <h1 class="text-xl font-bold tracking-widest text-white font-sans">不遠山莊</h1>
     </div>
-    <button id="mobile-menu-btn" class="p-2 focus:outline-none text-stone-400 hover:text-emerald-700 transition-colors">
+    <button id="mobile-menu-btn" class="p-2 focus:outline-none text-emerald-200 hover:text-white transition-colors">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
   </div>
@@ -35,48 +35,48 @@ const { title, description } = Astro.props;
   <div id="sidebar-overlay" class="fixed inset-0 bg-emerald-950/60 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
   <!-- Sidebar -->
-  <aside id="sidebar" class="w-56 shrink-0 bg-white text-stone-600 min-h-screen flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full md:translate-x-0 md:static md:ml-0 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none font-sans border-r border-stone-200">
-    <div class="p-6 hidden md:block border-b border-stone-200">
+  <aside id="sidebar" class="w-56 shrink-0 bg-emerald-900 text-emerald-100/70 min-h-screen flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full md:translate-x-0 md:static md:ml-0 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none font-sans border-r border-emerald-800">
+    <div class="p-6 hidden md:block border-b border-emerald-800">
       <div class="flex items-center gap-2 mb-1">
         <span class="text-xl drop-shadow-sm">⛺️</span>
-        <h1 class="text-2xl font-black tracking-widest bg-gradient-to-r from-emerald-800 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm font-sans">不遠山莊</h1>
+        <h1 class="text-2xl font-black tracking-widest text-white drop-shadow-sm font-sans">不遠山莊</h1>
       </div>
-      <p class="text-xs text-stone-400 tracking-wider font-medium ml-8 mt-1">營主管理系統</p>
+      <p class="text-xs text-emerald-400/80 tracking-wider font-medium ml-8 mt-1">營主管理系統</p>
     </div>
-    <div class="p-4 md:hidden flex justify-between items-center border-b border-stone-200 bg-white h-16">
-      <h1 class="text-lg font-bold text-emerald-800 tracking-widest">系統選單</h1>
-      <button id="close-sidebar-btn" class="p-2 text-stone-400 hover:text-emerald-700 transition-colors">
+    <div class="p-4 md:hidden flex justify-between items-center border-b border-emerald-800 bg-emerald-900 h-16">
+      <h1 class="text-lg font-bold text-white tracking-widest">系統選單</h1>
+      <button id="close-sidebar-btn" class="p-2 text-emerald-400 hover:text-white transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
     </div>
     <nav class="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
-      <a href="/admin" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-stone-600 hover:bg-emerald-50 hover:text-emerald-700 transition-all group" id="nav-dashboard">
+      <a href="/admin" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-dashboard">
         <span class="text-lg group-hover:scale-110 transition-transform">📊</span> <span class="font-medium tracking-wide text-sm">儀表板</span>
       </a>
-      <a href="/admin/orders" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-stone-600 hover:bg-emerald-50 hover:text-emerald-700 transition-all group" id="nav-orders">
+      <a href="/admin/orders" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-orders">
         <span class="text-lg group-hover:scale-110 transition-transform">📝</span> <span class="font-medium tracking-wide text-sm">訂單管理</span>
       </a>
-      <a href="/admin/items" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-stone-600 hover:bg-emerald-50 hover:text-emerald-700 transition-all group" id="nav-items">
+      <a href="/admin/items" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-items">
         <span class="text-lg group-hover:scale-110 transition-transform">⛺️</span> <span class="font-medium tracking-wide text-sm">商品與營位</span>
       </a>
-      <a href="/admin/discounts" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-stone-600 hover:bg-emerald-50 hover:text-emerald-700 transition-all group" id="nav-discounts">
+      <a href="/admin/discounts" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-discounts">
         <span class="text-lg group-hover:scale-110 transition-transform">🏷️</span> <span class="font-medium tracking-wide text-sm">折扣碼管理</span>
       </a>
-      <a href="/admin/inventory" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-stone-600 hover:bg-emerald-50 hover:text-emerald-700 transition-all group" id="nav-inventory">
+      <a href="/admin/inventory" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-inventory">
         <span class="text-lg group-hover:scale-110 transition-transform">📅</span> <span class="font-medium tracking-wide text-sm">庫存行事曆</span>
       </a>
     </nav>
-    <div class="p-4 border-t border-stone-200">
-      <div class="flex items-center gap-3 px-3 py-2.5 mb-3 rounded-xl bg-stone-50 border border-stone-200">
-        <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold border border-emerald-200 shrink-0" id="user-avatar">
+    <div class="p-4 border-t border-emerald-800">
+      <div class="flex items-center gap-3 px-3 py-2.5 mb-3 rounded-xl bg-emerald-950/50 border border-emerald-800/50">
+        <div class="w-8 h-8 rounded-full bg-emerald-700 flex items-center justify-center text-emerald-100 font-bold border border-emerald-600 shrink-0" id="user-avatar">
           👤
         </div>
         <div class="overflow-hidden flex-1">
-          <p id="user-name-display" class="text-sm font-bold text-stone-800 truncate">載入中...</p>
-          <p id="user-email-display" class="text-xs text-stone-500 truncate">...</p>
+          <p id="user-name-display" class="text-sm font-bold text-white truncate">載入中...</p>
+          <p id="user-email-display" class="text-xs text-emerald-400 truncate">...</p>
         </div>
       </div>
-      <button id="logout-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-stone-500 bg-stone-50 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all font-medium tracking-wide border border-stone-200 hover:border-rose-200 text-sm">
+      <button id="logout-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-emerald-300/80 bg-emerald-950/30 hover:bg-rose-500/10 hover:text-rose-300 rounded-xl transition-all font-medium tracking-wide border border-transparent hover:border-rose-500/20 text-sm">
         <span>🚪</span> <span>登出系統</span>
       </button>
     </div>
@@ -165,7 +165,7 @@ const { title, description } = Astro.props;
 
     // 高亮當前選單
     const path = window.location.pathname;
-    const activeClasses = ["bg-emerald-50", "text-emerald-700", "font-bold", "border-l-4", "border-emerald-600"];
+    const activeClasses = ["bg-emerald-800", "text-white", "font-bold", "border-l-4", "border-emerald-400", "shadow-sm"];
     if (path === "/admin" || path === "/admin/") {
       document.getElementById("nav-dashboard")?.classList.add(...activeClasses);
     } else if (path.includes("/admin/orders")) {
