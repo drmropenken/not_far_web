@@ -100,10 +100,12 @@ const categories = Array.from(new Set(products?.map(p => p.category).filter(Bool
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;" id="products-grid">
           {products.map((product) => {
             const isTrendy = product.tags?.includes('風格');
+            const isAd = product.tags?.includes('廣告');
+            const isSpecial = isTrendy || isAd;
             return (
             <div 
-              class={`product-card ${isTrendy ? 'trendy-card' : 'glass-card'}`}
-              style={isTrendy ? "position: relative; border-radius: var(--radius); padding: 3px; display: flex; flex-direction: column; transition: all 0.3s; cursor: pointer; overflow: hidden;" : "display: flex; flex-direction: column; overflow: hidden; cursor: pointer;"}
+              class={`product-card ${isTrendy ? 'trendy-card' : isAd ? 'ad-card' : 'glass-card'}`}
+              style={isSpecial ? "position: relative; border-radius: var(--radius); padding: 3px; display: flex; flex-direction: column; transition: all 0.3s; cursor: pointer; overflow: hidden;" : "display: flex; flex-direction: column; overflow: hidden; cursor: pointer;"}
               data-category={product.category}
             >
               {isTrendy && (
@@ -114,9 +116,17 @@ const categories = Array.from(new Set(products?.map(p => p.category).filter(Bool
                   <div style="position: absolute; inset: -200%; background: conic-gradient(from 90deg at 50% 50%, transparent 0%, transparent 70%, #f59e0b 100%); animation: spin 3s linear infinite;"></div>
                 </>
               )}
+              {isAd && (
+                <>
+                  <!-- 科技感藍色底色邊框 -->
+                  <div style="position: absolute; inset: 0; background: rgba(59, 130, 246, 0.3); border-radius: var(--radius);"></div>
+                  <!-- 藍色發光繞圈圈的動畫圖層 -->
+                  <div style="position: absolute; inset: -200%; background: conic-gradient(from 90deg at 50% 50%, transparent 0%, transparent 70%, #3b82f6 100%); animation: spin 3s linear infinite;"></div>
+                </>
+              )}
               
               <!-- 內部卡片容器 -->
-              <div style={`position: relative; height: 100%; width: 100%; display: flex; flex-direction: column; background: white; ${isTrendy ? 'border-radius: calc(var(--radius) - 3px); overflow: hidden;' : ''}`}>
+              <div style={`position: relative; height: 100%; width: 100%; display: flex; flex-direction: column; background: white; ${isSpecial ? 'border-radius: calc(var(--radius) - 3px); overflow: hidden;' : ''}`}>
                 <!-- Product Image -->
                 <div style="position: relative; aspect-ratio: 1/1; background: #f0f0f0; overflow: hidden;">
                 {product.image_url ? (
@@ -138,6 +148,13 @@ const categories = Array.from(new Set(products?.map(p => p.category).filter(Bool
                 {isTrendy && (
                   <div style="position: absolute; top: 12px; left: 12px; border-radius: 50px; background: linear-gradient(to right, #fbbf24, #f59e0b); color: #451a03; padding: 4px 12px; font-size: 0.75rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10; display: flex; align-items: center; gap: 4px;">
                     ✨ 風格露營
+                  </div>
+                )}
+
+                {/* 廣告專屬標籤 */}
+                {isAd && (
+                  <div style="position: absolute; top: 12px; left: 12px; border-radius: 50px; background: linear-gradient(to right, #60a5fa, #3b82f6); color: white; padding: 4px 12px; font-size: 0.75rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10; display: flex; align-items: center; gap: 4px;">
+                    📢 贊助廣告
                   </div>
                 )}
 
