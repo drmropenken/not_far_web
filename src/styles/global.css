@@ -208,6 +208,10 @@ ul {
   gap: 10px;
   font-size: 1.5rem;
   font-weight: 700;
+  color: white;
+}
+
+.navbar.scrolled .logo {
   color: var(--primary-dark);
 }
 
@@ -226,9 +230,17 @@ ul {
   padding: 8px 16px;
   border-radius: 50px;
   font-weight: 500;
-  color: var(--text-dark);
+  color: white;
   transition: var(--transition);
   font-size: 0.95rem;
+}
+
+.navbar.scrolled .nav-links a {
+  color: var(--text-dark);
+}
+
+.navbar.scrolled .nav-links a.btn-primary {
+  color: white;
 }
 
 .nav-links a:hover,
@@ -252,9 +264,13 @@ ul {
 .hamburger span {
   width: 28px;
   height: 3px;
-  background: var(--text-dark);
+  background: white;
   border-radius: 2px;
   transition: var(--transition);
+}
+
+.navbar.scrolled .hamburger span {
+  background: var(--text-dark);
 }
 
 /* ===== Hero ===== */
