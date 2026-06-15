@@ -20,8 +20,8 @@ const products = productsData ? [
   ...productsData.filter(p => p.category !== '贊助廣告')
 ] : [];
 
-// Extract unique categories, removing nulls or empty strings
-const categories = Array.from(new Set(products?.map(p => p.category).filter(Boolean))) as string[];
+// Extract unique categories, removing nulls, empty strings, and '贊助廣告'
+const categories = Array.from(new Set(products?.map(p => p.category).filter(c => c && c !== '贊助廣告'))) as string[];
 ---
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -185,7 +185,7 @@ const categories = Array.from(new Set(products?.map(p => p.category).filter(Bool
                     class="btn btn-primary"
                     style="padding: 6px 14px; font-size: 0.85rem; flex-shrink: 0;"
                   >
-                    蝦皮查看 ↗️
+                    {isAd ? '點擊查看 ↗️' : '蝦皮查看 ↗️'}
                   </a>
                 </div>
               </div>
