@@ -313,6 +313,31 @@ export default function BookingFlow() {
       const totalAmount = calculateTotal();
       const discountAmount = calculateDiscountAmount();
       
+      // 1.5 Pre-flight check: Ensure inventory is still available
+      const start = new Date(dates.checkIn);
+      const end = new Date(dates.checkOut);
+      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+        const dStr = d.toISOString().split('T')[0];
+        const isFirstNight = d.getTime() === start.getTime();
+
+        for (const { item, quantity } of selectedItems) {
+          const isSingleTime = item.category === 'service' && (item.name.includes('單次') || item.name.includes('次計費'));
+          if (isSingleTime && !isFirstNight) continue;
+
+          const { data: invData } = await supabase
+            .from('nf_inventory')
+            .select('booked_quantity')
+            .eq('date', dStr)
+            .eq('item_id', item.id)
+            .single();
+
+          const currentBooked = invData?.booked_quantity || 0;
+          if (currentBooked + quantity > item.total_quantity) {
+            throw new Error(`抱歉！在您結帳的同時，『${item.name}』在 ${dStr} 的剩餘數量已被其他客人訂走（剩餘 ${Math.max(0, item.total_quantity - currentBooked)} 個）。請返回上一步重新選擇數量！`);
+          }
+        }
+      }
+
       const phoneLast5 = customerInfo.phone.slice(-5).padStart(5, '0');
       const virtualAccount = method === 'bank_transfer' ? `962948188${phoneLast5}` : null;
 
@@ -774,7 +799,7 @@ export default function BookingFlow() {
                 onClick={() => handleCheckout('bank_transfer')}
                 className="w-full bg-white border-2 border-emerald-600 text-emerald-700 font-black py-3.5 rounded-xl hover:bg-emerald-50 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
               >
-                取號匯款 (保留 3 天) <span>🏦</span>
+                取號匯款 (保留 10 天) <span>🏦</span>
               </button>
             </div>
           </div>
@@ -787,7 +812,7 @@ export default function BookingFlow() {
               <h1 className="text-2xl font-black text-slate-800 tracking-wider">訂單已成立！</h1>
               <p className="text-sm text-slate-500 font-medium leading-relaxed">
                 您的訂單編號為：<strong className="text-slate-800">{finalOrderInfo.orderNo}</strong><br/>
-                請於 <strong className="text-rose-500">3 天內</strong> 完成匯款，逾期系統將自動取消訂單。
+                請於 <strong className="text-rose-500">10 天內</strong> 完成匯款，逾期系統將自動取消訂單。
               </p>
               
               <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-left space-y-4">

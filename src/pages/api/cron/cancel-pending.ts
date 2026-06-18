@@ -5,7 +5,7 @@ export const GET: APIRoute = async () => {
   try {
     // 取得時間點
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
 
     // 尋找所有未付款的訂單
     const { data: pendingOrders, error: fetchError } = await supabase
@@ -26,7 +26,7 @@ export const GET: APIRoute = async () => {
     const expiredOrders = pendingOrders.filter(order => {
       const createdAt = new Date(order.created_at);
       if (order.payment_method === 'bank_transfer') {
-        return createdAt < threeDaysAgo; // 匯款保留 3 天
+        return createdAt < tenDaysAgo; // 匯款保留 10 天
       } else {
         return createdAt < oneHourAgo;   // 其他(綠界)保留 1 小時
       }
@@ -70,7 +70,7 @@ export const GET: APIRoute = async () => {
       }
 
       // 2. 將訂單狀態標記為已取消
-      const timeoutReason = order.payment_method === 'bank_transfer' ? '超過3天未付款' : '超過1小時未付款';
+      const timeoutReason = order.payment_method === 'bank_transfer' ? '超過10天未付款' : '超過1小時未付款';
       await supabase
         .from('nf_orders')
         .update({ status: 'cancelled', notes: `系統自動取消：${timeoutReason}` })
