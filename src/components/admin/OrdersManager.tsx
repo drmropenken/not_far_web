@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import OrderModal from './OrderModal';
+import EditOrderItemsModal from './EditOrderItemsModal';
 
 type Item = {
   id: string;
@@ -46,6 +47,7 @@ export default function OrdersManager() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFinancialsId, setEditingFinancialsId] = useState<string | null>(null);
   const [financialsForm, setFinancialsForm] = useState({ total_amount: '', deposit_amount: '' });
+  const [editingOrderItemsOrder, setEditingOrderItemsOrder] = useState<Order | null>(null);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -393,7 +395,14 @@ export default function OrdersManager() {
                   {/* 項目與金額 */}
                   <div className="flex-1 flex flex-col justify-between">
                     <div className="space-y-2 mb-4">
-                      <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider">預訂內容</h4>
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider">預訂內容</h4>
+                        {order.status !== 'cancelled' && (
+                          <button onClick={() => setEditingOrderItemsOrder(order)} className="text-xs flex items-center gap-1 text-indigo-500 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded transition-colors font-medium border border-indigo-200 shadow-sm opacity-0 group-hover:opacity-100">
+                            <span>🛍️</span> 編輯明細
+                          </button>
+                        )}
+                      </div>
                       <ul className="space-y-1.5">
                         {order.nf_order_items?.map(item => (
                           <li key={item.id} className="text-sm flex justify-between items-start">
@@ -443,12 +452,25 @@ export default function OrdersManager() {
                                 </span>
                               </div>
                               <div className="flex justify-end items-end gap-2 mt-1 pt-1 border-t border-stone-200 border-dashed">
-                                <span className="text-xs text-stone-500 font-bold mb-1">
-                                  {order.status === 'paid' || order.status === 'checked_in' ? '實收尾款' : '待收尾款'}
-                                </span>
-                                <span className={`text-2xl font-black tracking-tight ${order.status === 'paid' || order.status === 'checked_in' ? 'text-stone-500' : 'text-rose-600'}`}>
-                                  NT$ {Math.max(0, order.total_amount - (order.deposit_amount || 0)).toLocaleString()}
-                                </span>
+                                {order.deposit_amount && order.deposit_amount > order.total_amount ? (
+                                  <>
+                                    <span className="text-xs text-rose-500 font-bold mb-1">
+                                      🚨 需退款
+                                    </span>
+                                    <span className="text-2xl font-black tracking-tight text-rose-600">
+                                      NT$ {(order.deposit_amount - order.total_amount).toLocaleString()}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="text-xs text-stone-500 font-bold mb-1">
+                                      {order.status === 'paid' || order.status === 'checked_in' ? '實收尾款' : '待收尾款'}
+                                    </span>
+                                    <span className={`text-2xl font-black tracking-tight ${order.status === 'paid' || order.status === 'checked_in' ? 'text-stone-500' : 'text-rose-600'}`}>
+                                      NT$ {Math.max(0, order.total_amount - (order.deposit_amount || 0)).toLocaleString()}
+                                    </span>
+                                  </>
+                                )}
                               </div>
                             </>
                           )}
@@ -562,6 +584,16 @@ export default function OrdersManager() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSuccess={fetchOrders} 
+      />
+
+      <EditOrderItemsModal
+        isOpen={!!editingOrderItemsOrder}
+        onClose={() => setEditingOrderItemsOrder(null)}
+        onSuccess={() => {
+          fetchOrders();
+          setEditingOrderItemsOrder(null);
+        }}
+        order={editingOrderItemsOrder}
       />
     </div>
   );

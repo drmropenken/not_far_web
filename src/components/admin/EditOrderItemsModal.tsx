@@ -1,0 +1,315 @@
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+
+type Item = {
+  id: string;
+  name: string;
+  category: string;
+  price_weekday: number;
+  price_holiday: number;
+  total_quantity: number;
+};
+
+type OrderItem = {
+  id: string;
+  item_id: string;
+  quantity: number;
+  unit_price: number;
+  nf_items: Item;
+};
+
+type Order = {
+  id: string;
+  order_no: string;
+  customer_name: string;
+  check_in_date: string;
+  check_out_date: string;
+  total_amount: number;
+  deposit_amount?: number;
+  status: string;
+  discount_amount?: number;
+  nf_order_items: OrderItem[];
+};
+
+type EditOrderItemsModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  order: Order | null;
+};
+
+export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order }: EditOrderItemsModalProps) {
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  // Array of currently selected items
+  const [selectedItems, setSelectedItems] = useState<{item: Item, quantity: number}[]>([]);
+
+  useEffect(() => {
+    if (isOpen && order) {
+      fetchItems();
+      const initialSelected = order.nf_order_items.map(oi => ({
+        item: oi.nf_items,
+        quantity: oi.quantity
+      }));
+      setSelectedItems(initialSelected);
+    }
+  }, [isOpen, order]);
+
+  const fetchItems = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('nf_items').select('*').order('sort_order');
+    setItems(data || []);
+    setLoading(false);
+  };
+
+  const updateQuantity = (itemId: string, delta: number) => {
+    setSelectedItems(prev => prev.map(i => {
+      if (i.item.id === itemId) {
+        const newQ = Math.max(0, i.quantity + delta);
+        return { ...i, quantity: newQ };
+      }
+      return i;
+    }).filter(i => i.quantity > 0)); // Remove if quantity is 0
+  };
+
+  const toggleItem = (item: Item) => {
+    const existing = selectedItems.find(i => i.item.id === item.id);
+    if (existing) {
+      setSelectedItems(selectedItems.filter(i => i.item.id !== item.id));
+    } else {
+      setSelectedItems([...selectedItems, { item, quantity: 1 }]);
+    }
+  };
+
+  const calculateOriginalTotal = () => {
+    if (!order?.check_in_date || !order?.check_out_date) return 0;
+    const start = new Date(order.check_in_date);
+    const end = new Date(order.check_out_date);
+    const nights = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    let total = 0;
+
+    selectedItems.forEach(si => {
+      const isSingleTime = si.item.category === 'service' && (si.item.name.includes('單次') || si.item.name.includes('次計費'));
+      
+      if (isSingleTime) {
+        total += si.item.price_weekday * si.quantity;
+      } else if (si.item.category === 'service') {
+        total += si.item.price_weekday * si.quantity * nights;
+      } else {
+        for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+          const price = isWeekend ? si.item.price_holiday : si.item.price_weekday;
+          total += price * si.quantity;
+        }
+      }
+    });
+    return total;
+  };
+
+  const calculateTotal = () => {
+    return Math.max(0, calculateOriginalTotal() - (order?.discount_amount || 0));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!order) return;
+    if (selectedItems.length === 0) {
+      if (!confirm('警告：您移除了所有項目！確定要儲存嗎？（建議您直接使用「取消訂單」功能）')) return;
+    }
+
+    setSaving(true);
+    const finalTotal = calculateTotal();
+    
+    // 1. Calculate inventory deltas
+    const oldItemsMap = new Map(order.nf_order_items.map(oi => [oi.item_id, oi.quantity]));
+    const newItemsMap = new Map(selectedItems.map(si => [si.item.id, si.quantity]));
+    const allItemIds = new Set([...oldItemsMap.keys(), ...newItemsMap.keys()]);
+    
+    const start = new Date(order.check_in_date);
+    const end = new Date(order.check_out_date);
+    
+    for (const itemId of allItemIds) {
+      const oldQty = oldItemsMap.get(itemId) || 0;
+      const newQty = newItemsMap.get(itemId) || 0;
+      const delta = newQty - oldQty; 
+      
+      if (delta === 0) continue; 
+      
+      const itemData = items.find(i => i.id === itemId) || order.nf_order_items.find(oi => oi.item_id === itemId)?.nf_items;
+      const isSingleTimeItem = itemData?.category === 'service' && 
+        (itemData?.name.includes('單次') || itemData?.name.includes('次計費'));
+      
+      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        const isFirstNight = d.getTime() === start.getTime();
+        
+        if (isSingleTimeItem && !isFirstNight) continue;
+
+        const { data: inv } = await supabase
+          .from('nf_inventory')
+          .select('id, booked_quantity')
+          .eq('date', dateStr)
+          .eq('item_id', itemId)
+          .single();
+
+        if (inv) {
+          const newBookedQty = Math.max(0, inv.booked_quantity + delta);
+          await supabase
+            .from('nf_inventory')
+            .update({ booked_quantity: newBookedQty })
+            .eq('id', inv.id);
+        } else if (delta > 0) {
+          await supabase
+            .from('nf_inventory')
+            .insert([{
+              date: dateStr,
+              item_id: itemId,
+              booked_quantity: delta
+            }]);
+        }
+      }
+    }
+
+    // 2. Update nf_order_items
+    for (const oi of order.nf_order_items) {
+      if (!newItemsMap.has(oi.item_id)) {
+        await supabase.from('nf_order_items').delete().eq('id', oi.id);
+      }
+    }
+    for (const si of selectedItems) {
+      const existing = order.nf_order_items.find(oi => oi.item_id === si.item.id);
+      if (existing) {
+        if (existing.quantity !== si.quantity) {
+          await supabase.from('nf_order_items').update({ quantity: si.quantity }).eq('id', existing.id);
+        }
+      } else {
+        await supabase.from('nf_order_items').insert([{
+          order_id: order.id,
+          item_id: si.item.id,
+          quantity: si.quantity,
+          unit_price: si.item.price_weekday
+        }]);
+      }
+    }
+
+    // 3. Update nf_orders total_amount
+    await supabase.from('nf_orders').update({ total_amount: finalTotal }).eq('id', order.id);
+
+    setSaving(false);
+    onSuccess();
+    onClose();
+  };
+
+  if (!isOpen || !order) return null;
+
+  const currentTotal = calculateTotal();
+  const deposit = order.deposit_amount || 0;
+  const needRefund = deposit > currentTotal;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border border-stone-200">
+        <div className="p-6 border-b border-stone-100 flex justify-between items-center bg-white z-10 shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl bg-indigo-100 text-indigo-600 p-2 rounded-lg">🛍️</span>
+            <div>
+              <h3 className="text-2xl font-bold text-stone-800 tracking-wide">編輯訂單明細</h3>
+              <p className="text-sm text-stone-500 mt-1">{order.customer_name} • {order.order_no} • {order.check_in_date} 入住</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-stone-400 hover:text-rose-500 transition-colors p-2 rounded-full hover:bg-rose-50">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        
+        <form id="editItemsForm" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 bg-stone-50">
+          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm h-full flex flex-col mx-auto">
+            <h4 className="font-bold text-stone-700 border-b border-stone-100 pb-2 mb-4 flex items-center gap-2 shrink-0">
+              <span className="text-emerald-500">🏕️</span> 調整預訂項目
+            </h4>
+            
+            {loading ? (
+              <div className="flex-1 flex items-center justify-center text-stone-400 py-10">載入項目中...</div>
+            ) : (
+              <div className="flex-1 overflow-y-auto pr-2 space-y-2 max-h-[300px] sm:max-h-[400px]">
+                {items.map(item => {
+                  const isSelected = selectedItems.some(i => i.item.id === item.id);
+                  const selectedData = selectedItems.find(i => i.item.id === item.id);
+                  const quantity = selectedData?.quantity || 0;
+                  
+                  return (
+                    <div key={item.id} className={`p-3 rounded-xl border-2 transition-all ${isSelected ? 'border-indigo-400 bg-indigo-50/30' : 'border-stone-100 hover:border-stone-300'}`}>
+                      <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleItem(item)}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded flex items-center justify-center border ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'bg-white border-stone-300'}`}>
+                            {isSelected && <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>}
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-stone-800">{item.name}</h5>
+                            <p className="text-xs text-stone-500">平日 ${item.price_weekday} / 假日 ${item.price_holiday}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {isSelected && (
+                        <div className="mt-3 pt-3 border-t border-indigo-100">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-sm font-semibold text-stone-600">數量</span>
+                            <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-lg p-1 shadow-sm">
+                              <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, -1); }} className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-stone-100 text-stone-600 font-bold">-</button>
+                              <span className="w-8 text-center font-bold text-indigo-600">{quantity}</span>
+                              <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1); }} className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-stone-100 text-stone-600 font-bold">+</button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            <div className="mt-6 pt-4 border-t-2 border-stone-100 border-dashed shrink-0 space-y-3">
+              <div className="flex justify-between items-center text-sm text-stone-500">
+                <span>原本總金額</span>
+                <span className="line-through">NT$ {order.total_amount?.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center bg-stone-50 p-2 rounded-lg border border-stone-200">
+                <span className="font-bold text-stone-700">重新試算總金額</span>
+                <span className="text-xl font-black text-stone-800 tracking-tighter">NT$ {currentTotal.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm text-stone-500">
+                <span>已收定金 (或全額)</span>
+                <span>NT$ {deposit.toLocaleString()}</span>
+              </div>
+              
+              <div className={`mt-2 p-3 rounded-lg flex items-center justify-between border ${needRefund ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'}`}>
+                <span className={`font-bold ${needRefund ? 'text-rose-700' : 'text-emerald-700'}`}>
+                  {needRefund ? '🚨 需現場退款給客人' : '待收剩餘尾款'}
+                </span>
+                <span className={`text-2xl font-black tracking-tighter ${needRefund ? 'text-rose-600' : 'text-emerald-600'}`}>
+                  NT$ {Math.abs(currentTotal - deposit).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <div className="p-4 md:p-6 border-t border-stone-200 bg-white flex justify-end gap-3 shrink-0">
+          <button type="button" onClick={onClose} className="px-6 py-2.5 text-stone-600 hover:bg-stone-100 rounded-lg font-bold transition-colors">
+            取消
+          </button>
+          <button type="submit" form="editItemsForm" disabled={saving} className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+            {saving ? (
+              <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> 處理中...</>
+            ) : (
+              '確定儲存變更'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
