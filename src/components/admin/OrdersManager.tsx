@@ -35,10 +35,20 @@ type Order = {
   admin_notes: string | null;
   discount_code: string | null;
   discount_amount: number;
-  created_at: string;
-  payment_method?: string;
-  virtual_account?: string;
+  ecpay_trade_no: string | null;
+  payment_method: string | null;
+  virtual_account: string | null;
   nf_order_items: OrderItem[];
+};
+
+const parseOrderNotes = (notesStr: string | null) => {
+  if (!notesStr) return { email: '', people: '', notes: '' };
+  const emailMatch = notesStr.match(/\[Email:\s*(.*?)\]/);
+  const peopleMatch = notesStr.match(/\[人數:\s*(.*?)\]/);
+  const email = emailMatch ? emailMatch[1] : '';
+  const people = peopleMatch ? peopleMatch[1] : '';
+  const notes = notesStr.replace(/\[Email:\s*.*?\]\s*/, '').replace(/\[人數:\s*.*?\]\s*/, '').trim();
+  return { email, people, notes };
 };
 
 export default function OrdersManager() {
@@ -361,7 +371,9 @@ export default function OrdersManager() {
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 align-top">
-            {filteredOrders.map(order => (
+            {filteredOrders.map(order => {
+              const parsed = parseOrderNotes(order.notes);
+              return (
               <div key={order.id} className={`bg-white rounded-xl border ${order.status === 'cancelled' ? 'border-rose-100 opacity-75' : 'border-stone-200'} shadow-sm overflow-hidden hover:shadow-md transition-all group`}>
                 {/* 訂單表頭 */}
                 <div className={`bg-stone-100/50 border-b ${order.status === 'cancelled' ? 'border-rose-100' : 'border-stone-100'} px-5 py-3 flex justify-between items-center`}>
@@ -386,7 +398,11 @@ export default function OrdersManager() {
                       </div>
                       <div>
                         <h3 className={`font-bold text-lg ${order.status === 'cancelled' ? 'text-stone-500 line-through' : 'text-stone-800'}`}>{order.customer_name}</h3>
-                        <p className="text-sm text-stone-500 font-mono">{order.customer_phone}</p>
+                        <div className="text-sm text-stone-500 font-mono mt-0.5 space-y-0.5">
+                          <p>📞 {order.customer_phone}</p>
+                          {parsed.email && <p>✉️ {parsed.email}</p>}
+                          {parsed.people && <p>👥 {parsed.people}</p>}
+                        </div>
                       </div>
                     </div>
                     <div className="bg-stone-50 rounded-lg p-3 text-sm space-y-1.5 border border-stone-100">
@@ -440,7 +456,7 @@ export default function OrdersManager() {
                       </ul>
                       <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note" onClick={() => updateOrderNote(order.id as unknown as number, order.notes || '')}>
                         <div className="flex justify-between items-start">
-                          <span>💬 客人備註：{order.notes || <span className="opacity-50 italic">無</span>}</span>
+                          <span>💬 客人備註：{parsed.notes || <span className="opacity-50 italic">無</span>}</span>
                           <span className="opacity-0 group-hover/note:opacity-100 text-stone-500">✏️</span>
                         </div>
                       </div>
@@ -512,7 +528,6 @@ export default function OrdersManager() {
                   </div>
                 </div>
 
-                </div>
 
                 {/* 操作按鈕 */}
                 <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -541,7 +556,8 @@ export default function OrdersManager() {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

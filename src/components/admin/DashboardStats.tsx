@@ -16,6 +16,16 @@ type Order = {
   nf_order_items: { quantity: number; nf_items: { name: string } }[];
 };
 
+const parseOrderNotes = (notesStr: string | null) => {
+  if (!notesStr) return { email: '', people: '', notes: '' };
+  const emailMatch = notesStr.match(/\[Email:\s*(.*?)\]/);
+  const peopleMatch = notesStr.match(/\[人數:\s*(.*?)\]/);
+  const email = emailMatch ? emailMatch[1] : '';
+  const people = peopleMatch ? peopleMatch[1] : '';
+  const notes = notesStr.replace(/\[Email:\s*.*?\]\s*/, '').replace(/\[人數:\s*.*?\]\s*/, '').trim();
+  return { email, people, notes };
+};
+
 export default function DashboardStats() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,7 +141,9 @@ export default function DashboardStats() {
               </div>
             ) : (
               <ul className="space-y-3">
-                {checkinsToday.map(order => (
+                {checkinsToday.map(order => {
+                  const parsed = parseOrderNotes(order.notes);
+                  return (
                   <li key={order.id} className="p-4 bg-white border border-stone-200 rounded-xl shadow-sm hover:shadow-md hover:border-emerald-200 transition-all group">
                     <div className="flex justify-between items-start mb-2">
                       <div className="font-bold text-stone-800 text-lg flex items-center gap-2">
@@ -155,8 +167,20 @@ export default function DashboardStats() {
                         <div className="text-[10px] font-mono text-stone-400 px-1 py-0.5">{order.order_no}</div>
                       </div>
                     </div>
-                    <div className="text-sm text-stone-600 mb-3 font-mono flex items-center gap-1.5">
-                      <span>📞</span> {order.customer_phone}
+                    <div className="text-sm text-stone-600 mb-3 font-mono flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <span>📞</span> {order.customer_phone}
+                      </div>
+                      {parsed.email && (
+                        <div className="flex items-center gap-1.5 text-stone-500 text-xs">
+                          <span>✉️</span> {parsed.email}
+                        </div>
+                      )}
+                      {parsed.people && (
+                        <div className="flex items-center gap-1.5 text-stone-500 text-xs">
+                          <span>👥</span> {parsed.people}
+                        </div>
+                      )}
                     </div>
                     <div className="bg-white border border-stone-100 rounded-lg p-3 text-xs text-stone-600 space-y-1.5 shadow-sm group-hover:border-stone-200 transition-colors">
                       {order.nf_order_items.map((oi, idx) => (
@@ -166,14 +190,14 @@ export default function DashboardStats() {
                         </div>
                       ))}
                     </div>
-                    {(order.notes || order.admin_notes) && (
+                    {(parsed.notes || order.admin_notes) && (
                       <div className="mt-3 space-y-2">
-                        {order.notes && (
+                        {parsed.notes && (
                           <div className="text-xs bg-stone-50 border border-stone-100 text-stone-600 p-2.5 rounded-lg flex items-start gap-2 shadow-sm">
                             <span className="opacity-70 shrink-0 mt-0.5">💬</span>
                             <div className="flex-1">
                               <span className="font-bold opacity-70 block mb-0.5">客人備註：</span>
-                              <span className="whitespace-pre-wrap">{order.notes}</span>
+                              <span className="whitespace-pre-wrap">{parsed.notes}</span>
                             </div>
                           </div>
                         )}
@@ -189,7 +213,8 @@ export default function DashboardStats() {
                       </div>
                     )}
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -211,7 +236,9 @@ export default function DashboardStats() {
               </div>
             ) : (
               <ul className="space-y-3">
-                {checkoutsToday.map(order => (
+                {checkoutsToday.map(order => {
+                  const parsed = parseOrderNotes(order.notes);
+                  return (
                   <li key={order.id} className="p-4 bg-white border border-stone-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all group">
                     <div className="flex justify-between items-start mb-2">
                       <div className="font-bold text-stone-800 text-lg flex items-center gap-2">
@@ -224,8 +251,20 @@ export default function DashboardStats() {
                         <div className="text-[10px] font-mono text-stone-400 px-1 py-0.5">{order.order_no}</div>
                       </div>
                     </div>
-                    <div className="text-sm text-stone-600 mb-3 font-mono flex items-center gap-1.5">
-                      <span>📞</span> {order.customer_phone}
+                    <div className="text-sm text-stone-600 mb-3 font-mono flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <span>📞</span> {order.customer_phone}
+                      </div>
+                      {parsed.email && (
+                        <div className="flex items-center gap-1.5 text-stone-500 text-xs">
+                          <span>✉️</span> {parsed.email}
+                        </div>
+                      )}
+                      {parsed.people && (
+                        <div className="flex items-center gap-1.5 text-stone-500 text-xs">
+                          <span>👥</span> {parsed.people}
+                        </div>
+                      )}
                     </div>
                     <div className="bg-white border border-stone-100 rounded-lg p-3 text-xs text-stone-600 space-y-1.5 shadow-sm group-hover:border-stone-200 transition-colors">
                       {order.nf_order_items.map((oi, idx) => (
@@ -235,14 +274,14 @@ export default function DashboardStats() {
                         </div>
                       ))}
                     </div>
-                    {(order.notes || order.admin_notes) && (
+                    {(parsed.notes || order.admin_notes) && (
                       <div className="mt-3 space-y-2">
-                        {order.notes && (
+                        {parsed.notes && (
                           <div className="text-xs bg-stone-50 border border-stone-100 text-stone-600 p-2.5 rounded-lg flex items-start gap-2 shadow-sm">
                             <span className="opacity-70 shrink-0 mt-0.5">💬</span>
                             <div className="flex-1">
                               <span className="font-bold opacity-70 block mb-0.5">客人備註：</span>
-                              <span className="whitespace-pre-wrap">{order.notes}</span>
+                              <span className="whitespace-pre-wrap">{parsed.notes}</span>
                             </div>
                           </div>
                         )}
@@ -258,7 +297,8 @@ export default function DashboardStats() {
                       </div>
                     )}
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </div>
