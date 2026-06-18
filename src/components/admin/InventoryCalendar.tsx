@@ -48,6 +48,14 @@ export default function InventoryCalendar() {
   // 批次修改某日的全部庫存
   const [editingDay, setEditingDay] = useState<number | null>(null);
 
+  // Hover Tooltip 狀態
+  const [hoveredCell, setHoveredCell] = useState<{
+    rect: DOMRect;
+    orders: MonthOrder[];
+    booked: number;
+    item: Item;
+  } | null>(null);
+
   // 選擇月份
   const [currentDate, setCurrentDate] = useState(new Date());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -361,36 +369,23 @@ export default function InventoryCalendar() {
                     });
                     
                     return (
-                      <td key={day} className={`relative p-1 md:p-1.5 border-b border-r cursor-pointer group/cell ${isToday ? 'bg-amber-50/40 border-amber-200 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.3)]' : 'border-stone-100/60'}`} onClick={() => handleCellClick(item, day)}>
+                      <td 
+                        key={day} 
+                        className={`relative p-1 md:p-1.5 border-b border-r cursor-pointer group/cell ${isToday ? 'bg-amber-50/40 border-amber-200 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.3)]' : 'border-stone-100/60'}`} 
+                        onClick={() => handleCellClick(item, day)}
+                        onMouseEnter={(e) => {
+                          if (cellOrders.length > 0) {
+                            setHoveredCell({
+                              rect: e.currentTarget.getBoundingClientRect(),
+                              orders: cellOrders,
+                              booked,
+                              item
+                            });
+                          }
+                        }}
+                        onMouseLeave={() => setHoveredCell(null)}
+                      >
                         {cellContent}
-                        {cellOrders.length > 0 && (
-                          <div className="absolute bottom-[calc(100%-8px)] left-1/2 -translate-x-1/2 mb-2 w-[280px] bg-stone-800 text-white text-xs rounded-xl shadow-2xl p-4 opacity-0 invisible group-hover/cell:opacity-100 group-hover/cell:visible transition-all duration-200 z-[9999] pointer-events-none border border-stone-600">
-                            <div className="font-bold border-b border-stone-600/80 pb-2 mb-3 flex justify-between items-center">
-                              <span className="text-stone-200 tracking-wider">📝 訂單明細</span>
-                              <span className="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded text-[10px]">總計 {booked} 個</span>
-                            </div>
-                            <div className="space-y-3 max-h-[200px] overflow-y-auto hide-scrollbar">
-                              {cellOrders.map(order => {
-                                const qty = order.nf_order_items?.find(oi => oi.item_id === item.id)?.quantity || 0;
-                                return (
-                                  <div key={order.id} className="flex justify-between items-start gap-3 bg-stone-700/30 p-2 rounded-lg border border-stone-600/30">
-                                    <div className="min-w-0 flex-1">
-                                      <div className="text-emerald-300 font-bold truncate text-sm">
-                                        {order.customer_name} 
-                                        <span className="text-stone-400 font-mono text-xs ml-1.5">({order.order_no.slice(-4)})</span>
-                                      </div>
-                                      <div className="text-[10px] text-stone-300 mt-1 font-medium">
-                                        {order.status === 'paid' ? '💰 已付款' : order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}
-                                      </div>
-                                    </div>
-                                    <div className="font-mono bg-stone-900/50 px-2 py-1 rounded text-amber-300 shrink-0 font-bold text-sm shadow-inner border border-stone-700/50">x {qty}</div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-stone-800"></div>
-                          </div>
-                        )}
                       </td>
                     );
                   })}
@@ -499,6 +494,54 @@ export default function InventoryCalendar() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 浮動的 Hover Tooltip (固定在視窗上，避免被 overflow 裁切) */}
+      {hoveredCell && (
+        <div 
+          className="fixed z-[99999] pointer-events-none w-[280px] bg-stone-800 text-white text-xs rounded-xl shadow-2xl p-4 border border-stone-600 animate-in fade-in zoom-in-95 duration-150"
+          style={{
+            left: hoveredCell.rect.left + hoveredCell.rect.width / 2,
+            transform: 'translateX(-50%)',
+            top: hoveredCell.rect.top > 280 
+              ? hoveredCell.rect.top - 8 
+              : hoveredCell.rect.bottom + 8,
+            translate: hoveredCell.rect.top > 280 ? '0 -100%' : '0 0',
+          }}
+        >
+          <div className="font-bold border-b border-stone-600/80 pb-2 mb-3 flex justify-between items-center">
+            <span className="text-stone-200 tracking-wider">📝 訂單明細</span>
+            <span className="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded text-[10px]">總計 {hoveredCell.booked} 個</span>
+          </div>
+          <div className="space-y-3 max-h-[200px] overflow-y-auto hide-scrollbar">
+            {hoveredCell.orders.map(order => {
+              const qty = order.nf_order_items?.find(oi => oi.item_id === hoveredCell.item.id)?.quantity || 0;
+              return (
+                <div key={order.id} className="flex justify-between items-start gap-3 bg-stone-700/30 p-2 rounded-lg border border-stone-600/30">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-emerald-300 font-bold truncate text-sm">
+                      {order.customer_name} 
+                      <span className="text-stone-400 font-mono text-xs ml-1.5">({order.order_no.slice(-4)})</span>
+                    </div>
+                    <div className="text-[10px] text-stone-300 mt-1 font-medium">
+                      {order.status === 'paid' ? '💰 已付款' : order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}
+                    </div>
+                  </div>
+                  <div className="font-mono bg-stone-900/50 px-2 py-1 rounded text-amber-300 shrink-0 font-bold text-sm shadow-inner border border-stone-700/50">x {qty}</div>
+                </div>
+              )
+            })}
+          </div>
+          
+          {/* 小三角形指標 */}
+          <div 
+            className={`absolute left-1/2 -translate-x-1/2 border-[6px] border-transparent ${
+              hoveredCell.rect.top > 280 
+                ? 'top-full border-t-stone-800' 
+                : 'bottom-full border-b-stone-800'
+            }`}
+          ></div>
         </div>
       )}
     </div>
