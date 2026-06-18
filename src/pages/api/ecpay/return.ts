@@ -50,12 +50,16 @@ export const POST: APIRoute = async ({ request }) => {
     // 2. Check Return Code
     const rtnCode = params['RtnCode'];
     const orderNo = params['MerchantTradeNo'];
+    const tradeAmt = params['TradeAmt'];
 
     if (rtnCode === '1' && orderNo) {
       // Payment Success! Update DB
       const { error } = await supabase
         .from('nf_orders')
-        .update({ status: 'paid' })
+        .update({ 
+          status: 'paid',
+          deposit_amount: parseInt(tradeAmt || '0', 10)
+        })
         .eq('order_no', orderNo);
       
       if (error) {
