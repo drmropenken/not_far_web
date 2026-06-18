@@ -30,6 +30,9 @@ export default function InventoryCalendar() {
   } | null>(null);
   const [newQuota, setNewQuota] = useState<string>('');
   
+  // 批次修改某日的全部庫存
+  const [editingDay, setEditingDay] = useState<number | null>(null);
+
   // 選擇月份
   const [currentDate, setCurrentDate] = useState(new Date());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -166,6 +169,47 @@ export default function InventoryCalendar() {
     await fetchData(); // 重新整理
   };
 
+  const handleBatchSaveQuota = async (overrideValue: number | null) => {
+    if (editingDay === null) return;
+    
+    setLoading(true);
+    const day = editingDay;
+    setEditingDay(null);
+
+    const year = currentDate.getFullYear();
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+    const dateStr = `${year}-${month}-${day.toString().padStart(2, '0')}`;
+
+    const promises = items.map(async (item) => {
+      const existingRecord = inventory.find(i => i.item_id === item.id && i.date === dateStr);
+      
+      // 若是設定為 null (恢復預設)，而且本來就沒有 record，就不需要做事
+      if (overrideValue === null && !existingRecord) {
+        return Promise.resolve();
+      }
+
+      if (existingRecord) {
+        // 更新現有紀錄
+        return supabase
+          .from('nf_inventory')
+          .update({ override_quantity: overrideValue })
+          .eq('id', existingRecord.id);
+      } else {
+        // 插入新紀錄 (只有在 overrideValue !== null 時)
+        return supabase
+          .from('nf_inventory')
+          .insert([{
+            item_id: item.id,
+            date: dateStr,
+            override_quantity: overrideValue
+          }]);
+      }
+    });
+
+    await Promise.all(promises);
+    await fetchData();
+  };
+
   return (
     <div className="bg-white md:rounded-2xl shadow-sm border border-stone-200 md:p-5 p-3 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-80px)] w-full relative">
       
@@ -215,8 +259,8 @@ export default function InventoryCalendar() {
                   const isToday = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth() && day === today.getDate();
                   
                   return (
-                    <th key={day} id={isToday ? 'today-col-header' : undefined} className={`relative p-1.5 border-b border-r min-w-[45px] md:min-w-[55px] ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-stone-200/80' : 'text-stone-600 border-stone-200/80'}`}>
-                      <div className="flex flex-col items-center justify-center space-y-0.5">
+                    <th key={day} id={isToday ? 'today-col-header' : undefined} onClick={() => setEditingDay(day)} title={`點擊設定 ${day} 日全天庫存`} className={`relative p-1.5 border-b border-r min-w-[45px] md:min-w-[55px] cursor-pointer hover:bg-stone-200/50 transition-colors group/day ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-stone-200/80' : 'text-stone-600 border-stone-200/80'}`}>
+                      <div className="flex flex-col items-center justify-center space-y-0.5 group-hover/day:scale-105 transition-transform">
                         <span className={`font-bold text-base md:text-lg ${isToday ? 'text-amber-700' : ''}`}>{day}</span>
                         <span className={`text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-amber-200/80 text-amber-800' : isWeekend ? 'bg-rose-100/50 text-rose-600' : 'bg-stone-200/50 text-stone-500'}`}>
                           {['日', '一', '二', '三', '四', '五', '六'][date.getDay()]}
@@ -343,6 +387,42 @@ export default function InventoryCalendar() {
                 className="px-5 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex items-center gap-2"
               >
                 儲存設定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 批次編輯整天庫存 Modal */}
+      {editingDay && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-stone-100 bg-stone-50/50">
+              <h3 className="text-lg font-bold text-stone-800">修改全天庫存總量</h3>
+              <p className="text-sm text-stone-500 mt-1">
+                {currentDate.getFullYear()} 年 {currentDate.getMonth() + 1} 月 {editingDay} 日
+              </p>
+            </div>
+            <div className="p-5 space-y-3">
+              <button 
+                onClick={() => handleBatchSaveQuota(0)}
+                className="w-full py-3 px-4 bg-rose-50 text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-100 hover:border-rose-300 transition-colors font-bold flex items-center justify-center gap-2"
+              >
+                🚫 一鍵歸零 (關閉本日)
+              </button>
+              <button 
+                onClick={() => handleBatchSaveQuota(null)}
+                className="w-full py-3 px-4 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl hover:bg-emerald-100 hover:border-emerald-300 transition-colors font-bold flex items-center justify-center gap-2"
+              >
+                ✅ 恢復系統預設
+              </button>
+            </div>
+            <div className="p-4 border-t border-stone-100 flex justify-center bg-stone-50/50">
+              <button 
+                onClick={() => setEditingDay(null)}
+                className="px-6 py-2 text-stone-500 font-bold hover:bg-stone-200 rounded-lg transition-colors w-full"
+              >
+                取消
               </button>
             </div>
           </div>
