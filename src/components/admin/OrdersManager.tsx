@@ -110,9 +110,16 @@ export default function OrdersManager() {
       }
     }
     
+    const orderToUpdate = orders.find(o => o.id === orderId);
+    let updateData: any = { status: newStatus };
+    // 如果手動標記為「已付款」，我們順便把「已收定金」直接填滿為「總金額」，確保資料的一致性
+    if (newStatus === 'paid' && orderToUpdate) {
+      updateData.deposit_amount = orderToUpdate.total_amount;
+    }
+
     const { error } = await supabase
       .from('nf_orders')
-      .update({ status: newStatus })
+      .update(updateData)
       .eq('id', orderId);
 
     if (error) {
