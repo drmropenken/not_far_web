@@ -513,7 +513,7 @@ export default function OrdersManager() {
                 )}
 
                 {/* 操作按鈕 */}
-                <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap justify-end gap-2">
                   <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors mr-auto">
                     刪除紀錄
                   </button>
