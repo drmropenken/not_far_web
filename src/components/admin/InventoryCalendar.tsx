@@ -16,9 +16,24 @@ type InventoryRecord = {
   booked_quantity: number;
 };
 
+type MonthOrder = {
+  id: string;
+  order_no: string;
+  customer_name: string;
+  check_in_date: string;
+  check_out_date: string;
+  status: string;
+  nf_order_items: {
+    item_id: string;
+    quantity: number;
+    nf_items: { category: string; name: string };
+  }[];
+};
+
 export default function InventoryCalendar() {
   const [items, setItems] = useState<Item[]>([]);
   const [inventory, setInventory] = useState<InventoryRecord[]>([]);
+  const [monthOrders, setMonthOrders] = useState<MonthOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingCell, setEditingCell] = useState<{
     item: Item;
@@ -97,6 +112,22 @@ export default function InventoryCalendar() {
       .lte('date', endDate);
 
     if (invData) setInventory(invData);
+
+    const { data: ordersData } = await supabase
+      .from('nf_orders')
+      .select(`
+        id, order_no, customer_name, check_in_date, check_out_date, status,
+        nf_order_items (
+          item_id, quantity,
+          nf_items ( category, name )
+        )
+      `)
+      .neq('status', 'cancelled')
+      .lte('check_in_date', endDate)
+      .gte('check_out_date', startDate);
+      
+    if (ordersData) setMonthOrders(ordersData as any);
+
     setLoading(false);
   };
 
@@ -315,9 +346,51 @@ export default function InventoryCalendar() {
                     const today = new Date();
                     const isToday = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth() && day === today.getDate();
                     
+                    const currentDateTime = new Date(dateStr).getTime();
+                    const cellOrders = monthOrders.filter(order => {
+                      const start = new Date(order.check_in_date).getTime();
+                      const end = new Date(order.check_out_date).getTime();
+                      if (currentDateTime < start || currentDateTime >= end) return false;
+                      const isFirstNight = currentDateTime === start;
+                      return order.nf_order_items?.some(oi => {
+                        if (oi.item_id !== item.id) return false;
+                        const isSingleTime = oi.nf_items?.category === 'service' && (oi.nf_items?.name.includes('單次') || oi.nf_items?.name.includes('次計費'));
+                        if (isSingleTime && !isFirstNight) return false;
+                        return true;
+                      });
+                    });
+                    
                     return (
-                      <td key={day} className={`p-1 md:p-1.5 border-b border-r cursor-pointer group/cell ${isToday ? 'bg-amber-50/40 border-amber-200 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.3)]' : 'border-stone-100/60'}`} onClick={() => handleCellClick(item, day)} title={`點擊修改 ${day} 日庫存 | 已訂: ${booked} / 總量: ${totalAvailable}`}>
+                      <td key={day} className={`relative p-1 md:p-1.5 border-b border-r cursor-pointer group/cell ${isToday ? 'bg-amber-50/40 border-amber-200 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.3)]' : 'border-stone-100/60'}`} onClick={() => handleCellClick(item, day)}>
                         {cellContent}
+                        {cellOrders.length > 0 && (
+                          <div className="absolute bottom-[calc(100%-8px)] left-1/2 -translate-x-1/2 mb-2 w-[280px] bg-stone-800 text-white text-xs rounded-xl shadow-2xl p-4 opacity-0 invisible group-hover/cell:opacity-100 group-hover/cell:visible transition-all duration-200 z-[9999] pointer-events-none border border-stone-600">
+                            <div className="font-bold border-b border-stone-600/80 pb-2 mb-3 flex justify-between items-center">
+                              <span className="text-stone-200 tracking-wider">📝 訂單明細</span>
+                              <span className="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded text-[10px]">總計 {booked} 個</span>
+                            </div>
+                            <div className="space-y-3 max-h-[200px] overflow-y-auto hide-scrollbar">
+                              {cellOrders.map(order => {
+                                const qty = order.nf_order_items?.find(oi => oi.item_id === item.id)?.quantity || 0;
+                                return (
+                                  <div key={order.id} className="flex justify-between items-start gap-3 bg-stone-700/30 p-2 rounded-lg border border-stone-600/30">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="text-emerald-300 font-bold truncate text-sm">
+                                        {order.customer_name} 
+                                        <span className="text-stone-400 font-mono text-xs ml-1.5">({order.order_no.slice(-4)})</span>
+                                      </div>
+                                      <div className="text-[10px] text-stone-300 mt-1 font-medium">
+                                        {order.status === 'paid' ? '💰 已付款' : order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}
+                                      </div>
+                                    </div>
+                                    <div className="font-mono bg-stone-900/50 px-2 py-1 rounded text-amber-300 shrink-0 font-bold text-sm shadow-inner border border-stone-700/50">x {qty}</div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-stone-800"></div>
+                          </div>
+                        )}
                       </td>
                     );
                   })}
