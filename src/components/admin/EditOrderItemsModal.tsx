@@ -194,8 +194,17 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
       }
     }
 
-    // 3. Update nf_orders total_amount
-    await supabase.from('nf_orders').update({ total_amount: finalTotal }).eq('id', order.id);
+    // Calculate how much they have already paid
+    let historicalPaid = order.deposit_amount || 0;
+    if (historicalPaid === 0 && (order.status === 'paid' || order.status === 'checked_in')) {
+      historicalPaid = order.total_amount;
+    }
+
+    // 3. Update nf_orders total_amount and ensure deposit_amount reflects what they paid
+    await supabase.from('nf_orders').update({ 
+      total_amount: finalTotal,
+      deposit_amount: historicalPaid
+    }).eq('id', order.id);
 
     setSaving(false);
     onSuccess();
@@ -205,7 +214,11 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
   if (!isOpen || !order) return null;
 
   const currentTotal = calculateTotal();
-  const deposit = order.deposit_amount || 0;
+  // Calculate how much they have already paid for UI display
+  let deposit = order.deposit_amount || 0;
+  if (deposit === 0 && (order.status === 'paid' || order.status === 'checked_in')) {
+    deposit = order.total_amount;
+  }
   const needRefund = deposit > currentTotal;
 
   return (

@@ -192,9 +192,15 @@ export default function OrdersManager() {
   };
 
   const openFinancialsModal = (order: Order) => {
+    // 如果是已付款狀態且沒有設定定金，代表他付了全額，我們把原本的總額當作已付定金帶入
+    let paidAmount = order.deposit_amount || 0;
+    if (paidAmount === 0 && (order.status === 'paid' || order.status === 'checked_in')) {
+      paidAmount = order.total_amount;
+    }
+
     setFinancialsForm({
       total_amount: order.total_amount?.toString() || '0',
-      deposit_amount: order.deposit_amount?.toString() || '0'
+      deposit_amount: paidAmount.toString()
     });
     setEditingFinancialsId(order.id);
   };
