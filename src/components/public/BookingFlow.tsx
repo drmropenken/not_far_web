@@ -378,8 +378,6 @@ export default function BookingFlow() {
       if (itemsError) throw itemsError;
 
       // 4. Lock Inventory
-      const start = new Date(dates.checkIn);
-      const end = new Date(dates.checkOut);
       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
         const dStr = d.toISOString().split('T')[0];
         const isFirstNight = d.getTime() === start.getTime();
