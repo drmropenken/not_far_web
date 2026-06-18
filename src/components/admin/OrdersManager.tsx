@@ -348,7 +348,7 @@ export default function OrdersManager() {
       </div>
 
       {/* 訂單列表區域 */}
-      <div className="flex-1 overflow-auto bg-stone-50 p-4 md:p-6">
+      <div className="flex-1 overflow-auto bg-stone-50 p-4 md:p-6 pb-32 md:pb-32">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-full text-amber-600/60 space-y-4">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500"></div>
@@ -513,7 +513,7 @@ export default function OrdersManager() {
                 )}
 
                 {/* 操作按鈕 */}
-                <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap justify-end gap-2">
+                <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors mr-auto">
                     刪除紀錄
                   </button>
