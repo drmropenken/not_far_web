@@ -28,7 +28,8 @@ type Order = {
   check_in_date: string;
   check_out_date: string;
   total_amount: number;
-  status: 'pending' | 'paid' | 'checked_in' | 'cancelled';
+  status: 'pending' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled';
+  deposit_amount?: number;
   notes: string | null;
   admin_notes: string | null;
   discount_code: string | null;
@@ -40,7 +41,7 @@ type Order = {
 export default function OrdersManager() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'paid' | 'checked_in' | 'cancelled'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -69,8 +70,8 @@ export default function OrdersManager() {
     fetchOrders();
   }, []);
 
-  const updateOrderStatus = async (orderId: string, newStatus: 'pending' | 'paid' | 'checked_in' | 'cancelled') => {
-    if (!confirm(`確定要將此訂單標記為「${newStatus === 'paid' ? '已付款' : newStatus === 'cancelled' ? '已取消' : newStatus === 'checked_in' ? '已報到' : '待付款'}」嗎？`)) return;
+  const updateOrderStatus = async (orderId: string, newStatus: 'pending' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled') => {
+    if (!confirm(`確定要將此訂單標記為「${newStatus === 'paid' ? '已付款' : newStatus === 'cancelled' ? '已取消' : newStatus === 'checked_in' ? '已報到' : '狀態變更'}」嗎？`)) return;
 
     // 如果是取消訂單，退還庫存
     if (newStatus === 'cancelled') {
@@ -214,6 +215,7 @@ export default function OrdersManager() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid': return <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold border border-emerald-200">已付款</span>;
+      case 'deposit_paid': return <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-bold border border-teal-200 shadow-sm">🪙 已付定金</span>;
       case 'checked_in': return <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">✅ 已報到</span>;
       case 'pending': return <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-200">待付款</span>;
       case 'cancelled': return <span className="px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold border border-rose-200">已取消</span>;
@@ -231,7 +233,7 @@ export default function OrdersManager() {
       order.license_plate || '',
       order.check_in_date,
       order.check_out_date,
-      order.status === 'paid' ? '已付款' : order.status === 'pending' ? '待付款' : order.status === 'checked_in' ? '已報到' : '已取消',
+      order.status === 'paid' ? '已付款' : order.status === 'deposit_paid' ? '已付定金' : order.status === 'pending' ? '待付款' : order.status === 'checked_in' ? '已報到' : '已取消',
       order.total_amount,
       `"${(order.notes || '').replace(/"/g, '""')}"`,
       `"${(order.admin_notes || '').replace(/"/g, '""')}"`,
@@ -262,6 +264,7 @@ export default function OrdersManager() {
           {[
             { id: 'all', label: '全部訂單' },
             { id: 'pending', label: '待付款' },
+            { id: 'deposit_paid', label: '已付定金' },
             { id: 'paid', label: '已付款' },
             { id: 'checked_in', label: '已報到' },
             { id: 'cancelled', label: '已取消' }
@@ -399,11 +402,36 @@ export default function OrdersManager() {
                             🎟️ {order.discount_code} (-NT$ {order.discount_amount?.toLocaleString()})
                           </div>
                         )}
-                        <div className="flex justify-end items-end gap-2">
-                          <span className="text-xs text-stone-500 mb-1">總金額</span>
-                          <span className={`text-2xl font-bold tracking-tight ${order.status === 'cancelled' ? 'text-stone-400' : 'text-emerald-600'}`}>
-                            NT$ {order.total_amount?.toLocaleString()}
-                          </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-stone-500">總金額</span>
+                            <span className={`text-xl font-bold tracking-tight ${order.status === 'cancelled' ? 'text-stone-400 line-through' : 'text-stone-700'}`}>
+                              NT$ {order.total_amount?.toLocaleString()}
+                            </span>
+                          </div>
+                          {(order.deposit_amount || 0) > 0 && order.status !== 'cancelled' && (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-teal-600">🪙 已收定金</span>
+                                <span className="text-sm font-bold text-teal-600 tracking-tight">
+                                  - NT$ {order.deposit_amount?.toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="flex justify-end items-end gap-2 mt-1 pt-1 border-t border-stone-200 border-dashed">
+                                <span className="text-xs text-stone-500 font-bold mb-1">
+                                  {order.status === 'paid' || order.status === 'checked_in' ? '實收尾款' : '待收尾款'}
+                                </span>
+                                <span className={`text-2xl font-black tracking-tight ${order.status === 'paid' || order.status === 'checked_in' ? 'text-stone-500' : 'text-rose-600'}`}>
+                                  NT$ {Math.max(0, order.total_amount - (order.deposit_amount || 0)).toLocaleString()}
+                                </span>
+                              </div>
+                            </>
+                          )}
+                          {(!order.deposit_amount || order.deposit_amount === 0 || order.status === 'cancelled') && (
+                            <div className={`text-2xl font-bold tracking-tight mt-1 ${order.status === 'cancelled' ? 'text-stone-400' : 'text-emerald-600'}`}>
+                              NT$ {order.total_amount?.toLocaleString()}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -418,6 +446,11 @@ export default function OrdersManager() {
                   {order.status === 'pending' && (
                     <button onClick={() => updateOrderStatus(order.id, 'paid')} className="px-4 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
                       標記為已付款
+                    </button>
+                  )}
+                  {order.status === 'deposit_paid' && (
+                    <button onClick={() => updateOrderStatus(order.id, 'paid')} className="px-4 py-1.5 text-xs font-bold text-teal-600 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-md transition-colors shadow-sm">
+                      標記已付尾款 (轉為已付款)
                     </button>
                   )}
                   {order.status === 'paid' && (

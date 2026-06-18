@@ -9,7 +9,7 @@ type Order = {
   check_in_date: string;
   check_out_date: string;
   total_amount: number;
-  status: 'pending' | 'paid' | 'checked_in' | 'cancelled';
+  status: 'pending' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled';
   notes: string | null;
   admin_notes: string | null;
   created_at: string;
@@ -74,7 +74,7 @@ export default function DashboardStats() {
     .filter(o => o.status === 'paid' && o.created_at.startsWith(currentMonthStr))
     .reduce((sum, o) => sum + o.total_amount, 0);
 
-  const pendingOrders = orders.filter(o => o.status === 'pending');
+  const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'deposit_paid');
 
   if (loading) {
     return (
@@ -137,6 +137,7 @@ export default function DashboardStats() {
                       <div className="font-bold text-stone-800 text-lg flex items-center gap-2">
                         {order.customer_name}
                         {order.status === 'pending' && <span className="px-2 py-0.5 bg-rose-100 text-rose-600 text-[10px] rounded border border-rose-200">尚未付款</span>}
+                        {order.status === 'deposit_paid' && <span className="px-2 py-0.5 bg-teal-100 text-teal-700 text-[10px] rounded border border-teal-200">🪙 已付定金</span>}
                         {order.status === 'checked_in' && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] rounded border border-blue-200">✅ 已報到</span>}
                       </div>
                       <div className="flex flex-col items-end gap-1">
@@ -216,6 +217,7 @@ export default function DashboardStats() {
                       <div className="font-bold text-stone-800 text-lg flex items-center gap-2">
                         {order.customer_name}
                         {order.status === 'pending' && <span className="px-2 py-0.5 bg-rose-100 text-rose-600 text-[10px] rounded border border-rose-200">尚未付款</span>}
+                        {order.status === 'deposit_paid' && <span className="px-2 py-0.5 bg-teal-100 text-teal-700 text-[10px] rounded border border-teal-200">🪙 已付定金</span>}
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{order.check_out_date.slice(5)} 離場</span>

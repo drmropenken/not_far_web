@@ -34,6 +34,8 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
   const [selectedItems, setSelectedItems] = useState<{item: Item, quantity: number}[]>([]);
   const [discountPercent, setDiscountPercent] = useState<number>(1);
   const [discountError, setDiscountError] = useState('');
+  const [manualTotal, setManualTotal] = useState<string>('');
+  const [depositAmount, setDepositAmount] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
@@ -51,6 +53,8 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
       setSelectedItems([]);
       setDiscountPercent(1);
       setDiscountError('');
+      setManualTotal('');
+      setDepositAmount('');
     }
   }, [isOpen]);
 
@@ -144,8 +148,10 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     }
 
     setSaving(true);
-    const finalTotal = calculateTotal();
+    const finalTotal = manualTotal ? parseInt(manualTotal) || 0 : calculateTotal();
     const discountAmount = calculateDiscountAmount();
+    const deposit = parseInt(depositAmount) || 0;
+    const finalStatus = deposit > 0 && deposit < finalTotal ? 'deposit_paid' : (deposit >= finalTotal ? 'paid' : 'pending');
     
     // 1. 建立訂單
     const dateStr = new Date().toISOString().replace(/[-:T.]/g, '').slice(2, 14);
@@ -165,7 +171,8 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
         total_amount: finalTotal,
         discount_code: formData.discount_code || null,
         discount_amount: discountAmount,
-        status: 'pending' // 手動建單預設待付款
+        deposit_amount: deposit,
+        status: finalStatus // 依據定金自動判斷狀態
       }])
       .select()
       .single();
@@ -400,20 +407,52 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
                   </div>
                 )}
 
-                <div className="mt-4 pt-4 border-t-2 border-stone-100 border-dashed shrink-0">
-                  <div className="flex justify-between text-sm text-stone-500 mb-1">
+                <div className="mt-4 pt-4 border-t-2 border-stone-100 border-dashed shrink-0 space-y-3">
+                  <div className="flex justify-between items-center text-sm text-stone-500">
                     <span>原價總計</span>
                     <span>NT$ {calculateOriginalTotal().toLocaleString()}</span>
                   </div>
                   {discountPercent < 1 && (
-                    <div className="flex justify-between text-sm text-rose-500 font-bold mb-1">
+                    <div className="flex justify-between items-center text-sm text-rose-500 font-bold">
                       <span>折扣金額</span>
                       <span>- NT$ {calculateDiscountAmount().toLocaleString()}</span>
                     </div>
                   )}
-                  <div className="flex justify-between items-end mt-2">
-                    <span className="font-bold text-stone-700">最終結帳總金額</span>
-                    <span className="text-3xl font-black text-emerald-600 tracking-tighter">NT$ {calculateTotal().toLocaleString()}</span>
+                  <div className="flex justify-between items-center bg-stone-50 p-2 rounded-lg border border-stone-200">
+                    <span className="font-bold text-stone-700">✏️ 手動修改總價</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-stone-400">NT$</span>
+                      <input 
+                        type="number" 
+                        min="0"
+                        placeholder={`系統試算: ${calculateTotal()}`}
+                        value={manualTotal}
+                        onChange={e => setManualTotal(e.target.value)}
+                        className="w-24 border border-stone-300 rounded p-1.5 text-right text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                    <span className="font-bold text-emerald-700">🪙 已收定金</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-emerald-600">NT$</span>
+                      <input 
+                        type="number" 
+                        min="0"
+                        placeholder="0"
+                        value={depositAmount}
+                        onChange={e => setDepositAmount(e.target.value)}
+                        className="w-24 border border-emerald-300 rounded p-1.5 text-right text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-end mt-4 pt-2 border-t border-stone-200">
+                    <span className="font-bold text-stone-700 text-sm">
+                      {parseInt(depositAmount) > 0 ? '剩餘待付尾款' : '最終結帳總金額'}
+                    </span>
+                    <span className="text-3xl font-black text-emerald-600 tracking-tighter">
+                      NT$ {Math.max(0, (manualTotal ? parseInt(manualTotal) || 0 : calculateTotal()) - (parseInt(depositAmount) || 0)).toLocaleString()}
+                    </span>
                   </div>
                 </div>
               </div>

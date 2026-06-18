@@ -530,7 +530,7 @@ export default function InventoryCalendar() {
                       )}
                     </div>
                     <div className="text-[10px] text-stone-300 mt-1 font-medium">
-                      {order.status === 'paid' ? '💰 已付款' : order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}
+                      {order.status === 'paid' ? '💰 已付款' : order.status === 'deposit_paid' ? '🪙 已付定金' : order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}
                     </div>
                   </div>
                   <div className="font-mono bg-stone-900/50 px-2 py-1 rounded text-amber-300 shrink-0 font-bold text-sm shadow-inner border border-stone-700/50">x {qty}</div>
