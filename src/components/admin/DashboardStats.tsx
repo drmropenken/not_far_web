@@ -123,16 +123,16 @@ export default function DashboardStats() {
             </h3>
             <span className="text-xs font-bold bg-stone-200 text-stone-600 px-2 py-1 rounded-full">{checkinsToday.length} 組</span>
           </div>
-          <div className="p-0 overflow-y-auto flex-1 hide-scrollbar">
+          <div className="p-3 overflow-y-auto flex-1 hide-scrollbar bg-stone-50/30">
             {checkinsToday.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-stone-400 space-y-2">
                 <span className="text-4xl opacity-50">🍃</span>
                 <p className="text-sm font-medium tracking-wider">近期無人進場</p>
               </div>
             ) : (
-              <ul className="divide-y divide-stone-100">
+              <ul className="space-y-3">
                 {checkinsToday.map(order => (
-                  <li key={order.id} className="p-5 hover:bg-stone-50 transition-colors group">
+                  <li key={order.id} className="p-4 bg-white border border-stone-200 rounded-xl shadow-sm hover:shadow-md hover:border-emerald-200 transition-all group">
                     <div className="flex justify-between items-start mb-2">
                       <div className="font-bold text-stone-800 text-lg flex items-center gap-2">
                         {order.customer_name}
@@ -203,16 +203,16 @@ export default function DashboardStats() {
             </h3>
             <span className="text-xs font-bold bg-stone-200 text-stone-600 px-2 py-1 rounded-full">{checkoutsToday.length} 組</span>
           </div>
-          <div className="p-0 overflow-y-auto flex-1 hide-scrollbar">
+          <div className="p-3 overflow-y-auto flex-1 hide-scrollbar bg-stone-50/30">
             {checkoutsToday.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-stone-400 space-y-2">
                 <span className="text-4xl opacity-50">🍃</span>
                 <p className="text-sm font-medium tracking-wider">近期無人離場</p>
               </div>
             ) : (
-              <ul className="divide-y divide-stone-100">
+              <ul className="space-y-3">
                 {checkoutsToday.map(order => (
-                  <li key={order.id} className="p-5 hover:bg-stone-50 transition-colors group">
+                  <li key={order.id} className="p-4 bg-white border border-stone-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all group">
                     <div className="flex justify-between items-start mb-2">
                       <div className="font-bold text-stone-800 text-lg flex items-center gap-2">
                         {order.customer_name}
