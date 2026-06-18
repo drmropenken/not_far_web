@@ -31,6 +31,15 @@ type Order = {
   nf_order_items: OrderItem[];
 };
 
+const getCategoryStyle = (category: string) => {
+  switch (category) {
+    case 'campsite': return { badge: 'bg-orange-100 text-orange-700 border-orange-200', icon: '⛺', label: '營位', border: 'border-orange-400', activeBg: 'bg-orange-50/30', btnBg: 'bg-orange-500', btnText: 'text-orange-600', btnHover: 'hover:bg-orange-100' };
+    case 'equipment': return { badge: 'bg-blue-100 text-blue-700 border-blue-200', icon: '🪑', label: '裝備', border: 'border-blue-400', activeBg: 'bg-blue-50/30', btnBg: 'bg-blue-500', btnText: 'text-blue-600', btnHover: 'hover:bg-blue-100' };
+    case 'service': return { badge: 'bg-purple-100 text-purple-700 border-purple-200', icon: '🍖', label: '服務', border: 'border-purple-400', activeBg: 'bg-purple-50/30', btnBg: 'bg-purple-500', btnText: 'text-purple-600', btnHover: 'hover:bg-purple-100' };
+    default: return { badge: 'bg-stone-100 text-stone-700 border-stone-200', icon: '📦', label: '其他', border: 'border-stone-400', activeBg: 'bg-stone-50/30', btnBg: 'bg-stone-500', btnText: 'text-stone-600', btnHover: 'hover:bg-stone-100' };
+  }
+};
+
 type EditOrderItemsModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -251,29 +260,35 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
                   const isSelected = selectedItems.some(i => i.item.id === item.id);
                   const selectedData = selectedItems.find(i => i.item.id === item.id);
                   const quantity = selectedData?.quantity || 0;
+                  const catStyle = getCategoryStyle(item.category);
                   
                   return (
-                    <div key={item.id} className={`p-3 rounded-xl border-2 transition-all ${isSelected ? 'border-indigo-400 bg-indigo-50/30' : 'border-stone-100 hover:border-stone-300'}`}>
+                    <div key={item.id} className={`p-3 rounded-xl border-2 transition-all ${isSelected ? `${catStyle.border} ${catStyle.activeBg}` : 'border-stone-100 hover:border-stone-300'}`}>
                       <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleItem(item)}>
                         <div className="flex items-center gap-3">
-                          <div className={`w-5 h-5 rounded flex items-center justify-center border ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'bg-white border-stone-300'}`}>
+                          <div className={`w-5 h-5 rounded flex items-center justify-center border shrink-0 ${isSelected ? `${catStyle.btnBg} border-transparent` : 'bg-white border-stone-300'}`}>
                             {isSelected && <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>}
                           </div>
-                          <div>
-                            <h5 className="font-bold text-stone-800">{item.name}</h5>
+                          <div className="flex flex-col gap-1 items-start">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded border flex items-center gap-1 ${catStyle.badge}`}>
+                                <span>{catStyle.icon}</span>{catStyle.label}
+                              </span>
+                              <h5 className="font-bold text-stone-800 leading-tight">{item.name}</h5>
+                            </div>
                             <p className="text-xs text-stone-500">平日 ${item.price_weekday} / 假日 ${item.price_holiday}</p>
                           </div>
                         </div>
                       </div>
                       
                       {isSelected && (
-                        <div className="mt-3 pt-3 border-t border-indigo-100">
+                        <div className={`mt-3 pt-3 border-t ${catStyle.border} border-opacity-50`}>
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-sm font-semibold text-stone-600">數量</span>
                             <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-lg p-1 shadow-sm">
-                              <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, -1); }} className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-stone-100 text-stone-600 font-bold">-</button>
-                              <span className="w-8 text-center font-bold text-indigo-600">{quantity}</span>
-                              <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1); }} className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-stone-100 text-stone-600 font-bold">+</button>
+                              <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, -1); }} className={`w-8 h-8 rounded-md flex items-center justify-center ${catStyle.btnHover} text-stone-600 font-bold transition-colors`}>-</button>
+                              <span className={`w-8 text-center font-bold ${catStyle.btnText}`}>{quantity}</span>
+                              <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1); }} className={`w-8 h-8 rounded-md flex items-center justify-center ${catStyle.btnHover} text-stone-600 font-bold transition-colors`}>+</button>
                             </div>
                           </div>
                         </div>

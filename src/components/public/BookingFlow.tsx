@@ -17,6 +17,15 @@ type SelectedItem = {
   quantity: number;
 };
 
+const getCategoryStyle = (category: string) => {
+  switch (category) {
+    case 'campsite': return { badge: 'bg-orange-100 text-orange-700 border-orange-200', icon: '⛺', label: '營位', border: 'border-orange-400', activeBg: 'bg-orange-50/30', btnBg: 'bg-orange-500', btnText: 'text-orange-600', btnHover: 'hover:bg-orange-100' };
+    case 'equipment': return { badge: 'bg-blue-100 text-blue-700 border-blue-200', icon: '🪑', label: '裝備', border: 'border-blue-400', activeBg: 'bg-blue-50/30', btnBg: 'bg-blue-500', btnText: 'text-blue-600', btnHover: 'hover:bg-blue-100' };
+    case 'service': return { badge: 'bg-purple-100 text-purple-700 border-purple-200', icon: '🍖', label: '服務', border: 'border-purple-400', activeBg: 'bg-purple-50/30', btnBg: 'bg-purple-500', btnText: 'text-purple-600', btnHover: 'hover:bg-purple-100' };
+    default: return { badge: 'bg-slate-100 text-slate-700 border-slate-200', icon: '📦', label: '其他', border: 'border-slate-400', activeBg: 'bg-slate-50/30', btnBg: 'bg-slate-500', btnText: 'text-slate-600', btnHover: 'hover:bg-slate-100' };
+  }
+};
+
 export default function BookingFlow() {
   const [step, setStep] = useState(0); // 0: Login, 1: Date, 2: Items, 3: Info, 4: Confirm
   const [session, setSession] = useState<any>(null);
@@ -509,13 +518,14 @@ export default function BookingFlow() {
                   {availableItems.map(({ item, remaining }) => {
                     const selected = selectedItems.find(s => s.item.id === item.id);
                     const qty = selected?.quantity || 0;
+                    const catStyle = getCategoryStyle(item.category);
                     
                     return (
-                      <div key={item.id} className={`p-4 rounded-2xl border-2 transition-all ${qty > 0 ? 'border-emerald-500 bg-emerald-50/30 shadow-md' : 'border-slate-100 bg-white shadow-sm'}`}>
+                      <div key={item.id} className={`p-4 rounded-2xl border-2 transition-all ${qty > 0 ? `${catStyle.border} ${catStyle.activeBg} shadow-md` : 'border-slate-100 bg-white shadow-sm'}`}>
                         <div className="flex justify-between items-start mb-3">
                           <div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 mb-1 inline-block">
-                              {item.category === 'campsite' ? '⛺️ 營位' : item.category === 'equipment' ? '🪑 裝備' : '🍖 服務'}
+                            <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border flex items-center gap-1 w-fit mb-2 ${catStyle.badge}`}>
+                              <span>{catStyle.icon}</span>{catStyle.label}
                             </span>
                             <h3 className="font-black text-slate-800 text-lg leading-tight">{item.name}</h3>
                             <div className="text-sm text-slate-500 font-bold mt-1">
@@ -531,18 +541,18 @@ export default function BookingFlow() {
                           </div>
                         </div>
                         
-                        <div className="flex items-center justify-between border-t border-slate-100 pt-3 mt-1">
+                        <div className={`flex items-center justify-between border-t border-opacity-50 pt-3 mt-1 ${qty > 0 ? catStyle.border : 'border-slate-100'}`}>
                           <span className="text-sm font-bold text-slate-600">數量</span>
-                          <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-1 border border-slate-200">
+                          <div className="flex items-center gap-3 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
                             <button 
                               onClick={() => handleItemSelect(item, Math.max(0, qty - 1))}
-                              className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-slate-600 font-bold hover:bg-slate-100 disabled:opacity-50"
+                              className={`w-8 h-8 flex items-center justify-center rounded-lg shadow-sm font-bold disabled:opacity-50 transition-colors ${qty > 0 ? `${catStyle.btnHover} ${catStyle.btnText}` : 'text-slate-600 hover:bg-slate-100'}`}
                               disabled={qty === 0}
                             >-</button>
-                            <span className="w-6 text-center font-black text-slate-800">{qty}</span>
+                            <span className={`w-6 text-center font-black ${qty > 0 ? catStyle.btnText : 'text-slate-800'}`}>{qty}</span>
                             <button 
                               onClick={() => handleItemSelect(item, Math.min(remaining, qty + 1))}
-                              className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-emerald-600 font-bold hover:bg-emerald-50 disabled:opacity-50"
+                              className={`w-8 h-8 flex items-center justify-center rounded-lg shadow-sm font-bold disabled:opacity-50 transition-colors ${qty > 0 ? `${catStyle.btnHover} ${catStyle.btnText}` : 'text-slate-600 hover:bg-slate-100'}`}
                               disabled={qty >= remaining || remaining === 0}
                             >+</button>
                           </div>
