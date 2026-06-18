@@ -805,6 +805,11 @@ export default function BookingFlow() {
                 </div>
               </div>
 
+              <div className="bg-rose-50 text-rose-700 p-4 rounded-xl border border-rose-200 text-sm font-bold flex gap-2 items-start text-left">
+                <span className="text-lg leading-none">⚠️</span>
+                <span>強烈建議您現在立刻「截圖」或記下此頁面的帳號資訊。為保障您的隱私，關閉此頁面後將無法再次查看！</span>
+              </div>
+
               <div className="pt-4">
                 <a href="/" className="block w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest">
                   返回首頁
