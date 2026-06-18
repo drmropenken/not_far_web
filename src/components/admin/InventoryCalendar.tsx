@@ -23,6 +23,8 @@ type MonthOrder = {
   check_in_date: string;
   check_out_date: string;
   status: string;
+  notes: string | null;
+  admin_notes: string | null;
   nf_order_items: {
     item_id: string;
     quantity: number;
@@ -124,7 +126,7 @@ export default function InventoryCalendar() {
     const { data: ordersData } = await supabase
       .from('nf_orders')
       .select(`
-        id, order_no, customer_name, check_in_date, check_out_date, status,
+        id, order_no, customer_name, check_in_date, check_out_date, status, notes, admin_notes,
         nf_order_items (
           item_id, quantity,
           nf_items ( category, name )
@@ -520,9 +522,12 @@ export default function InventoryCalendar() {
               return (
                 <div key={order.id} className="flex justify-between items-start gap-3 bg-stone-700/30 p-2 rounded-lg border border-stone-600/30">
                   <div className="min-w-0 flex-1">
-                    <div className="text-emerald-300 font-bold truncate text-sm">
+                    <div className="text-emerald-300 font-bold truncate text-sm flex items-center">
                       {order.customer_name} 
                       <span className="text-stone-400 font-mono text-xs ml-1.5">({order.order_no.slice(-4)})</span>
+                      {(order.notes || order.admin_notes) && (
+                        <span className="ml-1.5 text-[10px]" title="有備註訊息">💬</span>
+                      )}
                     </div>
                     <div className="text-[10px] text-stone-300 mt-1 font-medium">
                       {order.status === 'paid' ? '💰 已付款' : order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}

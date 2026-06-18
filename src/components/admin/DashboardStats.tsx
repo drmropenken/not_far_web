@@ -10,6 +10,8 @@ type Order = {
   check_out_date: string;
   total_amount: number;
   status: 'pending' | 'paid' | 'checked_in' | 'cancelled';
+  notes: string | null;
+  admin_notes: string | null;
   created_at: string;
   nf_order_items: { quantity: number; nf_items: { name: string } }[];
 };
@@ -29,7 +31,7 @@ export default function DashboardStats() {
     const { data, error } = await supabase
       .from('nf_orders')
       .select(`
-        id, order_no, customer_name, customer_phone, check_in_date, check_out_date, total_amount, status, created_at,
+        id, order_no, customer_name, customer_phone, check_in_date, check_out_date, total_amount, status, created_at, notes, admin_notes,
         nf_order_items ( quantity, nf_items ( name ) )
       `)
       .neq('status', 'cancelled');
@@ -163,6 +165,28 @@ export default function DashboardStats() {
                         </div>
                       ))}
                     </div>
+                    {(order.notes || order.admin_notes) && (
+                      <div className="mt-3 space-y-2">
+                        {order.notes && (
+                          <div className="text-xs bg-stone-50 border border-stone-100 text-stone-600 p-2.5 rounded-lg flex items-start gap-2 shadow-sm">
+                            <span className="opacity-70 shrink-0 mt-0.5">💬</span>
+                            <div className="flex-1">
+                              <span className="font-bold opacity-70 block mb-0.5">客人備註：</span>
+                              <span className="whitespace-pre-wrap">{order.notes}</span>
+                            </div>
+                          </div>
+                        )}
+                        {order.admin_notes && (
+                          <div className="text-xs bg-amber-50/50 border border-amber-100 text-amber-800 p-2.5 rounded-lg flex items-start gap-2 shadow-sm">
+                            <span className="opacity-70 shrink-0 mt-0.5">📝</span>
+                            <div className="flex-1">
+                              <span className="font-bold opacity-70 block mb-0.5">營主備註：</span>
+                              <span className="whitespace-pre-wrap">{order.admin_notes}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -209,6 +233,28 @@ export default function DashboardStats() {
                         </div>
                       ))}
                     </div>
+                    {(order.notes || order.admin_notes) && (
+                      <div className="mt-3 space-y-2">
+                        {order.notes && (
+                          <div className="text-xs bg-stone-50 border border-stone-100 text-stone-600 p-2.5 rounded-lg flex items-start gap-2 shadow-sm">
+                            <span className="opacity-70 shrink-0 mt-0.5">💬</span>
+                            <div className="flex-1">
+                              <span className="font-bold opacity-70 block mb-0.5">客人備註：</span>
+                              <span className="whitespace-pre-wrap">{order.notes}</span>
+                            </div>
+                          </div>
+                        )}
+                        {order.admin_notes && (
+                          <div className="text-xs bg-amber-50/50 border border-amber-100 text-amber-800 p-2.5 rounded-lg flex items-start gap-2 shadow-sm">
+                            <span className="opacity-70 shrink-0 mt-0.5">📝</span>
+                            <div className="flex-1">
+                              <span className="font-bold opacity-70 block mb-0.5">營主備註：</span>
+                              <span className="whitespace-pre-wrap">{order.admin_notes}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
