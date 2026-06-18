@@ -68,8 +68,21 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
 
   const fetchItems = async () => {
     setLoading(true);
-    const { data } = await supabase.from('nf_items').select('*').order('sort_order');
-    setItems(data || []);
+    const { data } = await supabase
+      .from('nf_items')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    
+    if (data) {
+      const categoryWeight: Record<string, number> = { campsite: 1, equipment: 2, service: 3 };
+      data.sort((a, b) => {
+        if (categoryWeight[a.category] !== categoryWeight[b.category]) {
+          return (categoryWeight[a.category] || 99) - (categoryWeight[b.category] || 99);
+        }
+        return a.sort_order - b.sort_order;
+      });
+      setItems(data);
+    }
     setLoading(false);
   };
 

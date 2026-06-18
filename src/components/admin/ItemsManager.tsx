@@ -132,10 +132,17 @@ export default function ItemsManager() {
     service: '🍖 餐飲與服務'
   };
 
+  const categoryWeight: Record<string, number> = { campsite: 1, equipment: 2, service: 3 };
+
   const filteredItems = items.filter(item => {
     if (activeTab === 'all') return true;
     return item.category === activeTab;
-  }).sort((a, b) => a.sort_order - b.sort_order);
+  }).sort((a, b) => {
+    if (categoryWeight[a.category] !== categoryWeight[b.category]) {
+      return categoryWeight[a.category] - categoryWeight[b.category];
+    }
+    return a.sort_order - b.sort_order;
+  });
 
   return (
     <div className="bg-white md:rounded-2xl shadow-sm border border-stone-200 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-48px)] w-full">
