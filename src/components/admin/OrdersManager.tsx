@@ -44,6 +44,8 @@ export default function OrdersManager() {
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingFinancialsId, setEditingFinancialsId] = useState<string | null>(null);
+  const [financialsForm, setFinancialsForm] = useState({ total_amount: '', deposit_amount: '' });
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -172,34 +174,52 @@ export default function OrdersManager() {
   };
 
   const updateOrderNote = async (orderId: number, currentNote: string) => {
-    const newNote = window.prompt('請輸入新的備註內容（若要清空請直接按確定）：', currentNote || '');
-    if (newNote === null) return; // 取消輸入
-
-    const { error } = await supabase
-      .from('nf_orders')
-      .update({ notes: newNote })
-      .eq('id', orderId);
-
-    if (error) {
-      alert('更新備註失敗: ' + error.message);
-    } else {
-      fetchOrders();
-    }
+    const newNote = prompt('請輸入客人備註：', currentNote);
+    if (newNote === null) return;
+    const { error } = await supabase.from('nf_orders').update({ notes: newNote }).eq('id', orderId);
+    if (error) alert('更新失敗');
+    else fetchOrders();
   };
 
   const updateAdminNote = async (orderId: string, currentNote: string) => {
-    const newNote = window.prompt('📝 請輸入營主內部備註（給自己或員工看的）：', currentNote || '');
-    if (newNote === null) return; // 取消輸入
+    const newNote = prompt('請輸入營主內部備註 (僅管理員可見)：', currentNote);
+    if (newNote === null) return;
+    const { error } = await supabase.from('nf_orders').update({ admin_notes: newNote }).eq('id', orderId);
+    if (error) alert('更新失敗');
+    else fetchOrders();
+  };
+
+  const openFinancialsModal = (order: Order) => {
+    setFinancialsForm({
+      total_amount: order.total_amount?.toString() || '0',
+      deposit_amount: order.deposit_amount?.toString() || '0'
+    });
+    setEditingFinancialsId(order.id);
+  };
+
+  const saveFinancials = async () => {
+    if (!editingFinancialsId) return;
+    const total = parseInt(financialsForm.total_amount) || 0;
+    const deposit = parseInt(financialsForm.deposit_amount) || 0;
+    const newStatus = deposit > 0 && deposit < total ? 'deposit_paid' : (deposit >= total ? 'paid' : 'pending');
+
+    const currentOrder = orders.find(o => o.id === editingFinancialsId);
+    let finalStatus = currentOrder?.status;
+    // 如果原本是已取消或已報到，我們不改他的狀態，只改金額
+    if (finalStatus !== 'cancelled' && finalStatus !== 'checked_in') {
+      finalStatus = newStatus as any;
+    }
 
     const { error } = await supabase
       .from('nf_orders')
-      .update({ admin_notes: newNote })
-      .eq('id', orderId);
+      .update({ total_amount: total, deposit_amount: deposit, status: finalStatus })
+      .eq('id', editingFinancialsId);
 
     if (error) {
-      alert('更新內部備註失敗: ' + error.message);
+      alert('更新金額失敗：' + error.message);
     } else {
       fetchOrders();
+      setEditingFinancialsId(null);
     }
   };
 
@@ -403,11 +423,16 @@ export default function OrdersManager() {
                           </div>
                         )}
                         <div className="flex flex-col items-end gap-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-end gap-2">
                             <span className="text-xs text-stone-500">總金額</span>
                             <span className={`text-xl font-bold tracking-tight ${order.status === 'cancelled' ? 'text-stone-400 line-through' : 'text-stone-700'}`}>
                               NT$ {order.total_amount?.toLocaleString()}
                             </span>
+                            {order.status !== 'cancelled' && (
+                              <button onClick={() => openFinancialsModal(order)} className="opacity-0 group-hover:opacity-100 transition-opacity text-stone-400 hover:text-amber-600" title="微調訂單金額">
+                                ✏️
+                              </button>
+                            )}
                           </div>
                           {(order.deposit_amount || 0) > 0 && order.status !== 'cancelled' && (
                             <>
@@ -469,6 +494,69 @@ export default function OrdersManager() {
           </div>
         )}
       </div>
+
+      {/* 編輯訂單金額 Modal */}
+      {editingFinancialsId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col overflow-hidden border border-stone-200">
+            <div className="p-5 border-b border-stone-100 flex justify-between items-center bg-stone-50">
+              <h3 className="font-bold text-stone-800 flex items-center gap-2">
+                <span>💰</span> 訂單金額微調
+              </h3>
+              <button onClick={() => setEditingFinancialsId(null)} className="text-stone-400 hover:text-rose-500 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-stone-600 mb-1.5">最終總金額</label>
+                <div className="flex items-center gap-2 bg-stone-50 p-2 rounded-lg border border-stone-200">
+                  <span className="text-stone-500">NT$</span>
+                  <input 
+                    type="number" 
+                    min="0"
+                    value={financialsForm.total_amount}
+                    onChange={e => setFinancialsForm({...financialsForm, total_amount: e.target.value})}
+                    className="flex-1 bg-transparent border-none p-0 text-right font-bold focus:ring-0 outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-stone-600 mb-1.5">已收定金</label>
+                <div className="flex items-center gap-2 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                  <span className="text-emerald-600">NT$</span>
+                  <input 
+                    type="number" 
+                    min="0"
+                    value={financialsForm.deposit_amount}
+                    onChange={e => setFinancialsForm({...financialsForm, deposit_amount: e.target.value})}
+                    className="flex-1 bg-transparent border-none p-0 text-right font-bold focus:ring-0 outline-none text-emerald-700"
+                  />
+                </div>
+              </div>
+              <div className="pt-3 border-t border-stone-100 flex justify-between items-end">
+                <span className="text-sm font-bold text-stone-500">
+                  {parseInt(financialsForm.deposit_amount) > 0 ? '試算尾款' : '總金額'}
+                </span>
+                <span className="text-xl font-black text-amber-600">
+                  NT$ {Math.max(0, (parseInt(financialsForm.total_amount) || 0) - (parseInt(financialsForm.deposit_amount) || 0)).toLocaleString()}
+                </span>
+              </div>
+              <div className="text-[10px] text-stone-400 text-center leading-relaxed bg-stone-50 p-2 rounded">
+                💡 提示：儲存後，若定金大於 0 且小於總額，<br/>系統會自動將訂單轉為「已付定金」狀態。
+              </div>
+            </div>
+            <div className="p-4 border-t border-stone-100 flex justify-end gap-2 bg-stone-50">
+              <button onClick={() => setEditingFinancialsId(null)} className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-200 rounded-lg font-bold transition-colors">
+                取消
+              </button>
+              <button onClick={saveFinancials} className="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold shadow-sm transition-colors">
+                儲存變更
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <OrderModal 
         isOpen={isModalOpen} 
