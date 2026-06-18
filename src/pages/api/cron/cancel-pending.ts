@@ -3,22 +3,36 @@ import { supabase } from '../../../lib/supabase';
 
 export const GET: APIRoute = async () => {
   try {
-    // 取得 1 小時前的時間點
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    // 取得時間點
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
 
-    // 尋找超過 1 小時未付款的訂單
-    const { data: expiredOrders, error: fetchError } = await supabase
+    // 尋找所有未付款的訂單
+    const { data: pendingOrders, error: fetchError } = await supabase
       .from('nf_orders')
-      .select('id, check_in_date, check_out_date, nf_order_items(item_id, quantity, nf_items(category, name))')
-      .eq('status', 'pending')
-      .lt('created_at', oneHourAgo);
+      .select('id, created_at, payment_method, check_in_date, check_out_date, nf_order_items(item_id, quantity, nf_items(category, name))')
+      .eq('status', 'pending');
 
     if (fetchError) {
-      console.error('Cron: Failed to fetch expired orders:', fetchError);
+      console.error('Cron: Failed to fetch pending orders:', fetchError);
       return new Response('Error fetching orders', { status: 500 });
     }
 
-    if (!expiredOrders || expiredOrders.length === 0) {
+    if (!pendingOrders || pendingOrders.length === 0) {
+      return new Response('No pending orders found', { status: 200 });
+    }
+
+    // 篩選出已經過期的訂單
+    const expiredOrders = pendingOrders.filter(order => {
+      const createdAt = new Date(order.created_at);
+      if (order.payment_method === 'bank_transfer') {
+        return createdAt < threeDaysAgo; // 匯款保留 3 天
+      } else {
+        return createdAt < oneHourAgo;   // 其他(綠界)保留 1 小時
+      }
+    });
+
+    if (expiredOrders.length === 0) {
       return new Response('No expired orders found', { status: 200 });
     }
 
@@ -56,9 +70,10 @@ export const GET: APIRoute = async () => {
       }
 
       // 2. 將訂單狀態標記為已取消
+      const timeoutReason = order.payment_method === 'bank_transfer' ? '超過3天未付款' : '超過1小時未付款';
       await supabase
         .from('nf_orders')
-        .update({ status: 'cancelled', notes: '系統自動取消：超過1小時未付款' })
+        .update({ status: 'cancelled', notes: `系統自動取消：${timeoutReason}` })
         .eq('id', order.id);
         
       console.log(`Cron: Successfully cancelled order ID ${order.id}`);

@@ -36,6 +36,8 @@ type Order = {
   discount_code: string | null;
   discount_amount: number;
   created_at: string;
+  payment_method?: string;
+  virtual_account?: string;
   nf_order_items: OrderItem[];
 };
 
@@ -497,6 +499,18 @@ export default function OrdersManager() {
                     </div>
                   </div>
                 </div>
+
+                {order.payment_method === 'bank_transfer' && order.status === 'pending' && (
+                  <div className="mx-5 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex flex-col gap-1">
+                    <div className="text-amber-800 font-bold text-sm flex items-center gap-2">
+                      <span>🏦</span> 客人選擇虛擬帳號匯款
+                    </div>
+                    <div className="text-amber-700 text-sm">
+                      請核對玉山銀行 (808) 帳號：<span className="font-black text-lg text-emerald-700 tracking-widest bg-white px-2 py-0.5 rounded border border-amber-200 ml-1">{order.virtual_account}</span>
+                    </div>
+                    <div className="text-amber-600 text-xs mt-1">若已收到款項，請點擊下方按鈕手動更改狀態。</div>
+                  </div>
+                )}
 
                 {/* 操作按鈕 */}
                 <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

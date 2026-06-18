@@ -43,6 +43,7 @@ export default function BookingFlow() {
   const [discountPercent, setDiscountPercent] = useState(1);
   const [discountError, setDiscountError] = useState('');
   const [discountAppliedCode, setDiscountAppliedCode] = useState('');
+  const [finalOrderInfo, setFinalOrderInfo] = useState<{orderNo: string, virtualAccount: string, totalAmount: number} | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -301,7 +302,7 @@ export default function BookingFlow() {
     }
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (method: 'ecpay' | 'bank_transfer') => {
     setLoading(true);
     try {
       // 1. Generate Order Number (Max 20 chars for ECPay)
@@ -311,6 +312,9 @@ export default function BookingFlow() {
 
       const totalAmount = calculateTotal();
       const discountAmount = calculateDiscountAmount();
+      
+      const phoneLast5 = customerInfo.phone.slice(-5).padStart(5, '0');
+      const virtualAccount = method === 'bank_transfer' ? `962948188${phoneLast5}` : null;
 
       // 2. Create Order
       const { data: orderData, error: orderError } = await supabase
@@ -327,6 +331,8 @@ export default function BookingFlow() {
           discount_code: discountAppliedCode || null,
           discount_amount: discountAmount,
           status: 'pending',
+          payment_method: method,
+          virtual_account: virtualAccount,
           line_user_id: session?.user?.user_metadata?.line_id || null
         }])
         .select('id')
@@ -380,8 +386,18 @@ export default function BookingFlow() {
         }
       }
 
-      // 5. Redirect to ECPay wrapper API
-      window.location.href = `/api/ecpay/create?order_id=${orderId}`;
+      // 5. Redirect or Show Success
+      if (method === 'ecpay') {
+        window.location.href = `/api/ecpay/create?order_id=${orderId}`;
+      } else {
+        setFinalOrderInfo({
+          orderNo,
+          virtualAccount: virtualAccount!,
+          totalAmount
+        });
+        setLoading(false);
+        setStep(5);
+      }
     } catch (error: any) {
       alert('建立訂單失敗: ' + error.message);
       setLoading(false);
@@ -747,13 +763,53 @@ export default function BookingFlow() {
                 </div>
               </div>
             </div>
-            <div className="pt-6 mt-auto border-t border-slate-100 shrink-0">
+            <div className="pt-6 mt-auto border-t border-slate-100 shrink-0 space-y-3">
               <button 
-                onClick={handleCheckout}
+                onClick={() => handleCheckout('ecpay')}
                 className="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-lg hover:bg-emerald-500 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
               >
                 前往綠界付款 <span>💳</span>
               </button>
+              <button 
+                onClick={() => handleCheckout('bank_transfer')}
+                className="w-full bg-white border-2 border-emerald-600 text-emerald-700 font-black py-3.5 rounded-xl hover:bg-emerald-50 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
+              >
+                取號匯款 (保留 3 天) <span>🏦</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 5 && finalOrderInfo && (
+          <div className="flex-1 p-6 flex flex-col items-center justify-center text-center">
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100 p-8 space-y-6">
+              <div className="text-6xl mb-4 text-emerald-500">✅</div>
+              <h1 className="text-2xl font-black text-slate-800 tracking-wider">訂單已成立！</h1>
+              <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                您的訂單編號為：<strong className="text-slate-800">{finalOrderInfo.orderNo}</strong><br/>
+                請於 <strong className="text-rose-500">3 天內</strong> 完成匯款，逾期系統將自動取消訂單。
+              </p>
+              
+              <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-left space-y-4">
+                <div>
+                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">匯款銀行</span>
+                  <span className="text-lg font-black text-slate-800">玉山銀行 (808)</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">虛擬帳號</span>
+                  <span className="text-2xl font-black text-emerald-600 tracking-widest">{finalOrderInfo.virtualAccount}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">匯款金額</span>
+                  <span className="text-xl font-black text-rose-600">NT$ {finalOrderInfo.totalAmount.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <a href="/" className="block w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest">
+                  返回首頁
+                </a>
+              </div>
             </div>
           </div>
         )}
