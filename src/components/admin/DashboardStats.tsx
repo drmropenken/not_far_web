@@ -167,18 +167,21 @@ export default function DashboardStats() {
                         <div className="text-[10px] font-mono text-stone-400 px-1 py-0.5">{order.order_no}</div>
                       </div>
                     </div>
-                    <div className="text-sm text-stone-600 mb-3 font-mono flex flex-col gap-1">
-                      <div className="flex items-center gap-1.5">
-                        <span>📞</span> {order.customer_phone}
+                    <div className="text-sm text-stone-600 mb-3 font-mono flex flex-col gap-1.5">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5" title="聯絡電話">
+                          <span className="opacity-70">📞</span> {order.customer_phone}
+                        </div>
+                        {parsed.people && (
+                          <div className="flex items-center gap-1.5 text-stone-500 text-xs" title="入住人數">
+                            <span className="opacity-70">👥</span> {parsed.people}
+                          </div>
+                        )}
                       </div>
                       {parsed.email && (
-                        <div className="flex items-center gap-1.5 text-stone-500 text-xs">
-                          <span>✉️</span> {parsed.email}
-                        </div>
-                      )}
-                      {parsed.people && (
-                        <div className="flex items-center gap-1.5 text-stone-500 text-xs">
-                          <span>👥</span> {parsed.people}
+                        <div className="flex items-center gap-1.5 text-stone-500 text-xs w-full max-w-[200px]" title={parsed.email}>
+                          <span className="opacity-70 shrink-0">✉️</span> 
+                          <span className="truncate">{parsed.email}</span>
                         </div>
                       )}
                     </div>
@@ -251,18 +254,21 @@ export default function DashboardStats() {
                         <div className="text-[10px] font-mono text-stone-400 px-1 py-0.5">{order.order_no}</div>
                       </div>
                     </div>
-                    <div className="text-sm text-stone-600 mb-3 font-mono flex flex-col gap-1">
-                      <div className="flex items-center gap-1.5">
-                        <span>📞</span> {order.customer_phone}
+                    <div className="text-sm text-stone-600 mb-3 font-mono flex flex-col gap-1.5">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5" title="聯絡電話">
+                          <span className="opacity-70">📞</span> {order.customer_phone}
+                        </div>
+                        {parsed.people && (
+                          <div className="flex items-center gap-1.5 text-stone-500 text-xs" title="入住人數">
+                            <span className="opacity-70">👥</span> {parsed.people}
+                          </div>
+                        )}
                       </div>
                       {parsed.email && (
-                        <div className="flex items-center gap-1.5 text-stone-500 text-xs">
-                          <span>✉️</span> {parsed.email}
-                        </div>
-                      )}
-                      {parsed.people && (
-                        <div className="flex items-center gap-1.5 text-stone-500 text-xs">
-                          <span>👥</span> {parsed.people}
+                        <div className="flex items-center gap-1.5 text-stone-500 text-xs w-full max-w-[200px]" title={parsed.email}>
+                          <span className="opacity-70 shrink-0">✉️</span> 
+                          <span className="truncate">{parsed.email}</span>
                         </div>
                       )}
                     </div>

@@ -398,10 +398,23 @@ export default function OrdersManager() {
                       </div>
                       <div>
                         <h3 className={`font-bold text-lg ${order.status === 'cancelled' ? 'text-stone-500 line-through' : 'text-stone-800'}`}>{order.customer_name}</h3>
-                        <div className="text-sm text-stone-500 font-mono mt-0.5 space-y-0.5">
-                          <p>📞 {order.customer_phone}</p>
-                          {parsed.email && <p>✉️ {parsed.email}</p>}
-                          {parsed.people && <p>👥 {parsed.people}</p>}
+                        <div className="text-sm text-stone-500 font-mono mt-1 flex flex-col gap-1">
+                          <div className="flex items-center gap-4">
+                            <span className="flex items-center gap-1.5" title="聯絡電話">
+                              <span className="opacity-70">📞</span> {order.customer_phone}
+                            </span>
+                            {parsed.people && (
+                              <span className="flex items-center gap-1.5" title="入住人數">
+                                <span className="opacity-70">👥</span> {parsed.people}
+                              </span>
+                            )}
+                          </div>
+                          {parsed.email && (
+                            <span className="flex items-center gap-1.5 w-full max-w-[220px]" title={parsed.email}>
+                              <span className="opacity-70 shrink-0">✉️</span> 
+                              <span className="truncate">{parsed.email}</span>
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
