@@ -242,17 +242,21 @@ export default function MyOrdersFlow() {
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 relative">
       <div className="bg-white px-5 py-4 shadow-sm z-10 flex items-center justify-between sticky top-0">
-        <div className="font-black text-slate-800 tracking-wide flex items-center gap-2">
+        <a href="/" className="font-black text-slate-800 tracking-wide flex items-center gap-2 hover:opacity-80 transition-opacity">
           <span className="text-emerald-600 text-xl">🏕️</span> 我的訂單
-        </div>
+        </a>
         {session && (
-          <button onClick={() => {
-            supabase.auth.signOut();
-            if (liff.isLoggedIn()) liff.logout();
-            setSelectedOrder(null);
-          }} className="text-xs text-slate-400 font-bold hover:text-slate-600">
-            登出
-          </button>
+          <div className="flex items-center gap-4">
+            <a href="/" className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors">回首頁</a>
+            <button onClick={() => {
+              supabase.auth.signOut();
+              if (liff.isLoggedIn()) liff.logout();
+              setSession(null);
+              setSelectedOrder(null);
+            }} className="text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors">
+              登出
+            </button>
+          </div>
         )}
       </div>
 
