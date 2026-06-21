@@ -348,7 +348,7 @@ export default function MyOrdersFlow() {
                         )}
                       </div>
                       
-                      <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed bg-white/60 p-3 rounded-lg border border-amber-100/50 min-h-[60px]">
+                      <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed bg-white/60 p-3 rounded-lg border border-amber-100/50 max-h-48 overflow-y-auto">
                         {parseOrderNotes(selectedOrder.notes).notes || <span className="text-slate-400 italic">目前無留言或備註</span>}
                       </div>
 

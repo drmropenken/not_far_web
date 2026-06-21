@@ -63,6 +63,8 @@ export default function OrdersManager() {
   const [replyingToOrderId, setReplyingToOrderId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [editingAdminNoteOrderId, setEditingAdminNoteOrderId] = useState<string | null>(null);
+  const [adminNoteText, setAdminNoteText] = useState('');
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -213,12 +215,18 @@ export default function OrdersManager() {
     }
   };
 
-  const updateAdminNote = async (orderId: string, currentNote: string) => {
-    const newNote = prompt('請輸入營主內部備註 (僅管理員可見)：', currentNote);
-    if (newNote === null) return;
-    const { error } = await supabase.from('nf_orders').update({ admin_notes: newNote }).eq('id', orderId);
-    if (error) alert('更新失敗');
-    else fetchOrders();
+  const submitAdminNote = async (orderId: string) => {
+    setIsSubmittingReply(true);
+    const { error } = await supabase.from('nf_orders').update({ admin_notes: adminNoteText }).eq('id', orderId);
+    setIsSubmittingReply(false);
+    
+    if (error) {
+      alert('更新失敗');
+    } else {
+      setEditingAdminNoteOrderId(null);
+      setAdminNoteText('');
+      fetchOrders();
+    }
   };
 
   const openFinancialsModal = (order: Order) => {
@@ -480,7 +488,7 @@ export default function OrdersManager() {
                       </ul>
                       {replyingToOrderId === order.id ? (
                         <div className="mt-2 p-2 bg-stone-50 rounded border border-stone-300 shadow-inner">
-                          <div className="text-xs text-stone-600 mb-2 whitespace-pre-wrap">💬 客人備註紀錄：<br/>{parsed.notes || <span className="opacity-50 italic">無</span>}</div>
+                          <div className="text-xs text-stone-600 mb-2 whitespace-pre-wrap max-h-32 overflow-y-auto">💬 客人備註紀錄：<br/>{parsed.notes || <span className="opacity-50 italic">無</span>}</div>
                           <textarea
                             className="w-full text-xs p-2 rounded border border-amber-200 focus:outline-none focus:border-amber-500 min-h-[60px] bg-white resize-y"
                             placeholder="請輸入回覆或補充 (將接在原內容下方)..."
@@ -498,17 +506,36 @@ export default function OrdersManager() {
                       ) : (
                         <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note" onClick={() => { setReplyingToOrderId(order.id as unknown as number); setReplyText(''); }}>
                           <div className="flex justify-between items-start">
-                            <span className="whitespace-pre-wrap break-words leading-relaxed">💬 客人備註：<br/>{parsed.notes || <span className="opacity-50 italic">無</span>}</span>
+                            <span className="whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto">💬 客人備註：<br/>{parsed.notes || <span className="opacity-50 italic">無</span>}</span>
                             <span className="opacity-0 group-hover/note:opacity-100 text-stone-500 shrink-0 ml-2 font-bold bg-white px-1.5 py-0.5 rounded shadow-sm border border-stone-200">我要回覆 ✏️</span>
                           </div>
                         </div>
                       )}
-                      <div className="mt-2 p-2 bg-amber-50 hover:bg-amber-100/80 rounded text-xs text-amber-800 border border-amber-200 cursor-pointer transition-colors group/note" onClick={() => updateAdminNote(order.id, order.admin_notes || '')}>
-                        <div className="flex justify-between items-start font-medium">
-                          <span>📝 營主備註：{order.admin_notes || <span className="opacity-50 italic">點擊新增內部備註...</span>}</span>
-                          <span className="opacity-0 group-hover/note:opacity-100 text-amber-600">✏️</span>
+                      
+                      {editingAdminNoteOrderId === order.id ? (
+                        <div className="mt-2 p-2 bg-amber-50 rounded border border-amber-200 shadow-inner">
+                          <textarea
+                            className="w-full text-xs p-2 rounded border border-amber-300 focus:outline-none focus:border-amber-500 min-h-[60px] bg-white resize-y"
+                            placeholder="請輸入營主內部備註 (僅管理員可見)..."
+                            value={adminNoteText}
+                            onChange={(e) => setAdminNoteText(e.target.value)}
+                            autoFocus
+                          />
+                          <div className="flex justify-end gap-2 mt-2">
+                            <button className="text-[11px] px-2 py-1 bg-amber-200/50 rounded text-amber-700 hover:bg-amber-300/50 transition-colors font-bold" onClick={(e) => { e.stopPropagation(); setEditingAdminNoteOrderId(null); }}>取消</button>
+                            <button className="text-[11px] px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors font-bold shadow-sm disabled:opacity-50" disabled={isSubmittingReply} onClick={(e) => { e.stopPropagation(); submitAdminNote(order.id); }}>
+                              {isSubmittingReply ? '儲存中...' : '儲存備註'}
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="mt-2 p-2 bg-amber-50 hover:bg-amber-100/80 rounded text-xs text-amber-800 border border-amber-200 cursor-pointer transition-colors group/note" onClick={() => { setEditingAdminNoteOrderId(order.id); setAdminNoteText(order.admin_notes || ''); }}>
+                          <div className="flex justify-between items-start font-medium">
+                            <span className="whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto">📝 營主備註：<br/>{order.admin_notes || <span className="opacity-50 italic">點擊新增內部備註...</span>}</span>
+                            <span className="opacity-0 group-hover/note:opacity-100 text-amber-600 shrink-0 ml-2 font-bold bg-white px-1.5 py-0.5 rounded shadow-sm border border-amber-200">編輯 ✏️</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="mt-auto">
                       <div className="text-right">
