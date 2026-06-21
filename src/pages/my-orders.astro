@@ -1,0 +1,8 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+import MyOrdersFlow from "../components/public/MyOrdersFlow";
+---
+
+<AppLayout title="我的訂單 - 不遠露營度假山莊">
+  <MyOrdersFlow client:only="react" />
+</AppLayout>
