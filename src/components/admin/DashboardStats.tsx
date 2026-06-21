@@ -169,20 +169,20 @@ export default function DashboardStats() {
                     </div>
                     <div className="text-sm text-stone-600 mb-3 font-mono flex flex-col gap-1.5">
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1.5" title="聯絡電話">
+                        <a href={`tel:${order.customer_phone}`} className="flex items-center gap-1.5 hover:text-emerald-600 transition-colors" title="撥打電話">
                           <span className="opacity-70">📞</span> {order.customer_phone}
-                        </div>
+                        </a>
                         {parsed.people && (
-                          <div className="flex items-center gap-1.5 text-stone-500 text-xs" title="入住人數">
-                            <span className="opacity-70">👥</span> {parsed.people}
+                          <div className="flex items-center gap-1.5 text-stone-500 text-xs whitespace-nowrap" title="入住人數">
+                            <span className="opacity-70">👥</span> {parsed.people.replace(/[\n\r]+/g, ' ')}
                           </div>
                         )}
                       </div>
                       {parsed.email && (
-                        <div className="flex items-center gap-1.5 text-stone-500 text-xs w-full max-w-[200px]" title={parsed.email}>
+                        <a href={`mailto:${parsed.email}`} className="flex items-center gap-1.5 text-stone-500 text-xs w-full max-w-[200px] hover:text-emerald-600 transition-colors group/email" title={`寄信給 ${parsed.email}`}>
                           <span className="opacity-70 shrink-0">✉️</span> 
-                          <span className="truncate">{parsed.email}</span>
-                        </div>
+                          <span className="truncate group-hover/email:whitespace-normal group-hover/email:break-all">{parsed.email}</span>
+                        </a>
                       )}
                     </div>
                     <div className="bg-white border border-stone-100 rounded-lg p-3 text-xs text-stone-600 space-y-1.5 shadow-sm group-hover:border-stone-200 transition-colors">
@@ -256,20 +256,20 @@ export default function DashboardStats() {
                     </div>
                     <div className="text-sm text-stone-600 mb-3 font-mono flex flex-col gap-1.5">
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1.5" title="聯絡電話">
+                        <a href={`tel:${order.customer_phone}`} className="flex items-center gap-1.5 hover:text-emerald-600 transition-colors" title="撥打電話">
                           <span className="opacity-70">📞</span> {order.customer_phone}
-                        </div>
+                        </a>
                         {parsed.people && (
-                          <div className="flex items-center gap-1.5 text-stone-500 text-xs" title="入住人數">
-                            <span className="opacity-70">👥</span> {parsed.people}
+                          <div className="flex items-center gap-1.5 text-stone-500 text-xs whitespace-nowrap" title="入住人數">
+                            <span className="opacity-70">👥</span> {parsed.people.replace(/[\n\r]+/g, ' ')}
                           </div>
                         )}
                       </div>
                       {parsed.email && (
-                        <div className="flex items-center gap-1.5 text-stone-500 text-xs w-full max-w-[200px]" title={parsed.email}>
+                        <a href={`mailto:${parsed.email}`} className="flex items-center gap-1.5 text-stone-500 text-xs w-full max-w-[200px] hover:text-emerald-600 transition-colors group/email" title={`寄信給 ${parsed.email}`}>
                           <span className="opacity-70 shrink-0">✉️</span> 
-                          <span className="truncate">{parsed.email}</span>
-                        </div>
+                          <span className="truncate group-hover/email:whitespace-normal group-hover/email:break-all">{parsed.email}</span>
+                        </a>
                       )}
                     </div>
                     <div className="bg-white border border-stone-100 rounded-lg p-3 text-xs text-stone-600 space-y-1.5 shadow-sm group-hover:border-stone-200 transition-colors">
