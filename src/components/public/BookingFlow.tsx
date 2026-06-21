@@ -267,8 +267,13 @@ export default function BookingFlow() {
               <span>{catStyle.icon}</span>{catStyle.label}
             </span>
             <h3 className="font-black text-slate-800 text-lg leading-tight">{item.name}</h3>
-            <div className="text-sm text-slate-500 font-bold mt-1">
-              平日 ${item.price_weekday} / 假日 ${item.price_holiday}
+            <div className="text-sm text-slate-500 font-bold mt-1 flex items-center gap-1.5 flex-wrap">
+              {item.price_original > 0 && (
+                <span className="line-through text-slate-400 font-normal text-xs">原價 ${item.price_original}</span>
+              )}
+              <span className={item.price_original > 0 ? "text-rose-600 font-black" : ""}>
+                平日 ${item.price_weekday} / 假日 ${item.price_holiday}
+              </span>
             </div>
           </div>
           <div className="text-right">
