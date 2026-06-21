@@ -518,24 +518,7 @@ export default function BookingFlow() {
     return <div className="flex-1 flex items-center justify-center min-h-screen bg-slate-50"><div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full"></div></div>;
   }
 
-  const ADMIN_EMAILS = (import.meta.env.PUBLIC_ADMIN_EMAILS || "").split(',').map(e => e.trim());
-  const isAdmin = session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
 
-  if (!isAdmin) {
-    return (
-      <div className="flex flex-col min-h-screen bg-slate-50 items-center justify-center p-6 text-center">
-        <div className="text-6xl mb-6 animate-bounce">🚧</div>
-        <h1 className="text-3xl font-black text-slate-800 mb-4 tracking-widest">系統升級維護中</h1>
-        <p className="text-slate-600 mb-8 max-w-md leading-relaxed font-medium">
-          不遠露營度假山莊的全新線上預訂系統正在進行最後的測試與升級。<br />
-          我們將於近期正式開放，敬請期待！
-        </p>
-        <a href="/" className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl shadow-lg hover:bg-emerald-700 transition-colors font-bold tracking-wide">
-          返回首頁
-        </a>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 relative">
