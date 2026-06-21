@@ -195,8 +195,23 @@ export default function OrdersManager() {
   };
 
   const updateOrderNote = async (orderId: number, currentNote: string) => {
-    const newNote = prompt('請輸入客人備註：', currentNote);
-    if (newNote === null) return;
+    const wantsToAppend = window.confirm("要「新增回覆」給客人嗎？\n(按「確定」新增回覆，按「取消」進入完整編輯模式)");
+    
+    let newNote = currentNote;
+    if (wantsToAppend) {
+      const appendText = window.prompt("請輸入要回覆客人的內容 (將自動接在原對話下方)：");
+      if (appendText === null) return; // User clicked Cancel on prompt
+      if (appendText.trim()) {
+        newNote = currentNote + (currentNote ? '\n\n' : '') + '[店家回覆]：' + appendText.trim();
+      } else {
+        return; // Empty append, do nothing
+      }
+    } else {
+      const editNote = window.prompt("【完整編輯模式】\n請小心不要誤刪 [Email: xxx] 等系統標籤與歷史對話：", currentNote);
+      if (editNote === null) return; // User clicked Cancel on prompt
+      newNote = editNote;
+    }
+
     const { error } = await supabase.from('nf_orders').update({ notes: newNote }).eq('id', orderId);
     if (error) alert('更新失敗');
     else fetchOrders();
