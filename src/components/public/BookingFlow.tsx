@@ -71,12 +71,18 @@ export default function BookingFlow() {
         }
       }
 
+      // Check if we already have a session to avoid double loading UI flash
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+
       // 2. 初始化 LIFF 並處理 LINE 暗影登入
       try {
         await liff.init({ liffId: '2010317535-p1JobvGF' });
 
         if (liff.isLoggedIn()) {
-          setLoading(true);
+          // Only show loading if we don't already have a session rendering the UI
+          if (!existingSession) {
+            setLoading(true);
+          }
           const profile = await liff.getProfile();
           const idToken = liff.getDecodedIDToken();
           const realEmail = idToken?.email;
@@ -120,7 +126,6 @@ export default function BookingFlow() {
         }
       } catch (err: any) {
         console.error("LIFF Init/Login failed:", err);
-        alert("LIFF 系統錯誤：" + err.message);
       }
 
       // 3. 統一讀取最終的 Supabase Session
