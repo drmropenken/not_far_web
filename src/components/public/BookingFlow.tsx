@@ -271,7 +271,7 @@ export default function BookingFlow() {
               {item.price_original > 0 && (
                 <span className="line-through text-slate-400 font-normal text-xs">原價 ${item.price_original}</span>
               )}
-              <span className={item.price_original > 0 ? "text-rose-600 font-black" : ""}>
+              <span className={item.price_original > 0 ? "text-blue-600 font-black" : ""}>
                 平日 ${item.price_weekday} / 假日 ${item.price_holiday}
               </span>
             </div>
