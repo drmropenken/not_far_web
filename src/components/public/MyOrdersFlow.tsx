@@ -13,14 +13,42 @@ const parseOrderNotes = (notesStr: string | null) => {
   return { email, people, notes };
 };
 
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case 'paid': return <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg border border-emerald-200">已全額付款</span>;
-    case 'deposit_paid': return <span className="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-lg border border-blue-200">已付訂金</span>;
-    case 'checked_in': return <span className="px-2.5 py-1 bg-slate-100 text-slate-800 text-xs font-bold rounded-lg border border-slate-300">已報到</span>;
-    case 'cancelled': return <span className="px-2.5 py-1 bg-rose-100 text-rose-800 text-xs font-bold rounded-lg border border-rose-200">已取消</span>;
-    default: return <span className="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-lg border border-amber-200 animate-pulse">待付款</span>;
+const getOrderStatusInfo = (order: any) => {
+  if (order.status === 'cancelled') {
+    return { label: '已取消', colorClass: 'bg-rose-100 text-rose-800 border-rose-200', type: 'cancelled' };
   }
+  if (order.status === 'paid') {
+    return { label: '已全額付款', colorClass: 'bg-emerald-100 text-emerald-800 border-emerald-200', type: 'paid' };
+  }
+  if (order.status === 'deposit_paid') {
+    return { label: '已付訂金', colorClass: 'bg-blue-100 text-blue-800 border-blue-200', type: 'paid' };
+  }
+  if (order.status === 'checked_in') {
+    return { label: '已報到', colorClass: 'bg-slate-100 text-slate-800 border-slate-300', type: 'paid' };
+  }
+  
+  // Pending status checks
+  if (order.status === 'pending') {
+    if (order.payment_method === 'bank_transfer') {
+      const orderDate = new Date(order.created_at).getTime();
+      const now = new Date().getTime();
+      const daysDiff = (now - orderDate) / (1000 * 3600 * 24);
+      if (daysDiff > 10) {
+        return { label: '已逾期', colorClass: 'bg-stone-200 text-stone-600 border-stone-300', type: 'expired' };
+      }
+    } else if (order.payment_method === 'credit_card') {
+      // If credit card is pending, it usually means payment failed/abandoned since ECPay is immediate
+      return { label: '付款失敗/逾期', colorClass: 'bg-stone-200 text-stone-600 border-stone-300', type: 'expired' };
+    }
+    return { label: '待付款', colorClass: 'bg-amber-100 text-amber-800 border-amber-200 animate-pulse', type: 'pending' };
+  }
+  
+  return { label: '未知狀態', colorClass: 'bg-gray-100 text-gray-800 border-gray-200', type: 'other' };
+};
+
+const getStatusBadge = (order: any) => {
+  const info = getOrderStatusInfo(order);
+  return <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border ${info.colorClass}`}>{info.label}</span>;
 };
 
 export default function MyOrdersFlow() {
@@ -28,6 +56,7 @@ export default function MyOrdersFlow() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<any[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [filter, setFilter] = useState<'all' | 'pending' | 'paid' | 'cancelled'>('all');
   
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -259,7 +288,7 @@ export default function MyOrdersFlow() {
                       <h2 className="text-xl font-black tracking-widest">{selectedOrder.order_no}</h2>
                       <p className="text-slate-400 text-sm mt-1">{new Date(selectedOrder.created_at).toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'})} 建立</p>
                     </div>
-                    <div>{getStatusBadge(selectedOrder.status)}</div>
+                    <div>{getStatusBadge(selectedOrder)}</div>
                   </div>
 
                   <div className="p-5 space-y-6">
@@ -275,7 +304,7 @@ export default function MyOrdersFlow() {
                           <span className="text-slate-500">已付金額 (訂金)</span>
                           <span className="font-bold text-emerald-600">NT$ {selectedOrder.deposit_amount?.toLocaleString() || 0}</span>
                         </div>
-                        {selectedOrder.status === 'pending' && selectedOrder.payment_method === 'bank_transfer' && selectedOrder.virtual_account && (
+                        {getOrderStatusInfo(selectedOrder).type === 'pending' && selectedOrder.payment_method === 'bank_transfer' && selectedOrder.virtual_account && (
                           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                             <p className="text-xs text-blue-600 font-bold mb-2">🏦 專屬匯款帳號 (銀行代碼 009 彰化銀行)</p>
                             <p className="text-xl font-black text-blue-800 tracking-widest">{selectedOrder.virtual_account}</p>
@@ -348,15 +377,51 @@ export default function MyOrdersFlow() {
               <div className="space-y-4">
                 <h2 className="text-2xl font-black text-slate-800 mb-6">嗨，{session.user.user_metadata?.full_name || '營友'}！</h2>
                 
-                {orders.length === 0 ? (
+                {/* 狀態切換標籤 */}
+                <div className="flex gap-2 mb-6 overflow-x-auto hide-scrollbar pb-1">
+                  {[
+                    { id: 'all', label: '全部訂單' },
+                    { id: 'pending', label: '待付款' },
+                    { id: 'paid', label: '已付款' },
+                    { id: 'cancelled', label: '已失效' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setFilter(tab.id as any)}
+                      className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
+                        filter === tab.id 
+                          ? 'bg-slate-800 text-white shadow-md' 
+                          : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {orders.filter(o => {
+                  if (filter === 'all') return true;
+                  const type = getOrderStatusInfo(o).type;
+                  if (filter === 'pending') return type === 'pending';
+                  if (filter === 'paid') return type === 'paid';
+                  if (filter === 'cancelled') return type === 'cancelled' || type === 'expired';
+                  return true;
+                }).length === 0 ? (
                   <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm">
                     <p className="text-6xl mb-4">🏕️</p>
-                    <p className="text-slate-500 font-bold">目前還沒有任何訂單紀錄喔！</p>
+                    <p className="text-slate-500 font-bold">目前沒有相關的訂單紀錄喔！</p>
                     <a href="/app" className="inline-block mt-4 text-emerald-600 font-bold hover:underline">現在去預訂 &rarr;</a>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {orders.map(order => (
+                    {orders.filter(o => {
+                      if (filter === 'all') return true;
+                      const type = getOrderStatusInfo(o).type;
+                      if (filter === 'pending') return type === 'pending';
+                      if (filter === 'paid') return type === 'paid';
+                      if (filter === 'cancelled') return type === 'cancelled' || type === 'expired';
+                      return true;
+                    }).map(order => (
                       <div 
                         key={order.id} 
                         onClick={() => setSelectedOrder(order)}
@@ -367,7 +432,7 @@ export default function MyOrdersFlow() {
                             <span className="text-xs font-bold text-slate-400 block mb-1">{new Date(order.created_at).toLocaleDateString()}</span>
                             <h3 className="font-black text-slate-800 text-lg group-hover:text-emerald-700 transition-colors">{order.order_no}</h3>
                           </div>
-                          <div>{getStatusBadge(order.status)}</div>
+                          <div>{getStatusBadge(order)}</div>
                         </div>
                         <div className="flex justify-between items-end border-t border-slate-100 pt-3">
                           <div className="text-sm text-slate-600 font-medium">
