@@ -270,9 +270,6 @@ export default function MyOrdersFlow() {
                 <button onClick={handleLineLogin} className="w-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-[#06C755]/20">
                   <span className="text-xl">💬</span> LINE 快速登入
                 </button>
-                <button onClick={handleGoogleLogin} className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm">
-                  <span className="text-xl">G</span> Google 登入
-                </button>
               </div>
             </div>
           </div>
