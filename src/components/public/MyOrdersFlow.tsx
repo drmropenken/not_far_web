@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import liff from '@line/liff';
 import { supabase } from '../../lib/supabase';
 
-// Helper function to parse notes and remove the [Email: ...] [人數: ...] tags for customer display
-const parseCustomerNotes = (notesStr: string | null) => {
-  if (!notesStr) return '';
-  // Removes tags like [Email: xxx] and [人數: 2大 0小] from the beginning or anywhere
-  return notesStr.replace(/\[Email:\s*.*?\]\s*/g, '').replace(/\[人數:\s*.*?\]\s*/g, '').trim();
+// Helper function to parse notes and extract Email, People, and clean notes
+const parseOrderNotes = (notesStr: string | null) => {
+  if (!notesStr) return { email: '', people: '', notes: '' };
+  const emailMatch = notesStr.match(/\[Email:\s*(.*?)\]/);
+  const peopleMatch = notesStr.match(/\[人數:\s*(.*?)\]/);
+  const email = emailMatch ? emailMatch[1] : '';
+  const people = peopleMatch ? peopleMatch[1] : '';
+  const notes = notesStr.replace(/\[Email:\s*.*?\]\s*/, '').replace(/\[人數:\s*.*?\]\s*/, '').trim();
+  return { email, people, notes };
 };
 
 const getStatusBadge = (status: string) => {
@@ -24,6 +28,31 @@ export default function MyOrdersFlow() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<any[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+
+  const handleAppendNote = async () => {
+    if (!replyText.trim() || !selectedOrder) return;
+    setIsSubmittingReply(true);
+    
+    // Append to existing notes (including the original hidden [Email] tags)
+    const currentNotes = selectedOrder.notes || '';
+    const appendedNotes = currentNotes + (currentNotes ? '\n\n' : '') + `[顧客補充]：${replyText.trim()}`;
+
+    const { error } = await supabase.from('nf_orders').update({ notes: appendedNotes }).eq('id', selectedOrder.id);
+    
+    setIsSubmittingReply(false);
+    if (error) {
+      alert('留言失敗：' + error.message);
+    } else {
+      setSelectedOrder({ ...selectedOrder, notes: appendedNotes });
+      setOrders(orders.map(o => o.id === selectedOrder.id ? { ...o, notes: appendedNotes } : o));
+      setIsReplying(false);
+      setReplyText('');
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -263,6 +292,8 @@ export default function MyOrdersFlow() {
                         <p>🏠 入住：<span className="text-slate-800 font-bold">{selectedOrder.check_in_date}</span></p>
                         <p>👋 退房：<span className="text-slate-800 font-bold">{selectedOrder.check_out_date}</span></p>
                         <p>👤 聯絡人：{selectedOrder.customer_name} ({selectedOrder.customer_phone})</p>
+                        {parseOrderNotes(selectedOrder.notes).email && <p>✉️ Email：{parseOrderNotes(selectedOrder.notes).email}</p>}
+                        {parseOrderNotes(selectedOrder.notes).people && <p>👥 入住人數：{parseOrderNotes(selectedOrder.notes).people}</p>}
                       </div>
 
                       <div className="space-y-3">
@@ -279,10 +310,35 @@ export default function MyOrdersFlow() {
 
                     {/* 留言備註 */}
                     <div className="bg-amber-50/50 rounded-xl p-4 border border-amber-100">
-                      <h3 className="font-bold text-amber-800 mb-2 flex items-center gap-2"><span>💬</span> 留言與備註</h3>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                        {parseCustomerNotes(selectedOrder.notes) || <span className="text-slate-400 italic">無特殊備註</span>}
-                      </p>
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-bold text-amber-800 flex items-center gap-2"><span>💬</span> 留言紀錄與對話</h3>
+                        {!isReplying && (
+                          <button onClick={() => setIsReplying(true)} className="text-xs bg-amber-200/50 hover:bg-amber-300/50 text-amber-800 px-3 py-1.5 rounded-lg transition-colors font-bold border border-amber-200">
+                            我要補充留言
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed bg-white/60 p-3 rounded-lg border border-amber-100/50 min-h-[60px]">
+                        {parseOrderNotes(selectedOrder.notes).notes || <span className="text-slate-400 italic">目前無留言或備註</span>}
+                      </div>
+
+                      {isReplying && (
+                        <div className="mt-4 pt-4 border-t border-amber-200/50 animate-fade-in">
+                          <textarea 
+                            value={replyText} 
+                            onChange={(e) => setReplyText(e.target.value)} 
+                            placeholder="例如：我們想更改人數為3大1小、或是 Email 填錯想更正為 abc@gmail.com..." 
+                            className="w-full text-sm p-3 rounded-lg border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none h-24 mb-3"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button onClick={() => setIsReplying(false)} disabled={isSubmittingReply} className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">取消</button>
+                            <button onClick={handleAppendNote} disabled={isSubmittingReply || !replyText.trim()} className="px-4 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors">
+                              {isSubmittingReply ? '送出中...' : '送出留言'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                   </div>
