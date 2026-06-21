@@ -410,7 +410,7 @@ export default function OrdersManager() {
                 {/* 訂單內容 */}
                 <div className="p-5 flex flex-col md:flex-row gap-6 flex-1">
                   {/* 客戶資訊 */}
-                  <div className="flex-1 space-y-3">
+                  <div className="w-full md:w-1/2 space-y-3">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-full ${order.status === 'cancelled' ? 'bg-rose-50 text-rose-500 border-rose-200' : 'bg-amber-50 text-amber-600 border-amber-200'} flex items-center justify-center font-bold text-lg border`}>
                         {order.customer_name.charAt(0)}
@@ -419,20 +419,20 @@ export default function OrdersManager() {
                         <h3 className={`font-bold text-lg ${order.status === 'cancelled' ? 'text-stone-500 line-through' : 'text-stone-800'}`}>{order.customer_name}</h3>
                         <div className="text-sm text-stone-500 font-mono mt-1 flex flex-col gap-1">
                           <div className="flex items-center gap-4">
-                            <span className="flex items-center gap-1.5" title="聯絡電話">
+                            <a href={`tel:${order.customer_phone}`} className="flex items-center gap-1.5 hover:text-emerald-600 transition-colors" title="撥打電話">
                               <span className="opacity-70">📞</span> {order.customer_phone}
-                            </span>
+                            </a>
                             {parsed.people && (
-                              <span className="flex items-center gap-1.5" title="入住人數">
-                                <span className="opacity-70">👥</span> {parsed.people}
+                              <span className="flex items-center gap-1.5 whitespace-nowrap" title="入住人數">
+                                <span className="opacity-70">👥</span> {parsed.people.replace(/[\n\r]+/g, ' ')}
                               </span>
                             )}
                           </div>
                           {parsed.email && (
-                            <span className="flex items-center gap-1.5 w-full max-w-[220px]" title={parsed.email}>
+                            <a href={`mailto:${parsed.email}`} className="flex items-center gap-1.5 w-full max-w-[220px] hover:text-emerald-600 transition-colors group/email" title={`寄信給 ${parsed.email}`}>
                               <span className="opacity-70 shrink-0">✉️</span> 
-                              <span className="truncate">{parsed.email}</span>
-                            </span>
+                              <span className="truncate group-hover/email:whitespace-normal group-hover/email:break-all">{parsed.email}</span>
+                            </a>
                           )}
                         </div>
                       </div>
@@ -446,12 +446,10 @@ export default function OrdersManager() {
                         <span className="text-stone-500">退營日期</span>
                         <span className="font-bold text-stone-700">{order.check_out_date}</span>
                       </div>
-                      {order.license_plate && (
-                        <div className="flex justify-between border-t border-stone-200/60 pt-1.5 mt-1.5">
-                          <span className="text-stone-500">車牌號碼</span>
-                          <span className="font-mono text-stone-700">{order.license_plate}</span>
-                        </div>
-                      )}
+                      <div className="flex justify-between border-t border-stone-200/60 pt-1.5 mt-1.5">
+                        <span className="text-stone-500">車牌號碼</span>
+                        <span className={`font-mono ${order.license_plate ? 'text-stone-700' : 'text-stone-400 italic'}`}>{order.license_plate || '無'}</span>
+                      </div>
                     </div>
 
                     {order.payment_method === 'bank_transfer' && order.status === 'pending' && (
@@ -468,7 +466,7 @@ export default function OrdersManager() {
                   </div>
 
                   {/* 項目與金額 */}
-                  <div className="flex-1 flex flex-col justify-between">
+                  <div className="w-full md:w-1/2 flex flex-col justify-between">
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between items-center">
                         <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider">預訂內容</h4>
@@ -546,7 +544,7 @@ export default function OrdersManager() {
                         )}
                         <div className="flex flex-col items-end gap-1">
                           <div className="flex items-center justify-end gap-2">
-                            <span className="text-xs text-stone-500">總金額</span>
+                            <span className="text-xs text-stone-500 whitespace-nowrap">總金額</span>
                             <span className={`text-xl font-bold tracking-tight ${order.status === 'cancelled' ? 'text-stone-400 line-through' : 'text-stone-700'}`}>
                               NT$ {order.total_amount?.toLocaleString()}
                             </span>
