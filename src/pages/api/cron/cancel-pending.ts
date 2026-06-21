@@ -1,5 +1,11 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL || '';
+const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+// 使用 Service Role Key 建立 Admin Client，這樣可以繞過 RLS 安全檢查，確保 Cron Job 能正常讀寫所有訂單
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export const GET: APIRoute = async () => {
   try {
