@@ -27,7 +27,7 @@ const getCategoryStyle = (category: string) => {
 };
 
 export default function BookingFlow() {
-  const [step, setStep] = useState(0); // 0: Login, 1: Date, 2: Items, 3: Info, 4: Confirm
+  const [step, setStep] = useState(0); // 0: Login, 1: Date, 2: Campsite, 3: Addons, 4: Info, 5: Confirm, 6: Success
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -244,6 +244,52 @@ export default function BookingFlow() {
     });
   };
 
+  const renderItemCard = ({ item, remaining }: {item: Item, remaining: number}) => {
+    const selected = selectedItems.find(s => s.item.id === item.id);
+    const qty = selected?.quantity || 0;
+    const catStyle = getCategoryStyle(item.category);
+    
+    return (
+      <div key={item.id} className={`p-4 rounded-2xl border-2 transition-all ${qty > 0 ? `${catStyle.border} ${catStyle.activeBg} shadow-md` : 'border-slate-100 bg-white shadow-sm'}`}>
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border flex items-center gap-1 w-fit mb-2 ${catStyle.badge}`}>
+              <span>{catStyle.icon}</span>{catStyle.label}
+            </span>
+            <h3 className="font-black text-slate-800 text-lg leading-tight">{item.name}</h3>
+            <div className="text-sm text-slate-500 font-bold mt-1">
+              平日 ${item.price_weekday} / 假日 ${item.price_holiday}
+            </div>
+          </div>
+          <div className="text-right">
+            {remaining > 0 ? (
+              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">剩餘 {remaining}</span>
+            ) : (
+              <span className="text-xs font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">已額滿</span>
+            )}
+          </div>
+        </div>
+        
+        <div className={`flex items-center justify-between border-t border-opacity-50 pt-3 mt-1 ${qty > 0 ? catStyle.border : 'border-slate-100'}`}>
+          <span className="text-sm font-bold text-slate-600">數量</span>
+          <div className="flex items-center gap-3 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
+            <button 
+              onClick={() => handleItemSelect(item, Math.max(0, qty - 1))}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg shadow-sm font-bold disabled:opacity-50 transition-colors ${qty > 0 ? `${catStyle.btnHover} ${catStyle.btnText}` : 'text-slate-600 hover:bg-slate-100'}`}
+              disabled={qty === 0}
+            >-</button>
+            <span className={`w-6 text-center font-black ${qty > 0 ? catStyle.btnText : 'text-slate-800'}`}>{qty}</span>
+            <button 
+              onClick={() => handleItemSelect(item, Math.min(remaining, qty + 1))}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg shadow-sm font-bold disabled:opacity-50 transition-colors ${qty > 0 ? `${catStyle.btnHover} ${catStyle.btnText}` : 'text-slate-600 hover:bg-slate-100'}`}
+              disabled={qty >= remaining || remaining === 0}
+            >+</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const calculateOriginalTotal = () => {
     let total = 0;
     const start = new Date(dates.checkIn);
@@ -419,7 +465,7 @@ export default function BookingFlow() {
           totalAmount
         });
         setLoading(false);
-        setStep(5);
+        setStep(6);
       }
     } catch (error: any) {
       alert('建立訂單失敗: ' + error.message);
@@ -545,7 +591,7 @@ export default function BookingFlow() {
         {step === 2 && (
           <div className="flex-1 p-6 flex flex-col">
             <button onClick={() => setStep(1)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改日期</button>
-            <h2 className="text-2xl font-black text-slate-800 mb-6">選擇方案</h2>
+            <h2 className="text-2xl font-black text-slate-800 mb-6">選擇營位</h2>
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
               {fetchingItems ? (
                 <div className="flex flex-col items-center justify-center py-20 text-emerald-500">
@@ -554,53 +600,43 @@ export default function BookingFlow() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {availableItems.map(({ item, remaining }) => {
-                    const selected = selectedItems.find(s => s.item.id === item.id);
-                    const qty = selected?.quantity || 0;
-                    const catStyle = getCategoryStyle(item.category);
-                    
-                    return (
-                      <div key={item.id} className={`p-4 rounded-2xl border-2 transition-all ${qty > 0 ? `${catStyle.border} ${catStyle.activeBg} shadow-md` : 'border-slate-100 bg-white shadow-sm'}`}>
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border flex items-center gap-1 w-fit mb-2 ${catStyle.badge}`}>
-                              <span>{catStyle.icon}</span>{catStyle.label}
-                            </span>
-                            <h3 className="font-black text-slate-800 text-lg leading-tight">{item.name}</h3>
-                            <div className="text-sm text-slate-500 font-bold mt-1">
-                              平日 ${item.price_weekday} / 假日 ${item.price_holiday}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            {remaining > 0 ? (
-                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">剩餘 {remaining}</span>
-                            ) : (
-                              <span className="text-xs font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">已額滿</span>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className={`flex items-center justify-between border-t border-opacity-50 pt-3 mt-1 ${qty > 0 ? catStyle.border : 'border-slate-100'}`}>
-                          <span className="text-sm font-bold text-slate-600">數量</span>
-                          <div className="flex items-center gap-3 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
-                            <button 
-                              onClick={() => handleItemSelect(item, Math.max(0, qty - 1))}
-                              className={`w-8 h-8 flex items-center justify-center rounded-lg shadow-sm font-bold disabled:opacity-50 transition-colors ${qty > 0 ? `${catStyle.btnHover} ${catStyle.btnText}` : 'text-slate-600 hover:bg-slate-100'}`}
-                              disabled={qty === 0}
-                            >-</button>
-                            <span className={`w-6 text-center font-black ${qty > 0 ? catStyle.btnText : 'text-slate-800'}`}>{qty}</span>
-                            <button 
-                              onClick={() => handleItemSelect(item, Math.min(remaining, qty + 1))}
-                              className={`w-8 h-8 flex items-center justify-center rounded-lg shadow-sm font-bold disabled:opacity-50 transition-colors ${qty > 0 ? `${catStyle.btnHover} ${catStyle.btnText}` : 'text-slate-600 hover:bg-slate-100'}`}
-                              disabled={qty >= remaining || remaining === 0}
-                            >+</button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {availableItems.filter(a => a.item.category === 'campsite').map(renderItemCard)}
                 </div>
               )}
+            </div>
+            <div className="pt-6 mt-auto border-t border-slate-100 shrink-0">
+              <button 
+                onClick={() => setStep(3)} 
+                disabled={selectedItems.filter(i => i.item.category === 'campsite').length === 0}
+                className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                下一步 (加購裝備與食材) <span>&rarr;</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="flex-1 p-6 flex flex-col">
+            <button onClick={() => setStep(2)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改營位</button>
+            <h2 className="text-2xl font-black text-slate-800 mb-6">加購裝備與食材服務</h2>
+            
+            <div className="bg-emerald-50/80 rounded-xl p-4 mb-6 border border-emerald-200 shadow-sm">
+              <h3 className="font-bold text-emerald-800 text-sm mb-2 flex items-center gap-1"><span>⛺</span> 您已選擇的營位：</h3>
+              <div className="space-y-1.5">
+                {selectedItems.filter(i => i.item.category === 'campsite').map(s => (
+                  <div key={s.item.id} className="text-emerald-700 font-black text-sm flex justify-between items-center bg-white/60 px-3 py-2 rounded-lg border border-emerald-100/50 shadow-sm">
+                    <span>{s.item.name}</span>
+                    <span className="bg-emerald-200/50 text-emerald-800 px-2 py-0.5 rounded text-xs">x {s.quantity}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
+              <div className="space-y-4">
+                {availableItems.filter(a => a.item.category !== 'campsite').map(renderItemCard)}
+              </div>
 
               {/* 服務/餐飲區塊提示 */}
               {availableItems.filter(a => a.item.category === 'service').length > 0 && (
@@ -608,7 +644,7 @@ export default function BookingFlow() {
                   <p className="text-sm text-amber-800 font-bold flex items-start gap-2 leading-relaxed">
                     <span className="text-lg leading-none">💡</span> 
                     <span>
-                      貼心提醒：在此加購的餐飲服務將直接套用於<strong className="text-amber-900 border-b border-amber-900/30 pb-0.5 mx-1">所有住宿天數</strong>。<br/>
+                      溫馨提醒：加購份數為<strong className="text-amber-900 border-b border-amber-900/30 pb-0.5 mx-1">「每晚」</strong>計費，請確認您的加購數量。<br/>
                       若您僅需加購「單日」餐飲，請勿在此勾選，請於下一步的「特殊需求備註」中說明，並於入住時現場加購結帳即可！
                     </span>
                   </p>
@@ -617,19 +653,18 @@ export default function BookingFlow() {
             </div>
             <div className="pt-6 mt-auto border-t border-slate-100 shrink-0">
               <button 
-                onClick={() => setStep(3)} 
-                disabled={selectedItems.length === 0}
-                className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setStep(4)} 
+                className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
               >
-                下一步 <span>&rarr;</span>
+                下一步 (填寫聯絡資料) <span>&rarr;</span>
               </button>
             </div>
           </div>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <div className="flex-1 p-6 flex flex-col">
-             <button onClick={() => setStep(2)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改方案</button>
+             <button onClick={() => setStep(3)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改加購項目</button>
             <h2 className="text-2xl font-black text-slate-800 mb-6">填寫聯絡資料</h2>
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
               <div className="bg-white p-5 rounded-2xl shadow-sm space-y-4">
@@ -681,19 +716,19 @@ export default function BookingFlow() {
             </div>
             <div className="pt-6 mt-auto border-t border-slate-100 shrink-0">
               <button 
-                onClick={() => setStep(4)} 
+                onClick={() => setStep(5)} 
                 disabled={!customerInfo.name || !customerInfo.phone || !customerInfo.email}
                 className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                下一步 <span>&rarr;</span>
+                下一步 (確認結帳) <span>&rarr;</span>
               </button>
             </div>
           </div>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <div className="flex-1 p-6 flex flex-col">
-             <button onClick={() => setStep(3)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改資料</button>
+             <button onClick={() => setStep(4)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改資料</button>
             <h2 className="text-2xl font-black text-slate-800 mb-6">確認結帳</h2>
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4 mb-4">
@@ -797,7 +832,7 @@ export default function BookingFlow() {
           </div>
         )}
 
-        {step === 5 && finalOrderInfo && (
+        {step === 6 && finalOrderInfo && (
           <div className="flex-1 p-6 flex flex-col items-center justify-center text-center">
             <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100 p-8 space-y-6">
               <div className="text-6xl mb-4 text-emerald-500">✅</div>
