@@ -116,7 +116,7 @@ const { title, description } = Astro.props;
     // 改為從環境變數讀取，這樣您就不用修改程式碼了！
     // 只要在 .env 檔案中加上 PUBLIC_ADMIN_EMAILS="您的信箱@gmail.com" 即可
     const envAdmins = import.meta.env.PUBLIC_ADMIN_EMAILS || "";
-    const ADMIN_EMAILS = envAdmins.split(',').map((e: string) => e.trim());
+    const ADMIN_EMAILS = envAdmins.split(',').map((e: string) => e.trim().toLowerCase());
 
     // 簡單的客戶端身分驗證檢查
     async function checkAuth() {
