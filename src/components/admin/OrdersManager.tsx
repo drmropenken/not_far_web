@@ -60,6 +60,9 @@ export default function OrdersManager() {
   const [editingFinancialsId, setEditingFinancialsId] = useState<string | null>(null);
   const [financialsForm, setFinancialsForm] = useState({ total_amount: '', deposit_amount: '' });
   const [editingOrderItemsOrder, setEditingOrderItemsOrder] = useState<Order | null>(null);
+  const [replyingToOrderId, setReplyingToOrderId] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -194,27 +197,20 @@ export default function OrdersManager() {
     }
   };
 
-  const updateOrderNote = async (orderId: number, currentNote: string) => {
-    const wantsToAppend = window.confirm("要「新增回覆」給客人嗎？\n(按「確定」新增回覆，按「取消」進入完整編輯模式)");
-    
-    let newNote = currentNote;
-    if (wantsToAppend) {
-      const appendText = window.prompt("請輸入要回覆客人的內容 (將自動接在原對話下方)：");
-      if (appendText === null) return; // User clicked Cancel on prompt
-      if (appendText.trim()) {
-        newNote = currentNote + (currentNote ? '\n\n' : '') + '[店家回覆]：' + appendText.trim();
-      } else {
-        return; // Empty append, do nothing
-      }
-    } else {
-      const editNote = window.prompt("【完整編輯模式】\n請小心不要誤刪 [Email: xxx] 等系統標籤與歷史對話：", currentNote);
-      if (editNote === null) return; // User clicked Cancel on prompt
-      newNote = editNote;
-    }
-
+  const submitReply = async (orderId: number, currentNote: string | null) => {
+    if (!replyText.trim()) return;
+    setIsSubmittingReply(true);
+    const newNote = (currentNote || '') + (currentNote ? '\n\n' : '') + '[店家回覆]：' + replyText.trim();
     const { error } = await supabase.from('nf_orders').update({ notes: newNote }).eq('id', orderId);
-    if (error) alert('更新失敗');
-    else fetchOrders();
+    setIsSubmittingReply(false);
+    
+    if (error) {
+      alert('更新失敗');
+    } else {
+      setReplyingToOrderId(null);
+      setReplyText('');
+      fetchOrders();
+    }
   };
 
   const updateAdminNote = async (orderId: string, currentNote: string) => {
@@ -482,12 +478,31 @@ export default function OrdersManager() {
                           </li>
                         ))}
                       </ul>
-                      <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note" onClick={() => updateOrderNote(order.id as unknown as number, order.notes || '')}>
-                        <div className="flex justify-between items-start">
-                          <span>💬 客人備註：{parsed.notes || <span className="opacity-50 italic">無</span>}</span>
-                          <span className="opacity-0 group-hover/note:opacity-100 text-stone-500">✏️</span>
+                      {replyingToOrderId === order.id ? (
+                        <div className="mt-2 p-2 bg-stone-50 rounded border border-stone-300 shadow-inner">
+                          <div className="text-xs text-stone-600 mb-2 whitespace-pre-wrap">💬 客人備註紀錄：<br/>{parsed.notes || <span className="opacity-50 italic">無</span>}</div>
+                          <textarea
+                            className="w-full text-xs p-2 rounded border border-amber-200 focus:outline-none focus:border-amber-500 min-h-[60px] bg-white resize-y"
+                            placeholder="請輸入回覆或補充 (將接在原內容下方)..."
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            autoFocus
+                          />
+                          <div className="flex justify-end gap-2 mt-2">
+                            <button className="text-[11px] px-2 py-1 bg-stone-200 rounded text-stone-600 hover:bg-stone-300 transition-colors font-bold" onClick={(e) => { e.stopPropagation(); setReplyingToOrderId(null); }}>取消</button>
+                            <button className="text-[11px] px-3 py-1 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors font-bold shadow-sm disabled:opacity-50" disabled={isSubmittingReply || !replyText.trim()} onClick={(e) => { e.stopPropagation(); submitReply(order.id as unknown as number, order.notes); }}>
+                              {isSubmittingReply ? '送出中...' : '送出回覆'}
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note" onClick={() => { setReplyingToOrderId(order.id as unknown as number); setReplyText(''); }}>
+                          <div className="flex justify-between items-start">
+                            <span className="whitespace-pre-wrap break-words leading-relaxed">💬 客人備註：<br/>{parsed.notes || <span className="opacity-50 italic">無</span>}</span>
+                            <span className="opacity-0 group-hover/note:opacity-100 text-stone-500 shrink-0 ml-2 font-bold bg-white px-1.5 py-0.5 rounded shadow-sm border border-stone-200">我要回覆 ✏️</span>
+                          </div>
+                        </div>
+                      )}
                       <div className="mt-2 p-2 bg-amber-50 hover:bg-amber-100/80 rounded text-xs text-amber-800 border border-amber-200 cursor-pointer transition-colors group/note" onClick={() => updateAdminNote(order.id, order.admin_notes || '')}>
                         <div className="flex justify-between items-start font-medium">
                           <span>📝 營主備註：{order.admin_notes || <span className="opacity-50 italic">點擊新增內部備註...</span>}</span>
