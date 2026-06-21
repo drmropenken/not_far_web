@@ -227,6 +227,14 @@ export default function BookingFlow() {
       available.push({ item, remaining: minRemaining });
     }
 
+    available.sort((a, b) => {
+      const aEmpty = a.remaining === 0;
+      const bEmpty = b.remaining === 0;
+      if (aEmpty && !bEmpty) return 1;
+      if (!aEmpty && bEmpty) return -1;
+      return 0;
+    });
+
     setAvailableItems(available);
     setFetchingItems(false);
   };
@@ -249,8 +257,10 @@ export default function BookingFlow() {
     const qty = selected?.quantity || 0;
     const catStyle = getCategoryStyle(item.category);
     
+    const unit = item.category === 'campsite' ? '帳' : '組';
+
     return (
-      <div key={item.id} className={`p-4 rounded-2xl border-2 transition-all ${qty > 0 ? `${catStyle.border} ${catStyle.activeBg} shadow-md` : 'border-slate-100 bg-white shadow-sm'}`}>
+      <div key={item.id} className={`p-4 rounded-2xl border-2 transition-all ${remaining === 0 ? 'opacity-60 bg-slate-50 border-slate-200' : qty > 0 ? `${catStyle.border} ${catStyle.activeBg} shadow-md` : 'border-slate-100 bg-white shadow-sm'}`}>
         <div className="flex justify-between items-start mb-3">
           <div>
             <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border flex items-center gap-1 w-fit mb-2 ${catStyle.badge}`}>
@@ -263,9 +273,13 @@ export default function BookingFlow() {
           </div>
           <div className="text-right">
             {remaining > 0 ? (
-              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">剩餘 {remaining}</span>
+              remaining === 1 ? (
+                <span className="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-200 animate-pulse shadow-sm block w-max">🔥 僅剩最後 1 {unit}</span>
+              ) : (
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 block w-max">剩餘 {remaining}</span>
+              )
             ) : (
-              <span className="text-xs font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">已額滿</span>
+              <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 block w-max">已額滿</span>
             )}
           </div>
         </div>
@@ -554,25 +568,25 @@ export default function BookingFlow() {
           <div className="flex-1 p-6 flex flex-col">
             <h2 className="text-2xl font-black text-slate-800 mb-6">選擇入住日期</h2>
             <div className="space-y-6 flex-1">
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">入住日期 (Check-in)</label>
+              <div className="bg-emerald-50/60 p-6 rounded-2xl shadow-sm border border-emerald-100/50">
+                <label className="block text-sm font-black text-emerald-800 uppercase tracking-wider mb-3">入住日期 (Check-in)</label>
                 <input 
                   type="date" 
                   value={dates.checkIn}
                   min={new Date().toLocaleDateString('en-CA')}
                   onChange={(e) => setDates({...dates, checkIn: e.target.value, checkOut: ''})}
-                  className="w-full text-lg font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors" 
+                  className="w-full text-xl font-black text-slate-800 bg-white border-2 border-emerald-200/60 rounded-xl px-4 py-4 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all shadow-inner" 
                 />
               </div>
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">退房日期 (Check-out)</label>
+              <div className="bg-emerald-50/60 p-6 rounded-2xl shadow-sm border border-emerald-100/50">
+                <label className="block text-sm font-black text-emerald-800 uppercase tracking-wider mb-3">退房日期 (Check-out)</label>
                 <input 
                   type="date" 
                   value={dates.checkOut}
                   min={dates.checkIn ? new Date(new Date(dates.checkIn).getTime() + 86400000).toLocaleDateString('en-CA') : new Date().toLocaleDateString('en-CA')}
                   onChange={(e) => setDates({...dates, checkOut: e.target.value})}
                   disabled={!dates.checkIn}
-                  className="w-full text-lg font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors disabled:opacity-50" 
+                  className="w-full text-xl font-black text-slate-800 bg-white border-2 border-emerald-200/60 rounded-xl px-4 py-4 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all disabled:opacity-50 shadow-inner" 
                 />
               </div>
             </div>
