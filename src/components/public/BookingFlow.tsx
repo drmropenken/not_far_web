@@ -383,7 +383,8 @@ export default function BookingFlow() {
       const totalAmount = calculateTotal();
       const discountAmount = calculateDiscountAmount();
 
-      // 1.5 Pre-flight check: Ensure inventory is still available
+      // Prepare inventory updates payload for RPC
+      const inventory_updates = [];
       const start = new Date(dates.checkIn);
       const end = new Date(dates.checkOut);
       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
@@ -394,90 +395,53 @@ export default function BookingFlow() {
           const isSingleTime = item.category === 'service' && (item.name.includes('單次') || item.name.includes('次計費'));
           if (isSingleTime && !isFirstNight) continue;
 
-          const { data: invData } = await supabase
-            .from('nf_inventory')
-            .select('booked_quantity')
-            .eq('date', dStr)
-            .eq('item_id', item.id)
-            .single();
-
-          const currentBooked = invData?.booked_quantity || 0;
-          if (currentBooked + quantity > item.total_quantity) {
-            throw new Error(`抱歉！在您結帳的同時，『${item.name}』在 ${dStr} 的剩餘數量已被其他客人訂走（剩餘 ${Math.max(0, item.total_quantity - currentBooked)} 個）。請返回上一步重新選擇數量！`);
-          }
+          inventory_updates.push({
+            date: dStr,
+            item_id: item.id,
+            quantity: quantity
+          });
         }
       }
 
       const phoneLast5 = customerInfo.phone.slice(-5).padStart(5, '0');
       const virtualAccount = method === 'bank_transfer' ? `962948188${phoneLast5}` : null;
 
-      // 2. Create Order
-      const { data: orderData, error: orderError } = await supabase
-        .from('nf_orders')
-        .insert([{
-          order_no: orderNo,
-          check_in_date: dates.checkIn,
-          check_out_date: dates.checkOut,
-          customer_name: customerInfo.name,
-          customer_phone: customerInfo.phone,
-          license_plate: customerInfo.license_plate,
-          notes: `[Email: ${customerInfo.email}] [人數: ${customerInfo.adults}大 ${customerInfo.children}小] ${customerInfo.notes}`,
-          total_amount: totalAmount,
-          discount_code: discountAppliedCode || null,
-          discount_amount: discountAmount,
-          status: 'pending',
-          payment_method: method,
-          virtual_account: virtualAccount,
-          line_user_id: session?.user?.user_metadata?.line_id || null
-        }])
-        .select('id')
-        .single();
+      const orderDataPayload = {
+        order_no: orderNo,
+        check_in_date: dates.checkIn,
+        check_out_date: dates.checkOut,
+        customer_name: customerInfo.name,
+        customer_phone: customerInfo.phone,
+        license_plate: customerInfo.license_plate,
+        notes: `[Email: ${customerInfo.email}] [人數: ${customerInfo.adults}大 ${customerInfo.children}小] ${customerInfo.notes}`,
+        total_amount: totalAmount,
+        discount_code: discountAppliedCode || null,
+        discount_amount: discountAmount,
+        deposit_amount: 0,
+        status: 'pending',
+        payment_method: method,
+        virtual_account: virtualAccount,
+        line_user_id: session?.user?.user_metadata?.line_id || null
+      };
 
-      if (orderError) throw orderError;
-      const orderId = orderData.id;
-
-      // 3. Create Order Items
-      const orderItemsToInsert = selectedItems.map(({ item, quantity }) => ({
-        order_id: orderId,
+      const orderItemsPayload = selectedItems.map(({ item, quantity }) => ({
         item_id: item.id,
         quantity: quantity,
-        unit_price: item.price_weekday // Simplified for now
+        unit_price: item.price_weekday
       }));
 
-      const { error: itemsError } = await supabase.from('nf_order_items').insert(orderItemsToInsert);
-      if (itemsError) throw itemsError;
+      // 呼叫資料庫底層的 Atomic Transaction (RPC) 確保絕不超賣
+      const { data: rpcData, error: rpcError } = await supabase.rpc('create_booking_transaction', {
+        p_order: orderDataPayload,
+        p_order_items: orderItemsPayload,
+        p_inventory_updates: inventory_updates
+      });
 
-      // 4. Lock Inventory
-      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-        const dStr = d.toISOString().split('T')[0];
-        const isFirstNight = d.getTime() === start.getTime();
-
-        for (const { item, quantity } of selectedItems) {
-          const isSingleTime = item.category === 'service' && (item.name.includes('單次') || item.name.includes('次計費'));
-          if (isSingleTime && !isFirstNight) {
-            continue; // 單次服務只扣第一天的庫存，多天服務每天扣
-          }
-
-          // Fetch existing inventory record
-          const { data: invData } = await supabase
-            .from('nf_inventory')
-            .select('id, booked_quantity')
-            .eq('date', dStr)
-            .eq('item_id', item.id)
-            .single();
-
-          if (invData) {
-            const { error: updErr } = await supabase.from('nf_inventory')
-              .update({ booked_quantity: invData.booked_quantity + quantity })
-              .eq('id', invData.id);
-            if (updErr) throw new Error(`更新庫存失敗 (${dStr}): ${updErr.message}`);
-          } else {
-            const { error: insErr } = await supabase.from('nf_inventory')
-              .insert([{ date: dStr, item_id: item.id, booked_quantity: quantity }]);
-            if (insErr) throw new Error(`新增庫存失敗 (${dStr}): ${insErr.message} (可能是 Supabase RLS 權限問題)`);
-          }
-        }
+      if (rpcError) {
+        throw new Error(rpcError.message);
       }
+
+      const orderId = rpcData.order_id;
 
       // 5. Redirect or Show Success
       if (method === 'ecpay') {

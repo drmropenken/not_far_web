@@ -186,42 +186,8 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
     const orderNo = `N${dateStr}${randomStr}`;
     
-    const { data: newOrder, error: orderError } = await supabase
-      .from('nf_orders')
-      .insert([{
-        order_no: orderNo,
-        customer_name: formData.customer_name,
-        customer_phone: formData.customer_phone,
-        license_plate: formData.license_plate,
-        check_in_date: formData.check_in_date,
-        check_out_date: formData.check_out_date,
-        notes: `[Email: ${formData.customer_email}] [人數: ${formData.adults}大 ${formData.children}小] ${formData.notes}`,
-        total_amount: finalTotal,
-        discount_code: formData.discount_code || null,
-        discount_amount: discountAmount,
-        deposit_amount: deposit,
-        status: finalStatus // 依據定金自動判斷狀態
-      }])
-      .select()
-      .single();
-
-    if (orderError) {
-      alert('建立訂單失敗: ' + orderError.message);
-      setSaving(false);
-      return;
-    }
-
-    // 2. 建立訂單明細
-    const orderItemsToInsert = selectedItems.map(si => ({
-      order_id: newOrder.id,
-      item_id: si.item.id,
-      quantity: si.quantity,
-      unit_price: si.item.price_weekday // 簡化紀錄，實際上這裡通常紀錄平均價或不用記，因為 total 已經算好了
-    }));
-
-    await supabase.from('nf_order_items').insert(orderItemsToInsert);
-
-    // 3. 扣除庫存 (更新 nf_inventory.booked_quantity)
+    // Prepare inventory updates payload for RPC
+    const inventory_updates = [];
     const start = new Date(formData.check_in_date);
     const end = new Date(formData.check_out_date);
     
@@ -233,31 +199,46 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
         const isSingleTime = si.item.category === 'service' && (si.item.name.includes('單次') || si.item.name.includes('次計費'));
         if (isSingleTime && !isFirstNight) continue;
 
-        // 先讀取當天該項目是否有紀錄
-        const { data: existingInv } = await supabase
-          .from('nf_inventory')
-          .select('id, booked_quantity')
-          .eq('date', dateStr)
-          .eq('item_id', si.item.id)
-          .single();
-
-        if (existingInv) {
-          const { error: updErr } = await supabase
-            .from('nf_inventory')
-            .update({ booked_quantity: existingInv.booked_quantity + si.quantity })
-            .eq('id', existingInv.id);
-          if (updErr) alert(`更新庫存失敗 (${dateStr}): ${updErr.message}`);
-        } else {
-          const { error: insErr } = await supabase
-            .from('nf_inventory')
-            .insert([{
-              date: dateStr,
-              item_id: si.item.id,
-              booked_quantity: si.quantity
-            }]);
-          if (insErr) alert(`新增庫存失敗 (${dateStr}): ${insErr.message} (可能是 Supabase RLS 權限問題)`);
-        }
+        inventory_updates.push({
+          date: dateStr,
+          item_id: si.item.id,
+          quantity: si.quantity
+        });
       }
+    }
+
+    const orderDataPayload = {
+      order_no: orderNo,
+      customer_name: formData.customer_name,
+      customer_phone: formData.customer_phone,
+      license_plate: formData.license_plate,
+      check_in_date: formData.check_in_date,
+      check_out_date: formData.check_out_date,
+      notes: `[Email: ${formData.customer_email}] [人數: ${formData.adults}大 ${formData.children}小] ${formData.notes}`,
+      total_amount: finalTotal,
+      discount_code: formData.discount_code || null,
+      discount_amount: discountAmount,
+      deposit_amount: deposit,
+      status: finalStatus
+    };
+
+    const orderItemsPayload = selectedItems.map(si => ({
+      item_id: si.item.id,
+      quantity: si.quantity,
+      unit_price: si.item.price_weekday
+    }));
+
+    // 呼叫資料庫底層的 Atomic Transaction (RPC) 確保絕不超賣
+    const { data: rpcData, error: rpcError } = await supabase.rpc('create_booking_transaction', {
+      p_order: orderDataPayload,
+      p_order_items: orderItemsPayload,
+      p_inventory_updates: inventory_updates
+    });
+
+    if (rpcError) {
+      alert('建立訂單失敗: ' + rpcError.message);
+      setSaving(false);
+      return;
     }
 
     setSaving(false);
