@@ -137,12 +137,10 @@ export default function MyOrdersFlow() {
       // 3. Final Session reading
       if (isMounted) {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          setSession(session);
-          fetchMyOrders(session);
-        } else {
+        if (!session) {
           setLoading(false);
         }
+        // If session exists, onAuthStateChange will handle fetching orders
       }
     };
 
