@@ -33,6 +33,9 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
   const [formData, setFormData] = useState({
     customer_name: '',
     customer_phone: '',
+    customer_email: '',
+    adults: '2',
+    children: '0',
     license_plate: '',
     check_in_date: '',
     check_out_date: '',
@@ -53,6 +56,9 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
       setFormData({
         customer_name: '',
         customer_phone: '',
+        customer_email: '',
+        adults: '2',
+        children: '0',
         license_plate: '',
         check_in_date: new Date().toISOString().split('T')[0],
         check_out_date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
@@ -189,7 +195,7 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
         license_plate: formData.license_plate,
         check_in_date: formData.check_in_date,
         check_out_date: formData.check_out_date,
-        notes: formData.notes,
+        notes: `[Email: ${formData.customer_email}] [人數: ${formData.adults}大 ${formData.children}小] ${formData.notes}`,
         total_amount: finalTotal,
         discount_code: formData.discount_code || null,
         discount_amount: discountAmount,
@@ -290,6 +296,20 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
                 <div>
                   <label className="block text-sm font-semibold text-stone-600 mb-1.5">聯絡電話 <span className="text-rose-500">*</span></label>
                   <input required type="tel" value={formData.customer_phone} onChange={e => setFormData({...formData, customer_phone: e.target.value})} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" placeholder="例如：0912345678"/>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-stone-600 mb-1.5">電子信箱</label>
+                  <input type="email" value={formData.customer_email} onChange={e => setFormData({...formData, customer_email: e.target.value})} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" placeholder="例如：user@example.com"/>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-600 mb-1.5">大人人數</label>
+                    <input type="number" min="1" value={formData.adults} onChange={e => setFormData({...formData, adults: e.target.value})} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none"/>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-600 mb-1.5">小孩人數</label>
+                    <input type="number" min="0" value={formData.children} onChange={e => setFormData({...formData, children: e.target.value})} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none"/>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-stone-600 mb-1.5">車牌號碼 (選填)</label>
