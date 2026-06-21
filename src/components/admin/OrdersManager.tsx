@@ -504,11 +504,11 @@ export default function OrdersManager() {
                           </div>
                         </div>
                       ) : (
-                        <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note" onClick={() => { setReplyingToOrderId(order.id as unknown as number); setReplyText(''); }}>
-                          <div className="flex justify-between items-start">
-                            <span className="whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto">💬 客人備註：<br/>{parsed.notes || <span className="opacity-50 italic">無</span>}</span>
-                            <span className="opacity-0 group-hover/note:opacity-100 text-stone-500 shrink-0 ml-2 font-bold bg-white px-1.5 py-0.5 rounded shadow-sm border border-stone-200">我要回覆 ✏️</span>
+                        <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note relative" onClick={() => { setReplyingToOrderId(order.id as unknown as number); setReplyText(''); }}>
+                          <div className="whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto pr-20">
+                            💬 客人備註：<br/>{parsed.notes || <span className="opacity-50 italic">無</span>}
                           </div>
+                          <span className="absolute top-2 right-2 opacity-0 group-hover/note:opacity-100 text-stone-500 font-bold bg-white px-1.5 py-0.5 rounded shadow-sm border border-stone-200">我要回覆 ✏️</span>
                         </div>
                       )}
                       
@@ -529,11 +529,11 @@ export default function OrdersManager() {
                           </div>
                         </div>
                       ) : (
-                        <div className="mt-2 p-2 bg-amber-50 hover:bg-amber-100/80 rounded text-xs text-amber-800 border border-amber-200 cursor-pointer transition-colors group/note" onClick={() => { setEditingAdminNoteOrderId(order.id); setAdminNoteText(order.admin_notes || ''); }}>
-                          <div className="flex justify-between items-start font-medium">
-                            <span className="whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto">📝 營主備註：<br/>{order.admin_notes || <span className="opacity-50 italic">點擊新增內部備註...</span>}</span>
-                            <span className="opacity-0 group-hover/note:opacity-100 text-amber-600 shrink-0 ml-2 font-bold bg-white px-1.5 py-0.5 rounded shadow-sm border border-amber-200">編輯 ✏️</span>
+                        <div className="mt-2 p-2 bg-amber-50 hover:bg-amber-100/80 rounded text-xs text-amber-800 border border-amber-200 cursor-pointer transition-colors group/note relative" onClick={() => { setEditingAdminNoteOrderId(order.id); setAdminNoteText(order.admin_notes || ''); }}>
+                          <div className="whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto pr-16 font-medium">
+                            📝 營主備註：<br/>{order.admin_notes || <span className="opacity-50 italic">點擊新增內部備註...</span>}
                           </div>
+                          <span className="absolute top-2 right-2 opacity-0 group-hover/note:opacity-100 text-amber-600 font-bold bg-white px-1.5 py-0.5 rounded shadow-sm border border-amber-200">編輯 ✏️</span>
                         </div>
                       )}
                     </div>
