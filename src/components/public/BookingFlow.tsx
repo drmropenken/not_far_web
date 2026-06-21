@@ -788,14 +788,8 @@ export default function BookingFlow() {
             </div>
             <div className="pt-6 mt-auto border-t border-slate-100 shrink-0 space-y-3">
               <button 
-                onClick={() => handleCheckout('ecpay')}
-                className="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-lg hover:bg-emerald-500 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
-              >
-                前往綠界付款 <span>💳</span>
-              </button>
-              <button 
                 onClick={() => handleCheckout('bank_transfer')}
-                className="w-full bg-white border-2 border-emerald-600 text-emerald-700 font-black py-3.5 rounded-xl hover:bg-emerald-50 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
+                className="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-lg hover:bg-emerald-500 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
               >
                 取號匯款 (保留 10 天) <span>🏦</span>
               </button>
