@@ -34,16 +34,16 @@ export default function BookingFlow() {
   // Form states
   const [dates, setDates] = useState({ checkIn: '', checkOut: '' });
   const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '', email: '', license_plate: '', adults: '2', children: '0', notes: '' });
-  const [availableItems, setAvailableItems] = useState<{item: Item, remaining: number}[]>([]);
+  const [availableItems, setAvailableItems] = useState<{ item: Item, remaining: number }[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [fetchingItems, setFetchingItems] = useState(false);
-  
+
   // Discount states
   const [discountCode, setDiscountCode] = useState('');
   const [discountPercent, setDiscountPercent] = useState(1);
   const [discountError, setDiscountError] = useState('');
   const [discountAppliedCode, setDiscountAppliedCode] = useState('');
-  const [finalOrderInfo, setFinalOrderInfo] = useState<{orderNo: string, virtualAccount: string, totalAmount: number} | null>(null);
+  const [finalOrderInfo, setFinalOrderInfo] = useState<{ orderNo: string, virtualAccount: string, totalAmount: number } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -61,7 +61,7 @@ export default function BookingFlow() {
           const hashParams = new URLSearchParams(hash.substring(1));
           const accessToken = hashParams.get('access_token');
           const refreshToken = hashParams.get('refresh_token');
-          
+
           if (accessToken && refreshToken) {
             await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
             window.history.replaceState(null, '', window.location.pathname);
@@ -74,7 +74,7 @@ export default function BookingFlow() {
       // 2. 初始化 LIFF 並處理 LINE 暗影登入
       try {
         await liff.init({ liffId: '2010317535-p1JobvGF' });
-        
+
         if (liff.isLoggedIn()) {
           setLoading(true);
           const profile = await liff.getProfile();
@@ -102,7 +102,7 @@ export default function BookingFlow() {
                 }
               }
             });
-            
+
             if (signUpError) {
               alert("自動註冊失敗：" + signUpError.message);
             }
@@ -112,7 +112,7 @@ export default function BookingFlow() {
               email: fakeEmail,
               password: fakePassword
             });
-            
+
             if (retrySignInError) {
               alert("註冊後登入失敗：" + retrySignInError.message + " (請檢查 Supabase 是否開啟了 Email Confirmation)");
             }
@@ -128,10 +128,10 @@ export default function BookingFlow() {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (session) {
           setSession(session);
-          setCustomerInfo(prev => ({ 
-            ...prev, 
-            email: session.user.email || '', 
-            name: session.user.user_metadata?.full_name || '' 
+          setCustomerInfo(prev => ({
+            ...prev,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.full_name || ''
           }));
           setStep(prev => prev === 0 ? 1 : prev);
         }
@@ -144,10 +144,10 @@ export default function BookingFlow() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && isMounted) {
         setSession(session);
-        setCustomerInfo(prev => ({ 
-          ...prev, 
-          email: session.user.email || '', 
-          name: session.user.user_metadata?.full_name || '' 
+        setCustomerInfo(prev => ({
+          ...prev,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.full_name || ''
         }));
         setStep(prev => prev === 0 ? 1 : prev);
         setLoading(false);
@@ -170,7 +170,7 @@ export default function BookingFlow() {
     setFetchingItems(true);
     const start = new Date(dates.checkIn);
     const end = new Date(dates.checkOut);
-    
+
     // 1. Fetch all items
     const { data: items } = await supabase
       .from('nf_items')
@@ -194,14 +194,14 @@ export default function BookingFlow() {
     // 2. Fetch inventory for the period
     const startStr = start.toISOString().split('T')[0];
     const endStr = new Date(end.getTime() - 86400000).toISOString().split('T')[0];
-    
+
     const { data: inventory } = await supabase
       .from('nf_inventory')
       .select('*')
       .gte('date', startStr)
       .lte('date', endStr);
 
-    const available: {item: Item, remaining: number}[] = [];
+    const available: { item: Item, remaining: number }[] = [];
 
     for (const item of items) {
       let minRemaining = item.total_quantity;
@@ -214,7 +214,7 @@ export default function BookingFlow() {
 
         const dateStr = d.toISOString().split('T')[0];
         const record = inventory?.find(i => i.item_id === item.id && i.date === dateStr);
-        
+
         const override = record?.override_quantity;
         const total = (override !== null && override !== undefined) ? override : item.total_quantity;
         const booked = record?.booked_quantity || 0;
@@ -252,11 +252,11 @@ export default function BookingFlow() {
     });
   };
 
-  const renderItemCard = ({ item, remaining }: {item: Item, remaining: number}) => {
+  const renderItemCard = ({ item, remaining }: { item: Item, remaining: number }) => {
     const selected = selectedItems.find(s => s.item.id === item.id);
     const qty = selected?.quantity || 0;
     const catStyle = getCategoryStyle(item.category);
-    
+
     const unit = item.category === 'campsite' ? '帳' : '組';
 
     return (
@@ -288,17 +288,17 @@ export default function BookingFlow() {
             )}
           </div>
         </div>
-        
+
         <div className={`flex items-center justify-between border-t border-opacity-50 pt-3 mt-1 ${qty > 0 ? catStyle.border : 'border-slate-100'}`}>
           <span className="text-sm font-bold text-slate-600">數量</span>
           <div className="flex items-center gap-3 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
-            <button 
+            <button
               onClick={() => handleItemSelect(item, Math.max(0, qty - 1))}
               className={`w-8 h-8 flex items-center justify-center rounded-lg shadow-sm font-bold disabled:opacity-50 transition-colors ${qty > 0 ? `${catStyle.btnHover} ${catStyle.btnText}` : 'text-slate-600 hover:bg-slate-100'}`}
               disabled={qty === 0}
             >-</button>
             <span className={`w-6 text-center font-black ${qty > 0 ? catStyle.btnText : 'text-slate-800'}`}>{qty}</span>
-            <button 
+            <button
               onClick={() => handleItemSelect(item, Math.min(remaining, qty + 1))}
               className={`w-8 h-8 flex items-center justify-center rounded-lg shadow-sm font-bold disabled:opacity-50 transition-colors ${qty > 0 ? `${catStyle.btnHover} ${catStyle.btnText}` : 'text-slate-600 hover:bg-slate-100'}`}
               disabled={qty >= remaining || remaining === 0}
@@ -355,7 +355,7 @@ export default function BookingFlow() {
       .eq('code', discountCode.trim().toUpperCase())
       .eq('is_active', true)
       .single();
-      
+
     if (data) {
       setDiscountPercent(data.discount_percent);
       setDiscountError('');
@@ -377,7 +377,7 @@ export default function BookingFlow() {
 
       const totalAmount = calculateTotal();
       const discountAmount = calculateDiscountAmount();
-      
+
       // 1.5 Pre-flight check: Ensure inventory is still available
       const start = new Date(dates.checkIn);
       const end = new Date(dates.checkOut);
@@ -522,7 +522,7 @@ export default function BookingFlow() {
         <div className="text-6xl mb-6 animate-bounce">🚧</div>
         <h1 className="text-3xl font-black text-slate-800 mb-4 tracking-widest">系統升級維護中</h1>
         <p className="text-slate-600 mb-8 max-w-md leading-relaxed font-medium">
-          不遠露營度假山莊的全新線上預訂系統正在進行最後的測試與升級。<br/>
+          不遠露營度假山莊的全新線上預訂系統正在進行最後的測試與升級。<br />
           我們將於近期正式開放，敬請期待！
         </p>
         <a href="/" className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl shadow-lg hover:bg-emerald-700 transition-colors font-bold tracking-wide">
@@ -556,7 +556,7 @@ export default function BookingFlow() {
               <div className="text-6xl mb-2">👋</div>
               <h1 className="text-2xl font-black text-slate-800 tracking-wider">歡迎來到不遠</h1>
               <p className="text-sm text-slate-500 font-medium">請先登入以繼續您的預訂流程或查詢訂單</p>
-              
+
               <div className="space-y-3 pt-4">
                 <button onClick={handleLineLogin} className="w-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-[#06C755]/20">
                   <span className="text-xl">💬</span> LINE 快速登入
@@ -575,29 +575,29 @@ export default function BookingFlow() {
             <div className="space-y-6 flex-1">
               <div className="bg-emerald-50/60 p-6 rounded-2xl shadow-sm border border-emerald-100/50">
                 <label className="block text-sm font-black text-emerald-800 uppercase tracking-wider mb-3">入住日期 (Check-in)</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={dates.checkIn}
                   min={new Date().toLocaleDateString('en-CA')}
-                  onChange={(e) => setDates({...dates, checkIn: e.target.value, checkOut: ''})}
-                  className="w-full text-xl font-black text-slate-800 bg-white border-2 border-emerald-200/60 rounded-xl px-4 py-4 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all shadow-inner" 
+                  onChange={(e) => setDates({ ...dates, checkIn: e.target.value, checkOut: '' })}
+                  className="w-full text-xl font-black text-slate-800 bg-white border-2 border-emerald-200/60 rounded-xl px-4 py-4 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all shadow-inner"
                 />
               </div>
               <div className="bg-emerald-50/60 p-6 rounded-2xl shadow-sm border border-emerald-100/50">
                 <label className="block text-sm font-black text-emerald-800 uppercase tracking-wider mb-3">退房日期 (Check-out)</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={dates.checkOut}
                   min={dates.checkIn ? new Date(new Date(dates.checkIn).getTime() + 86400000).toLocaleDateString('en-CA') : new Date().toLocaleDateString('en-CA')}
-                  onChange={(e) => setDates({...dates, checkOut: e.target.value})}
+                  onChange={(e) => setDates({ ...dates, checkOut: e.target.value })}
                   disabled={!dates.checkIn}
-                  className="w-full text-xl font-black text-slate-800 bg-white border-2 border-emerald-200/60 rounded-xl px-4 py-4 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all disabled:opacity-50 shadow-inner" 
+                  className="w-full text-xl font-black text-slate-800 bg-white border-2 border-emerald-200/60 rounded-xl px-4 py-4 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all disabled:opacity-50 shadow-inner"
                 />
               </div>
             </div>
             <div className="pt-6 mt-auto">
-              <button 
-                onClick={() => setStep(2)} 
+              <button
+                onClick={() => setStep(2)}
                 disabled={!dates.checkIn || !dates.checkOut}
                 className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -606,7 +606,7 @@ export default function BookingFlow() {
             </div>
           </div>
         )}
-        
+
         {step === 2 && (
           <div className="flex-1 p-6 flex flex-col">
             <button onClick={() => setStep(1)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改日期</button>
@@ -624,8 +624,8 @@ export default function BookingFlow() {
               )}
             </div>
             <div className="pt-6 mt-auto border-t border-slate-100 shrink-0">
-              <button 
-                onClick={() => setStep(3)} 
+              <button
+                onClick={() => setStep(3)}
                 disabled={selectedItems.filter(i => i.item.category === 'campsite').length === 0}
                 className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -639,7 +639,7 @@ export default function BookingFlow() {
           <div className="flex-1 p-6 flex flex-col">
             <button onClick={() => setStep(2)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改營位</button>
             <h2 className="text-2xl font-black text-slate-800 mb-6">加購裝備與食材服務</h2>
-            
+
             <div className="bg-emerald-50/80 rounded-xl p-4 mb-6 border border-emerald-200 shadow-sm">
               <h3 className="font-bold text-emerald-800 text-sm mb-2 flex items-center gap-1"><span>⛺</span> 您已選擇的營位：</h3>
               <div className="space-y-1.5">
@@ -661,9 +661,9 @@ export default function BookingFlow() {
               {availableItems.filter(a => a.item.category === 'service').length > 0 && (
                 <div className="mt-6 mb-2 p-4 bg-amber-50 border border-amber-200 rounded-xl shadow-sm">
                   <p className="text-sm text-amber-800 font-bold flex items-start gap-2 leading-relaxed">
-                    <span className="text-lg leading-none">💡</span> 
+                    <span className="text-lg leading-none">💡</span>
                     <span>
-                      溫馨提醒：加購份數為<strong className="text-amber-900 border-b border-amber-900/30 pb-0.5 mx-1">「每晚」</strong>計費，請確認您的加購數量。<br/>
+                      溫馨提醒：加購份數為<strong className="text-amber-900 border-b border-amber-900/30 pb-0.5 mx-1">「每晚」</strong>計費，請確認您的加購數量。<br />
                       若您僅需加購「單日」餐飲，請勿在此勾選，請於下一步的「特殊需求備註」中說明，並於入住時現場加購結帳即可！
                     </span>
                   </p>
@@ -671,8 +671,8 @@ export default function BookingFlow() {
               )}
             </div>
             <div className="pt-6 mt-auto border-t border-slate-100 shrink-0">
-              <button 
-                onClick={() => setStep(4)} 
+              <button
+                onClick={() => setStep(4)}
                 className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
               >
                 下一步 (填寫聯絡資料) <span>&rarr;</span>
@@ -683,44 +683,44 @@ export default function BookingFlow() {
 
         {step === 4 && (
           <div className="flex-1 p-6 flex flex-col">
-             <button onClick={() => setStep(3)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改加購項目</button>
+            <button onClick={() => setStep(3)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改加購項目</button>
             <h2 className="text-2xl font-black text-slate-800 mb-6">填寫聯絡資料</h2>
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
               <div className="bg-white p-5 rounded-2xl shadow-sm space-y-4">
                 <h3 className="font-bold text-slate-800 text-lg">聯絡資訊</h3>
-                
+
                 <div>
                   <label className="block text-sm font-bold text-slate-600 mb-1.5">聯絡人姓名 <span className="text-rose-500">*</span></label>
-                  <input required type="text" value={customerInfo.name} onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="例如：王小明"/>
+                  <input required type="text" value={customerInfo.name} onChange={e => setCustomerInfo({ ...customerInfo, name: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="例如：王小明" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-600 mb-1.5">手機號碼 <span className="text-rose-500">*</span></label>
-                  <input required type="tel" value={customerInfo.phone} onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="例如：0912345678"/>
+                  <input required type="tel" value={customerInfo.phone} onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="例如：0912345678" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-600 mb-1.5">電子郵件 <span className="text-rose-500">*</span></label>
-                  <input required type="email" value={customerInfo.email} onChange={e => setCustomerInfo({...customerInfo, email: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="用於寄送訂單通知"/>
+                  <input required type="email" value={customerInfo.email} onChange={e => setCustomerInfo({ ...customerInfo, email: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="用於寄送訂單通知" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-600 mb-1.5">車牌號碼 (選填)</label>
-                  <input type="text" value={customerInfo.license_plate} onChange={e => setCustomerInfo({...customerInfo, license_plate: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="如有開車請填寫，方便辨識進場"/>
+                  <input type="text" value={customerInfo.license_plate} onChange={e => setCustomerInfo({ ...customerInfo, license_plate: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="如有開車請填寫，方便辨識進場" />
                 </div>
 
                 <div className="flex gap-4">
                   <div className="flex-1">
                     <label className="block text-sm font-bold text-slate-600 mb-1.5">成人人數 <span className="text-rose-500">*</span></label>
-                    <input required type="number" min="1" value={customerInfo.adults} onChange={e => setCustomerInfo({...customerInfo, adults: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"/>
+                    <input required type="number" min="1" value={customerInfo.adults} onChange={e => setCustomerInfo({ ...customerInfo, adults: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" />
                   </div>
                   <div className="flex-1">
                     <label className="block text-sm font-bold text-slate-600 mb-1.5">兒童人數</label>
-                    <input type="number" min="0" value={customerInfo.children} onChange={e => setCustomerInfo({...customerInfo, children: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"/>
+                    <input type="number" min="0" value={customerInfo.children} onChange={e => setCustomerInfo({ ...customerInfo, children: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" />
                   </div>
                 </div>
-                
+
                 <div className="pt-2 border-t border-slate-100">
                   <label className="block text-sm font-bold text-slate-600 mb-1.5">折扣碼 (選填)</label>
                   <div className="flex gap-2">
-                    <input type="text" value={discountCode} onChange={e => setDiscountCode(e.target.value.toUpperCase())} className="flex-1 border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none uppercase font-mono tracking-wider" placeholder="請輸入折扣代碼"/>
+                    <input type="text" value={discountCode} onChange={e => setDiscountCode(e.target.value.toUpperCase())} className="flex-1 border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none uppercase font-mono tracking-wider" placeholder="請輸入折扣代碼" />
                     <button type="button" onClick={handleVerifyDiscount} className="bg-slate-800 text-white px-5 rounded-xl font-bold hover:bg-slate-700 transition-colors whitespace-nowrap text-sm">套用</button>
                   </div>
                   {discountError && <p className="text-rose-500 text-sm mt-1.5 font-bold">{discountError}</p>}
@@ -729,13 +729,13 @@ export default function BookingFlow() {
 
                 <div>
                   <label className="block text-sm font-bold text-slate-600 mb-1.5">特殊需求備註 (選填)</label>
-                  <textarea value={customerInfo.notes} onChange={e => setCustomerInfo({...customerInfo, notes: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none h-24 resize-none" placeholder="有任何需要我們協助的地方嗎？"/>
+                  <textarea value={customerInfo.notes} onChange={e => setCustomerInfo({ ...customerInfo, notes: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none h-24 resize-none" placeholder="有任何需要我們協助的地方嗎？" />
                 </div>
               </div>
             </div>
             <div className="pt-6 mt-auto border-t border-slate-100 shrink-0">
-              <button 
-                onClick={() => setStep(5)} 
+              <button
+                onClick={() => setStep(5)}
                 disabled={!customerInfo.name || !customerInfo.phone || !customerInfo.email}
                 className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -747,7 +747,7 @@ export default function BookingFlow() {
 
         {step === 5 && (
           <div className="flex-1 p-6 flex flex-col">
-             <button onClick={() => setStep(4)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改資料</button>
+            <button onClick={() => setStep(4)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改資料</button>
             <h2 className="text-2xl font-black text-slate-800 mb-6">確認結帳</h2>
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4 mb-4">
@@ -768,11 +768,11 @@ export default function BookingFlow() {
                   const nights = Math.round((new Date(dates.checkOut).getTime() - new Date(dates.checkIn).getTime()) / (1000 * 60 * 60 * 24));
                   const isSingleTime = item.category === 'service' && (item.name.includes('單次') || item.name.includes('次計費'));
                   const unit = item.category === 'campsite' ? '帳' : '份';
-                  
+
                   let itemTotal = 0;
                   let weekdays = 0;
                   let holidays = 0;
-                  
+
                   if (isSingleTime) {
                     itemTotal = item.price_weekday * quantity;
                   } else if (item.category === 'service') {
@@ -796,7 +796,7 @@ export default function BookingFlow() {
                     <div key={item.id} className="flex justify-between items-start py-3 border-b border-slate-50 last:border-0">
                       <div className="flex-1 pr-4">
                         <span className="text-slate-700 font-bold block leading-snug">
-                          {item.name} 
+                          {item.name}
                           <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md text-xs ml-2 border border-emerald-100 inline-block align-middle">
                             {isSingleTime ? `${quantity} ${unit} (單次)` : `${quantity} ${unit} × ${nights} 晚`}
                           </span>
@@ -807,9 +807,9 @@ export default function BookingFlow() {
                           ) : item.category === 'service' ? (
                             `NT$ ${item.price_weekday} × ${quantity} ${unit} × ${nights} 晚`
                           ) : (
-                            holidays > 0 && weekdays > 0 
+                            holidays > 0 && weekdays > 0
                               ? `(平日 NT$ ${item.price_weekday} × ${weekdays}晚 + 假日 NT$ ${item.price_holiday} × ${holidays}晚) × ${quantity}${unit}`
-                              : holidays > 0 
+                              : holidays > 0
                                 ? `假日 NT$ ${item.price_holiday} × ${holidays}晚 × ${quantity}${unit}`
                                 : `平日 NT$ ${item.price_weekday} × ${weekdays}晚 × ${quantity}${unit}`
                           )}
@@ -821,7 +821,7 @@ export default function BookingFlow() {
                     </div>
                   );
                 })}
-                
+
                 <div className="space-y-2 mt-4 pt-4 border-t border-emerald-100/50 text-slate-700 font-medium">
                   <div className="flex justify-between items-center text-sm">
                     <span>原價總計</span>
@@ -841,7 +841,7 @@ export default function BookingFlow() {
               </div>
             </div>
             <div className="pt-6 mt-auto border-t border-slate-100 shrink-0 space-y-3">
-              <button 
+              <button
                 onClick={() => handleCheckout('bank_transfer')}
                 className="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-lg hover:bg-emerald-500 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
               >
@@ -857,10 +857,10 @@ export default function BookingFlow() {
               <div className="text-6xl mb-4 text-emerald-500">✅</div>
               <h1 className="text-2xl font-black text-slate-800 tracking-wider">訂單已成立！</h1>
               <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                您的訂單編號為：<strong className="text-slate-800">{finalOrderInfo.orderNo}</strong><br/>
+                您的訂單編號為：<strong className="text-slate-800">{finalOrderInfo.orderNo}</strong><br />
                 請於 <strong className="text-rose-500">10 天內</strong> 完成匯款，逾期系統將自動取消訂單。
               </p>
-              
+
               <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-left space-y-4">
                 <div>
                   <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">匯款銀行</span>
