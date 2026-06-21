@@ -181,7 +181,7 @@ export default function DashboardStats() {
                       {parsed.email && (
                         <a href={`mailto:${parsed.email}`} className="flex items-center gap-1.5 text-stone-500 text-xs w-full max-w-[200px] hover:text-emerald-600 transition-colors group/email" title={`寄信給 ${parsed.email}`}>
                           <span className="opacity-70 shrink-0">✉️</span> 
-                          <span className="truncate group-hover/email:whitespace-normal group-hover/email:break-all">{parsed.email}</span>
+                          <span className="truncate">{parsed.email}</span>
                         </a>
                       )}
                     </div>
@@ -268,7 +268,7 @@ export default function DashboardStats() {
                       {parsed.email && (
                         <a href={`mailto:${parsed.email}`} className="flex items-center gap-1.5 text-stone-500 text-xs w-full max-w-[200px] hover:text-emerald-600 transition-colors group/email" title={`寄信給 ${parsed.email}`}>
                           <span className="opacity-70 shrink-0">✉️</span> 
-                          <span className="truncate group-hover/email:whitespace-normal group-hover/email:break-all">{parsed.email}</span>
+                          <span className="truncate">{parsed.email}</span>
                         </a>
                       )}
                     </div>
