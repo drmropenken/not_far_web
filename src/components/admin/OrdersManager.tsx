@@ -403,7 +403,11 @@ export default function OrdersManager() {
                     {getStatusBadge(order.status)}
                   </div>
                   <div className="text-xs text-stone-400">
-                    下單時間: {new Date(order.created_at).toLocaleString('zh-TW')}
+                    下單時間: {new Date(order.created_at.endsWith('Z') || order.created_at.includes('+') ? order.created_at : order.created_at + 'Z').toLocaleString('zh-TW', {
+                      year: 'numeric', month: '2-digit', day: '2-digit',
+                      hour: '2-digit', minute: '2-digit', second: '2-digit',
+                      hour12: false
+                    })}
                   </div>
                 </div>
                 
