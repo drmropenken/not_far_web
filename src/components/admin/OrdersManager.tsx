@@ -389,11 +389,11 @@ export default function OrdersManager() {
             <p className="font-medium tracking-wider">目前沒有符合條件的訂單</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 align-top">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 items-stretch">
             {filteredOrders.map(order => {
               const parsed = parseOrderNotes(order.notes);
               return (
-              <div key={order.id} className={`bg-white rounded-xl border ${order.status === 'cancelled' ? 'border-rose-100 opacity-75' : 'border-stone-200'} shadow-sm overflow-hidden hover:shadow-md transition-all group`}>
+              <div key={order.id} className={`bg-white rounded-xl border ${order.status === 'cancelled' ? 'border-rose-100 opacity-75' : 'border-stone-200'} shadow-sm overflow-hidden flex flex-col group transition-all hover:shadow-md`}>
                 {/* 訂單表頭 */}
                 <div className={`bg-stone-100/50 border-b ${order.status === 'cancelled' ? 'border-rose-100' : 'border-stone-100'} px-5 py-3 flex justify-between items-center`}>
                   <div className="flex items-center gap-3">
@@ -408,7 +408,7 @@ export default function OrdersManager() {
                 </div>
                 
                 {/* 訂單內容 */}
-                <div className="p-5 flex flex-col md:flex-row gap-6">
+                <div className="p-5 flex flex-col md:flex-row gap-6 flex-1">
                   {/* 客戶資訊 */}
                   <div className="flex-1 space-y-3">
                     <div className="flex items-center gap-3">
