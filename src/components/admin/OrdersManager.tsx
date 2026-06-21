@@ -359,7 +359,7 @@ export default function OrdersManager() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
             />
-            <span className="absolute left-3 top-1/2 -transtone-y-1/2 opacity-50">🔍</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50">🔍</span>
           </div>
           <button 
             onClick={handleExportCSV}
