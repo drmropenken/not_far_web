@@ -475,7 +475,7 @@ export default function OrdersManager() {
                       <div className="flex justify-between items-center">
                         <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider">預訂內容</h4>
                         {order.status !== 'cancelled' && (
-                          <button onClick={() => setEditingOrderItemsOrder(order)} className="text-xs flex items-center gap-1 text-indigo-500 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded transition-colors font-medium border border-indigo-200 shadow-sm opacity-0 group-hover:opacity-100">
+                          <button onClick={() => setEditingOrderItemsOrder(order)} className="text-xs flex items-center gap-1 text-indigo-500 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded transition-colors font-medium border border-indigo-200 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100">
                             <span>🛍️</span> 編輯明細
                           </button>
                         )}
@@ -553,7 +553,7 @@ export default function OrdersManager() {
                               NT$ {order.total_amount?.toLocaleString()}
                             </span>
                             {order.status !== 'cancelled' && (
-                              <button onClick={() => openFinancialsModal(order)} className="opacity-0 group-hover:opacity-100 transition-opacity text-stone-400 hover:text-amber-600" title="微調訂單金額">
+                              <button onClick={() => openFinancialsModal(order)} className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-stone-400 hover:text-amber-600" title="微調訂單金額">
                                 ✏️
                               </button>
                             )}
@@ -602,7 +602,7 @@ export default function OrdersManager() {
 
 
                 {/* 操作按鈕 */}
-                <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                   <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors mr-auto">
                     刪除紀錄
                   </button>
