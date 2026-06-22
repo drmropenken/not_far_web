@@ -280,11 +280,11 @@ export default function OrdersManager() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'paid': return <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold border border-emerald-200">已付款</span>;
-      case 'deposit_paid': return <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-bold border border-teal-200 shadow-sm">🪙 已付定金</span>;
-      case 'checked_in': return <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">✅ 已報到</span>;
-      case 'pending': return <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-200">待付款</span>;
-      case 'cancelled': return <span className="px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold border border-rose-200">已取消</span>;
+      case 'paid': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold border border-emerald-200">已付款</span>;
+      case 'deposit_paid': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-bold border border-teal-200 shadow-sm">🪙 已付定金</span>;
+      case 'checked_in': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">✅ 已報到</span>;
+      case 'pending': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-200">待付款</span>;
+      case 'cancelled': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold border border-rose-200">已取消</span>;
       default: return null;
     }
   };
@@ -395,8 +395,8 @@ export default function OrdersManager() {
               return (
               <div key={order.id} className={`bg-white rounded-xl border ${order.status === 'cancelled' ? 'border-rose-100 opacity-75' : 'border-stone-200'} shadow-sm overflow-hidden flex flex-col group transition-all hover:shadow-md`}>
                 {/* 訂單表頭 */}
-                <div className={`bg-stone-100/50 border-b ${order.status === 'cancelled' ? 'border-rose-100' : 'border-stone-100'} px-5 py-3 flex justify-between items-center`}>
-                  <div className="flex items-center gap-3">
+                <div className={`bg-stone-100/50 border-b ${order.status === 'cancelled' ? 'border-rose-100' : 'border-stone-100'} px-4 sm:px-5 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0`}>
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <span className="font-mono text-xs text-stone-500 bg-stone-200/70 px-2 py-1 rounded">
                       {order.order_no}
                     </span>
@@ -604,26 +604,26 @@ export default function OrdersManager() {
                 {/* 操作按鈕 */}
                 <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                   <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors mr-auto">
-                    刪除紀錄
+                    刪除
                   </button>
                   {order.status === 'pending' && (
-                    <button onClick={() => updateOrderStatus(order.id, 'paid')} className="px-4 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
-                      標記為已付款
+                    <button onClick={() => updateOrderStatus(order.id, 'paid')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
+                      標記已付款
                     </button>
                   )}
                   {order.status === 'deposit_paid' && (
-                    <button onClick={() => updateOrderStatus(order.id, 'paid')} className="px-4 py-1.5 text-xs font-bold text-teal-600 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-md transition-colors shadow-sm">
-                      標記已付尾款 (轉為已付款)
+                    <button onClick={() => updateOrderStatus(order.id, 'paid')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-teal-600 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-md transition-colors shadow-sm">
+                      標記已付尾款
                     </button>
                   )}
                   {order.status === 'paid' && (
-                    <button onClick={() => updateOrderStatus(order.id, 'checked_in')} className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors shadow-sm">
+                    <button onClick={() => updateOrderStatus(order.id, 'checked_in')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors shadow-sm">
                       ✅ 標記已報到
                     </button>
                   )}
                   {order.status !== 'cancelled' && (
-                    <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="px-4 py-1.5 text-xs font-bold text-stone-600 bg-white hover:bg-stone-100 border border-stone-200 rounded-md transition-colors">
-                      取消訂單 (退還庫存)
+                    <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-stone-600 bg-white hover:bg-stone-100 border border-stone-200 rounded-md transition-colors">
+                      取消訂單
                     </button>
                   )}
                 </div>
