@@ -137,7 +137,8 @@ export const sendOrderNotification = async (orderData: any, actionType: EmailAct
           ` : ''}
 
           <div style="margin-top: 32px; text-align: center;">
-            <a href="https://not-far-web.vercel.app/admin" style="background-color: #0f172a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; letter-spacing: 1px;">前往管理後台查看</a>
+            <a href="https://not-far-web.vercel.app/" style="background-color: #0f172a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; letter-spacing: 1px;">前往不遠山莊官網</a>
+            <p style="margin-top: 16px; font-size: 14px; color: #64748b;">如有任何問題，歡迎透過官方 LINE 聯繫我們！</p>
           </div>
         </div>
       </div>
