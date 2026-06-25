@@ -13,10 +13,10 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const { orderData, actionType } = body;
+    const { orderData, actionType, updateReason } = body;
 
     // Send the email
-    const result = await sendOrderNotification(orderData, actionType as EmailActionType);
+    const result = await sendOrderNotification(orderData, actionType as EmailActionType, updateReason);
 
     if (result.success) {
       return new Response(JSON.stringify({ success: true }), { 

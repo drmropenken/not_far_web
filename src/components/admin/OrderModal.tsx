@@ -220,7 +220,9 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
       discount_code: formData.discount_code || null,
       discount_amount: discountAmount,
       deposit_amount: deposit,
-      status: finalStatus
+      status: finalStatus,
+      payment_method: 'bank_transfer', // 手動建單預設為匯款
+      virtual_account: null
     };
 
     const orderItemsPayload = selectedItems.map(si => ({
@@ -241,6 +243,12 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
       setSaving(false);
       return;
     }
+
+    const orderId = rpcData.order_id;
+    // 手動接單：使用 89 + 訂單 ID 末 5 碼
+    const seq5 = (orderId % 100000).toString().padStart(5, '0');
+    const finalVirtualAccount = `962948189${seq5}`;
+    await supabase.from('nf_orders').update({ virtual_account: finalVirtualAccount }).eq('id', orderId);
 
     setSaving(false);
     onSuccess();

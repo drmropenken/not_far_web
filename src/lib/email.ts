@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 
 export type EmailActionType = 'new_order' | 'status_update' | 'cancelled';
 
-export const sendOrderNotification = async (orderData: any, actionType: EmailActionType) => {
+export const sendOrderNotification = async (orderData: any, actionType: EmailActionType, updateReason?: string) => {
   // 從備註中提取客人的 Email (格式: [Email: xxx@gmail.com])
   let customerEmail = '';
   if (orderData.notes) {
@@ -49,9 +49,9 @@ export const sendOrderNotification = async (orderData: any, actionType: EmailAct
       actionText = '請盡快登入後台確認訂單狀態。';
       break;
     case 'status_update':
-      subject = `[不遠露營] 🔄 訂單狀態更新 (編號: ${orderData.order_no})`;
-      title = '訂單狀態已更新！';
-      actionText = '訂單內容或狀態已被手動修改。';
+      subject = updateReason ? `[不遠露營] 🔄 ${updateReason} (編號: ${orderData.order_no})` : `[不遠露營] 🔄 訂單狀態更新 (編號: ${orderData.order_no})`;
+      title = updateReason || '訂單狀態已更新！';
+      actionText = updateReason ? `您的訂單${updateReason}，請見下方最新明細。` : '訂單內容或狀態已被手動修改。';
       break;
     case 'cancelled':
       subject = `[不遠露營] ❌ 訂單已取消 (編號: ${orderData.order_no})`;

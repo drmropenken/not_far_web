@@ -424,9 +424,6 @@ export default function BookingFlow() {
         }
       }
 
-      const phoneLast5 = customerInfo.phone.slice(-5).padStart(5, '0');
-      const virtualAccount = method === 'bank_transfer' ? `962948188${phoneLast5}` : null;
-
       const orderDataPayload = {
         order_no: orderNo,
         check_in_date: dates.checkIn,
@@ -441,7 +438,7 @@ export default function BookingFlow() {
         deposit_amount: 0,
         status: 'pending',
         payment_method: method,
-        virtual_account: virtualAccount,
+        virtual_account: null, // 先填 null，等拿到 ID 後再更新
         line_user_id: session?.user?.user_metadata?.line_id || null
       };
 
@@ -464,6 +461,14 @@ export default function BookingFlow() {
 
       const orderId = rpcData.order_id;
 
+      // 網頁下單：使用 88 + 客戶手機後五碼
+      let finalVirtualAccount = null;
+      if (method === 'bank_transfer') {
+        const phoneLast5 = customerInfo.phone.slice(-5).padStart(5, '0');
+        finalVirtualAccount = `962948188${phoneLast5}`;
+        await supabase.from('nf_orders').update({ virtual_account: finalVirtualAccount }).eq('id', orderId);
+      }
+
       // Email Notification
       try {
         const itemsText = selectedItems.map(({ item, quantity }) => `<li>${item.name} x ${quantity}</li>`).join('');
@@ -472,7 +477,7 @@ export default function BookingFlow() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             actionType: 'new_order',
-            orderData: { ...orderDataPayload, itemsText }
+            orderData: { ...orderDataPayload, itemsText, virtual_account: finalVirtualAccount }
           })
         });
       } catch (e) {
@@ -485,7 +490,7 @@ export default function BookingFlow() {
       } else {
         setFinalOrderInfo({
           orderNo,
-          virtualAccount: virtualAccount!,
+          virtualAccount: finalVirtualAccount!,
           totalAmount
         });
         setLoading(false);

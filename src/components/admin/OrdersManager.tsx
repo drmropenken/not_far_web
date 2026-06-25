@@ -152,7 +152,7 @@ export default function OrdersManager() {
         fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ actionType, orderData: updatedOrder })
+          body: JSON.stringify({ actionType, orderData: updatedOrder, updateReason: '已更改訂單狀態' })
         });
       } catch (e) { console.error('Email error', e); }
     }
@@ -231,7 +231,7 @@ export default function OrdersManager() {
           fetch('/api/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ actionType: 'status_update', orderData: updatedOrder })
+            body: JSON.stringify({ actionType: 'status_update', orderData: updatedOrder, updateReason: '已新增店家回覆' })
           });
         }
       } catch (e) { console.error('Email error', e); }
@@ -294,7 +294,7 @@ export default function OrdersManager() {
         fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ actionType: 'status_update', orderData: updatedOrder })
+          body: JSON.stringify({ actionType: 'status_update', orderData: updatedOrder, updateReason: '已更新訂單金額' })
         });
       } catch (e) { console.error('Email error', e); }
     }
