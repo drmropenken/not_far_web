@@ -11,7 +11,7 @@ export const GET: APIRoute = async () => {
   try {
     // 取得時間點
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     // 尋找所有未付款的訂單
     const { data: pendingOrders, error: fetchError } = await supabase
@@ -32,7 +32,7 @@ export const GET: APIRoute = async () => {
     const expiredOrders = pendingOrders.filter(order => {
       const createdAt = new Date(order.created_at);
       if (order.payment_method === 'bank_transfer') {
-        return createdAt < tenDaysAgo; // 匯款保留 10 天
+        return createdAt < thirtyDaysAgo; // 匯款保留 30 天
       } else {
         return createdAt < oneHourAgo;   // 其他(綠界)保留 1 小時
       }
