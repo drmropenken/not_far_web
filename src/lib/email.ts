@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { supabase } from './supabase';
 
 const user = import.meta.env.GMAIL_USER || process.env.GMAIL_USER || '';
 const pass = import.meta.env.GMAIL_APP_PASSWORD || process.env.GMAIL_APP_PASSWORD || '';
