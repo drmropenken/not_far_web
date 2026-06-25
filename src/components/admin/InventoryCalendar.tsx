@@ -342,12 +342,14 @@ export default function InventoryCalendar() {
                       <div className={`w-full h-full min-h-[32px] md:min-h-[40px] flex items-center justify-center rounded-lg mx-auto text-xs md:text-sm font-bold shadow-sm transition-all duration-200 transform group-hover/cell:scale-110 active:scale-95
                         ${isFull ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-rose-100/30' :
                           isOverridden ? 'bg-amber-50 text-amber-600 border border-amber-300 shadow-amber-100/30' :
+                          booked > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-emerald-100/30' :
                           'bg-white text-stone-700 border border-stone-200 hover:border-emerald-400 hover:text-emerald-600 hover:shadow-emerald-100/40'
                         }
                       `}>
                         {remaining > 0 ? (
                           <div className="flex items-baseline gap-0.5">
-                            <span className="text-[10px] opacity-60">{booked}/</span>
+                            <span className={`text-[10px] ${booked > 0 ? 'text-emerald-600 font-black text-xs' : 'opacity-60'}`}>{booked}</span>
+                            <span className="text-[10px] opacity-40">/</span>
                             <span>{remaining}</span>
                           </div>
                         ) : (totalAvailable === 0 ? <span className="text-stone-300 font-normal">-</span> : '滿')}

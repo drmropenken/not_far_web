@@ -291,7 +291,7 @@ export default function OrdersManager() {
   };
 
   const handleExportCSV = () => {
-    const headers = ['訂單編號', '訂購人姓名', '聯絡電話', '車牌號碼', '入住日期', '退房日期', '訂單狀態', '總金額(元)', '客人備註', '營主內部備註', '折扣碼', '折扣金額', '下單時間'];
+    const headers = ['訂單編號', '訂購人姓名', '聯絡電話', '車牌號碼', '入住日期', '退房日期', '訂單狀態', '總金額(元)', '虛擬匯款帳號', '客人備註', '營主內部備註', '折扣碼', '折扣金額', '下單時間'];
     
     const rows = filteredOrders.map(order => [
       order.order_no,
@@ -302,6 +302,7 @@ export default function OrdersManager() {
       order.check_out_date,
       order.status === 'paid' ? '已付款' : order.status === 'deposit_paid' ? '已付定金' : order.status === 'pending' ? '待付款' : order.status === 'checked_in' ? '已報到' : '已取消',
       order.total_amount,
+      order.virtual_account ? `"${order.virtual_account}"` : '',
       `"${(order.notes || '').replace(/"/g, '""')}"`,
       `"${(order.admin_notes || '').replace(/"/g, '""')}"`,
       order.discount_code || '',
