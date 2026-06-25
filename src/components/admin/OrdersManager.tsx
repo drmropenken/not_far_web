@@ -490,6 +490,33 @@ export default function OrdersManager() {
                       </div>
                     </div>
 
+                    {parsed.notes && (
+                      <div className="mt-3 p-3 bg-amber-50/50 rounded-lg border border-amber-100">
+                        <h4 className="text-xs font-bold text-amber-800 flex items-center gap-1.5 mb-2">
+                          <span>💬</span> 顧客留言與對話
+                        </h4>
+                        <div className="text-xs text-stone-700 whitespace-pre-wrap leading-relaxed">
+                          {parsed.notes.split('\n\n').map((paragraph, i) => {
+                            if (paragraph.startsWith('[店家回覆]')) {
+                              return (
+                                <div key={i} className="mt-2 p-2 bg-white rounded border border-amber-200 text-amber-800 shadow-sm font-medium">
+                                  {paragraph}
+                                </div>
+                              );
+                            }
+                            if (paragraph.startsWith('[顧客補充]')) {
+                              return (
+                                <div key={i} className="mt-2 p-2 bg-emerald-50 rounded border border-emerald-200 text-emerald-800 shadow-sm font-medium">
+                                  {paragraph}
+                                </div>
+                              );
+                            }
+                            return <div key={i} className={i > 0 ? "mt-2" : ""}>{paragraph}</div>;
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {order.payment_method === 'bank_transfer' && order.virtual_account && (
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex flex-col gap-1.5 mt-2 shadow-sm">
                         <div className="text-amber-800 font-bold text-xs flex items-center gap-1.5">
