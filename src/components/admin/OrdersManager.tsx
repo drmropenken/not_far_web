@@ -46,7 +46,10 @@ const parseOrderNotes = (notesStr: string | null) => {
   if (!notesStr) return { email: '', people: '', notes: '' };
   const emailMatch = notesStr.match(/\[Email:\s*(.*?)\]/);
   const peopleMatch = notesStr.match(/\[人數:\s*(.*?)\]/);
-  const email = emailMatch ? emailMatch[1] : '';
+  let email = emailMatch ? emailMatch[1] : '';
+  if (email.includes('@line.notfar.com') || email.includes('@dummy-line.com')) {
+    email = '';
+  }
   const people = peopleMatch ? peopleMatch[1] : '';
   const notes = notesStr.replace(/\[Email:\s*.*?\]\s*/, '').replace(/\[人數:\s*.*?\]\s*/, '').trim();
   return { email, people, notes };

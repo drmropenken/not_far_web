@@ -89,7 +89,7 @@ export default function BookingFlow() {
           const profile = await liff.getProfile();
           const idToken = liff.getDecodedIDToken();
           const realEmail = idToken?.email;
-          const fakeEmail = realEmail || `${profile.userId}@line.notfar.com`;
+          const fakeEmail = realEmail || `${profile.userId}@dummy-line.com`;
           const fakePassword = `${profile.userId}_notfar_secret_2024!`;
 
           // 嘗試暗影登入
@@ -138,7 +138,7 @@ export default function BookingFlow() {
           setSession(session);
           setCustomerInfo(prev => ({
             ...prev,
-            email: session.user.email?.includes('@line.notfar.com') ? '' : (session.user.email || ''),
+            email: (session.user.email?.includes('@line.notfar.com') || session.user.email?.includes('@dummy-line.com')) ? '' : (session.user.email || ''),
             name: session.user.user_metadata?.full_name || ''
           }));
           setStep(prev => prev === 0 ? 1 : prev);
@@ -154,7 +154,7 @@ export default function BookingFlow() {
         setSession(session);
         setCustomerInfo(prev => ({
           ...prev,
-          email: session.user.email?.includes('@line.notfar.com') ? '' : (session.user.email || ''),
+          email: (session.user.email?.includes('@line.notfar.com') || session.user.email?.includes('@dummy-line.com')) ? '' : (session.user.email || ''),
           name: session.user.user_metadata?.full_name || ''
         }));
         setStep(prev => prev === 0 ? 1 : prev);

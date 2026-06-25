@@ -111,23 +111,28 @@ export default function MyOrdersFlow() {
         if (liff.isLoggedIn()) {
           setLoading(true);
           const profile = await liff.getProfile();
-          const fakeEmail = profile.userId + '@line.notfar.com';
-          const fakePassword = profile.userId + '_notfar_secret_2024!';
+          if (profile.userId) {
+            const fakeEmail = profile.userId + '@dummy-line.com';
+            const fakePassword = profile.userId + '_notfar_secret_2024!';
 
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: fakeEmail,
-            password: fakePassword
-          });
-
-          if (signInError) {
-            await supabase.auth.signUp({
+            const { error: signInError } = await supabase.auth.signInWithPassword({
               email: fakeEmail,
               password: fakePassword,
-              options: {
-                data: { full_name: profile.displayName, avatar_url: profile.pictureUrl, line_id: profile.userId }
-              }
             });
-            await supabase.auth.signInWithPassword({ email: fakeEmail, password: fakePassword });
+
+            if (signInError && signInError.message.includes('Invalid login credentials')) {
+              await supabase.auth.signUp({
+                email: fakeEmail,
+                password: fakePassword,
+                options: {
+                  data: {
+                    full_name: profile.displayName,
+                    line_id: profile.userId,
+                  }
+                }
+              });
+              await supabase.auth.signInWithPassword({ email: fakeEmail, password: fakePassword });
+            }
           }
         }
       } catch (err) {
@@ -168,36 +173,13 @@ export default function MyOrdersFlow() {
     const email = currentSession.user.email;
     const lineId = currentSession.user.user_metadata?.line_id;
 
-    let query = supabase.from('nf_orders')
-      .select(`
-        *,
-        nf_order_items (
-          *,
-          nf_items (*)
-        )
-      `)
-      .order('created_at', { ascending: false });
-
-    if (lineId) {
-      query = query.or(`line_user_id.eq.${lineId},customer_email.eq.${email}`);
-    } else {
-      query = query.eq('customer_email', email); // fallback
-    }
-
-    const { data, error } = await query;
-
-    if (!error && data) {
-      // Temporary fallback for line vs email logic if customer_email doesn't exist explicitly in db yet (it might just be in notes)
-      // Wait, BookingFlow inserts Email into 'notes', but does it insert into a dedicated email column? No, 'nf_orders' doesn't have customer_email!
-      // Let's rely on line_user_id mainly, or we can filter by notes containing the email!
-    }
-    
     // Better logic: Fetch all orders where line_user_id matches, OR notes contains the email.
     let filterStr = '';
     if (lineId) {
       filterStr += `line_user_id.eq.${lineId}`;
     }
-    if (email && !email.includes('@line.notfar.com')) {
+    // For email from LINE, it might be a fake email we generated
+    if (email && !email.includes('@line.notfar.com') && !email.includes('@dummy-line.com')) {
       if (filterStr) filterStr += ',';
       filterStr += `notes.ilike.%[Email: ${email}]%`;
     }

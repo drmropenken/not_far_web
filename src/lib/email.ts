@@ -19,7 +19,7 @@ export const sendOrderNotification = async (orderData: any, actionType: EmailAct
   let customerEmail = '';
   if (orderData.notes) {
     const match = orderData.notes.match(/\[Email:\s*([^\]]+)\]/);
-    if (match && match[1] && !match[1].includes('@line.notfar.com')) {
+    if (match && match[1] && !match[1].includes('@line.notfar.com') && !match[1].includes('@dummy-line.com')) {
       customerEmail = match[1].trim();
     }
   }
