@@ -135,10 +135,11 @@ const { title, description } = Astro.props;
       const { data: adminRecord, error: adminError } = await supabase
         .from('nf_admins')
         .select('role')
-        .eq('email', userEmail)
+        .eq('email', userEmail.toLowerCase())
         .single();
 
       if (adminError || !adminRecord) {
+        console.error('Auth Error:', adminError, 'Email:', userEmail);
         await supabase.auth.signOut();
         window.location.href = "/admin/login?error=unauthorized";
         return;
