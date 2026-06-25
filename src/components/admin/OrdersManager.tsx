@@ -542,28 +542,34 @@ export default function OrdersManager() {
                             </div>
                           </div>
                         ) : (
-                          <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note relative flex flex-col" onClick={() => { setReplyingToOrderId(order.id as unknown as number); setReplyText(''); }}>
-                            <div className="whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto pr-16">
-                              <span className="font-bold opacity-80">💬 客人備註與對話：</span><br/>
-                              {parsed.notes ? (
-                                <div className="mt-1 space-y-1.5">
-                                  {parsed.notes.split('\n\n').map((paragraph, i) => {
-                                    if (paragraph.startsWith('[店家回覆]')) {
-                                      return <div key={i} className="p-1.5 bg-white rounded border border-amber-200 text-amber-800 shadow-sm font-medium">{paragraph}</div>;
-                                    }
-                                    if (paragraph.startsWith('[顧客補充]')) {
-                                      return <div key={i} className="p-1.5 bg-emerald-50 rounded border border-emerald-200 text-emerald-800 shadow-sm font-medium">{paragraph}</div>;
-                                    }
-                                    return <div key={i} className={i > 0 ? "mt-1.5" : ""}>{paragraph}</div>;
-                                  })}
+                          <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note relative flex flex-col justify-center min-h-[36px]" onClick={() => { setReplyingToOrderId(order.id as unknown as number); setReplyText(''); }}>
+                            {!parsed.notes ? (
+                              <div className="flex items-center justify-center gap-1 opacity-60 group-hover/note:opacity-100 font-medium">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" /></svg>
+                                新增店家回覆
+                              </div>
+                            ) : (
+                              <>
+                                <div className="whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto pr-16">
+                                  <span className="font-bold opacity-80">💬 客人備註與對話：</span>
+                                  <div className="mt-1.5 space-y-1.5">
+                                    {parsed.notes.split('\n\n').map((paragraph, i) => {
+                                      if (paragraph.startsWith('[店家回覆]')) {
+                                        return <div key={i} className="p-1.5 bg-white rounded border border-amber-200 text-amber-800 shadow-sm font-medium">{paragraph}</div>;
+                                      }
+                                      if (paragraph.startsWith('[顧客補充]')) {
+                                        return <div key={i} className="p-1.5 bg-emerald-50 rounded border border-emerald-200 text-emerald-800 shadow-sm font-medium">{paragraph}</div>;
+                                      }
+                                      return <div key={i} className={i > 0 ? "mt-1.5" : ""}>{paragraph}</div>;
+                                    })}
+                                  </div>
                                 </div>
-                              ) : <span className="opacity-50 italic mt-1 inline-block">無</span>}
-                            </div>
-                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover/note:opacity-100 font-medium text-stone-500 bg-white border border-stone-200 rounded py-1 px-2 mx-auto mt-2 shadow-sm absolute bottom-2 right-2">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" /></svg>
-                              回覆
-                            </div>
-                            {!parsed.notes && <div className="flex items-center justify-center gap-1 opacity-60 font-medium mt-1"><svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" /></svg>新增店家回覆</div>}
+                                <div className="flex items-center justify-center gap-1 opacity-0 group-hover/note:opacity-100 font-medium text-stone-500 bg-white border border-stone-200 rounded py-1 px-2 shadow-sm absolute top-2 right-2">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" /></svg>
+                                  回覆
+                                </div>
+                              </>
+                            )}
                           </div>
                         )
                       )}
