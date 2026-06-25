@@ -19,9 +19,11 @@ export default function DiscountsManager() {
   const [newPercent, setNewPercent] = useState<number>(0.9); // Default 90%
   const [newFixedAmount, setNewFixedAmount] = useState<number>(100); // Default 100 NTD
   const [isAdding, setIsAdding] = useState(false);
+  const [adminRole, setAdminRole] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDiscounts();
+    setAdminRole(localStorage.getItem('admin_role') || 'viewer');
   }, []);
 
   const fetchDiscounts = async () => {
@@ -120,12 +122,14 @@ export default function DiscountsManager() {
         <div className="text-stone-500 font-medium">
           共 {discounts.length} 組折扣碼
         </div>
-        <button 
-          onClick={() => setIsAdding(!isAdding)}
-          className={`px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-sm ${isAdding ? 'bg-stone-200 text-stone-700 hover:bg-stone-300' : 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-md'}`}
-        >
-          {isAdding ? '取消新增' : <><span>+</span> 新增折扣碼</>}
-        </button>
+        {adminRole !== 'viewer' && (
+          <button 
+            onClick={() => setIsAdding(!isAdding)}
+            className={`px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-sm ${isAdding ? 'bg-stone-200 text-stone-700 hover:bg-stone-300' : 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-md'}`}
+          >
+            {isAdding ? '取消新增' : <><span>+</span> 新增折扣碼</>}
+          </button>
+        )}
       </div>
 
       {/* Add Form */}
@@ -248,23 +252,26 @@ export default function DiscountsManager() {
                     </td>
                     <td className="p-4 text-center">
                       <button 
-                        onClick={() => toggleActive(discount.id, discount.is_active)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${discount.is_active ? 'bg-amber-500' : 'bg-stone-300'}`}
+                        onClick={() => adminRole !== 'viewer' && toggleActive(discount.id, discount.is_active)}
+                        disabled={adminRole === 'viewer'}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${discount.is_active ? 'bg-amber-500' : 'bg-stone-300'} ${adminRole === 'viewer' ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${discount.is_active ? 'transtone-x-6' : 'transtone-x-1'}`} />
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${discount.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
                       </button>
                       <div className={`text-[10px] font-bold mt-1 ${discount.is_active ? 'text-amber-600' : 'text-stone-400'}`}>
                         {discount.is_active ? '啟用中' : '已停用'}
                       </div>
                     </td>
                     <td className="p-4 text-right">
-                      <button 
-                        onClick={() => handleDelete(discount.id)}
-                        className="p-2 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center"
-                        title="刪除"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                      </button>
+                      {adminRole !== 'viewer' && (
+                        <button 
+                          onClick={() => handleDelete(discount.id)}
+                          className="p-2 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center"
+                          title="刪除"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

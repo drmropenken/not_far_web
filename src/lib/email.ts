@@ -23,16 +23,18 @@ export const sendOrderNotification = async (orderData: any, actionType: EmailAct
     }
   }
 
-  // 營主名單 (使用密件抄送 Bcc)
-  const adminEmails = [
-    'dr.mr.openken@gmail.com',
-    'close2.tw@gmail.com',
-    'bendonhome@gmail.com',
-    'manpowerwang@gmail.com',
-    'a0929576269@gmail.com'
-  ].join(',');
+  // 營主名單 (使用密件抄送 Bcc，從資料庫動態抓取)
+  let adminEmails = 'dr.mr.openken@gmail.com'; // Fallback
+  try {
+    const { data: adminList } = await supabase.from('nf_admins').select('email');
+    if (adminList && adminList.length > 0) {
+      adminEmails = adminList.map(a => a.email).join(',');
+    }
+  } catch (e) {
+    console.error('Failed to fetch admin emails for BCC', e);
+  }
 
-  // 如果客人沒有留信箱，就直接寄給營主作為主要收件者
+  // 如果客人沒有留信箱，就直接寄給第一順位營主作為主要收件者
   const toAddress = customerEmail || 'dr.mr.openken@gmail.com';
   
   let subject = '';

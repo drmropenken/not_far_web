@@ -65,6 +65,9 @@ const { title, description } = Astro.props;
       <a href="/admin/inventory" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-inventory">
         <span class="text-lg group-hover:scale-110 transition-transform">📅</span> <span class="font-medium tracking-wide text-sm">庫存行事曆</span>
       </a>
+      <a href="/admin/admins" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-admins">
+        <span class="text-lg group-hover:scale-110 transition-transform">🛡️</span> <span class="font-medium tracking-wide text-sm">權限與管理員</span>
+      </a>
     </nav>
     <div class="p-4 border-t border-emerald-800">
       <div class="flex items-center gap-3 px-3 py-2.5 mb-3 rounded-xl bg-emerald-950/50 border border-emerald-800/50">
@@ -112,12 +115,6 @@ const { title, description } = Astro.props;
   <script>
     import { supabase } from "@/lib/supabase";
 
-    // --- 管理員 Email 白名單 ---
-    // 改為從環境變數讀取，這樣您就不用修改程式碼了！
-    // 只要在 .env 檔案中加上 PUBLIC_ADMIN_EMAILS="您的信箱@gmail.com" 即可
-    const envAdmins = import.meta.env.PUBLIC_ADMIN_EMAILS || "";
-    const ADMIN_EMAILS = envAdmins.split(',').map((e: string) => e.trim().toLowerCase());
-
     // 簡單的客戶端身分驗證檢查
     async function checkAuth() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -127,13 +124,28 @@ const { title, description } = Astro.props;
         return;
       }
 
-      // 檢查是否為管理員白名單
+      // 檢查是否為管理員白名單 (從資料庫動態查詢)
       const userEmail = session.user.email;
-      if (!userEmail || !ADMIN_EMAILS.includes(userEmail)) {
+      if (!userEmail) {
         await supabase.auth.signOut();
         window.location.href = "/admin/login?error=unauthorized";
         return;
       }
+
+      const { data: adminRecord, error: adminError } = await supabase
+        .from('nf_admins')
+        .select('role')
+        .eq('email', userEmail)
+        .single();
+
+      if (adminError || !adminRecord) {
+        await supabase.auth.signOut();
+        window.location.href = "/admin/login?error=unauthorized";
+        return;
+      }
+
+      // 將角色存入 localStorage 供其他前端元件判斷是否隱藏編輯按鈕
+      localStorage.setItem('admin_role', adminRecord.role);
 
       // 渲染使用者資訊
       const userNameDisplay = document.getElementById("user-name-display");

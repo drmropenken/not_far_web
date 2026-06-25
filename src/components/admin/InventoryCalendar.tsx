@@ -62,6 +62,7 @@ export default function InventoryCalendar() {
   // 選擇月份
   const [currentDate, setCurrentDate] = useState(new Date());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [adminRole, setAdminRole] = useState<string | null>(null);
 
   // 取得當月的天數陣列
   const getDaysInMonth = (year: number, month: number) => {
@@ -73,6 +74,7 @@ export default function InventoryCalendar() {
 
   useEffect(() => {
     fetchData();
+    setAdminRole(localStorage.getItem('admin_role') || 'viewer');
   }, [currentDate]);
 
   useEffect(() => {
@@ -152,6 +154,7 @@ export default function InventoryCalendar() {
 
   // 點擊格子開啟編輯 Modal
   const handleCellClick = (item: Item, day: number) => {
+    if (adminRole === 'viewer') return;
     const year = currentDate.getFullYear();
     const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
     const dateStr = `${year}-${month}-${day.toString().padStart(2, '0')}`;
@@ -301,7 +304,7 @@ export default function InventoryCalendar() {
                   const isToday = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth() && day === today.getDate();
                   
                   return (
-                    <th key={day} id={isToday ? 'today-col-header' : undefined} onClick={() => setEditingDay(day)} title={`點擊設定 ${day} 日全天庫存`} className={`relative p-1.5 border-b border-r min-w-[45px] md:min-w-[55px] cursor-pointer hover:bg-stone-200/50 transition-colors group/day ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-stone-200/80' : 'text-stone-600 border-stone-200/80'}`}>
+                    <th key={day} id={isToday ? 'today-col-header' : undefined} onClick={() => adminRole !== 'viewer' && setEditingDay(day)} title={adminRole !== 'viewer' ? `點擊設定 ${day} 日全天庫存` : ''} className={`relative p-1.5 border-b border-r min-w-[45px] md:min-w-[55px] ${adminRole !== 'viewer' ? 'cursor-pointer hover:bg-stone-200/50' : ''} transition-colors group/day ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-stone-200/80' : 'text-stone-600 border-stone-200/80'}`}>
                       <div className="flex flex-col items-center justify-center space-y-0.5 group-hover/day:scale-105 transition-transform">
                         <span className={`font-bold text-base md:text-lg ${isToday ? 'text-amber-700' : ''}`}>{day}</span>
                         <span className={`text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-amber-200/80 text-amber-800' : isWeekend ? 'bg-rose-100/50 text-rose-600' : 'bg-stone-200/50 text-stone-500'}`}>

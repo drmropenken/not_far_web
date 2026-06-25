@@ -66,6 +66,7 @@ export default function OrdersManager() {
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const [editingAdminNoteOrderId, setEditingAdminNoteOrderId] = useState<string | null>(null);
   const [adminNoteText, setAdminNoteText] = useState('');
+  const [adminRole, setAdminRole] = useState<string | null>(null);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -90,6 +91,7 @@ export default function OrdersManager() {
 
   useEffect(() => {
     fetchOrders();
+    setAdminRole(localStorage.getItem('admin_role') || 'viewer');
   }, []);
 
   const updateOrderStatus = async (orderId: string, newStatus: 'pending' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled') => {
@@ -504,11 +506,12 @@ export default function OrdersManager() {
                   {/* 項目與金額 */}
                   <div className="w-full md:w-1/2 flex flex-col justify-between">
                     <div className="space-y-2 mb-4">
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider">預訂內容</h4>
-                        {order.status !== 'cancelled' && (
+                      <div className="flex items-center gap-2 mb-2 pb-2 border-b border-stone-100">
+                        <h4 className="font-bold text-sm text-stone-800 tracking-wide">預訂明細</h4>
+                        {adminRole !== 'viewer' && order.status !== 'cancelled' && (
                           <button onClick={() => setEditingOrderItemsOrder(order)} className="text-xs flex items-center gap-1 text-indigo-500 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded transition-colors font-medium border border-indigo-200 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100">
-                            <span>🛍️</span> 編輯明細
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                            修改明細
                           </button>
                         )}
                       </div>
@@ -520,55 +523,58 @@ export default function OrdersManager() {
                           </li>
                         ))}
                       </ul>
-                      {replyingToOrderId === order.id ? (
-                        <div className="mt-2 p-2 bg-stone-50 rounded border border-stone-300 shadow-inner">
-                          <div className="text-xs text-stone-600 mb-2 whitespace-pre-wrap max-h-32 overflow-y-auto">💬 客人備註紀錄：<br/>{parsed.notes || <span className="opacity-50 italic">無</span>}</div>
-                          <textarea
-                            className="w-full text-xs p-2 rounded border border-amber-200 focus:outline-none focus:border-amber-500 min-h-[60px] bg-white resize-y"
-                            placeholder="請輸入回覆或補充 (將接在原內容下方)..."
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            autoFocus
-                          />
-                          <div className="flex justify-end gap-2 mt-2">
-                            <button className="text-[11px] px-2 py-1 bg-stone-200 rounded text-stone-600 hover:bg-stone-300 transition-colors font-bold" onClick={(e) => { e.stopPropagation(); setReplyingToOrderId(null); }}>取消</button>
-                            <button className="text-[11px] px-3 py-1 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors font-bold shadow-sm disabled:opacity-50" disabled={isSubmittingReply || !replyText.trim()} onClick={(e) => { e.stopPropagation(); submitReply(order.id as unknown as number, order.notes); }}>
-                              {isSubmittingReply ? '送出中...' : '送出回覆'}
-                            </button>
+                      {adminRole !== 'viewer' && (
+                        replyingToOrderId === order.id ? (
+                          <div className="mt-2" onClick={e => e.stopPropagation()}>
+                            <textarea 
+                              className="w-full text-xs p-2 border border-stone-300 rounded focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-y min-h-[60px]"
+                              placeholder="輸入要回覆給客人的內容..."
+                              value={replyText}
+                              onChange={e => setReplyText(e.target.value)}
+                              autoFocus
+                            />
+                            <div className="flex justify-end gap-1 mt-1">
+                              <button className="text-[11px] px-2 py-1 bg-stone-200 rounded text-stone-600 hover:bg-stone-300 transition-colors font-bold" onClick={(e) => { e.stopPropagation(); setReplyingToOrderId(null); }}>取消</button>
+                              <button className="text-[11px] px-3 py-1 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors font-bold shadow-sm disabled:opacity-50" disabled={isSubmittingReply || !replyText.trim()} onClick={(e) => { e.stopPropagation(); submitReply(order.id as unknown as number, order.notes); }}>
+                                {isSubmittingReply ? '送出中...' : '送出回覆'}
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note relative" onClick={() => { setReplyingToOrderId(order.id as unknown as number); setReplyText(''); }}>
-                          <div className="whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto pr-20">
-                            💬 客人備註：<br/>{parsed.notes || <span className="opacity-50 italic">無</span>}
+                        ) : (
+                          <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note relative" onClick={() => { setReplyingToOrderId(order.id as unknown as number); setReplyText(''); }}>
+                            <div className="flex items-center justify-center gap-1 opacity-60 group-hover/note:opacity-100 font-medium">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" /></svg>
+                              新增店家回覆
+                            </div>
                           </div>
-                          <span className="absolute top-2 right-2 opacity-0 group-hover/note:opacity-100 text-stone-500 font-bold bg-white px-1.5 py-0.5 rounded shadow-sm border border-stone-200">我要回覆 ✏️</span>
-                        </div>
+                        )
                       )}
                       
-                      {editingAdminNoteOrderId === order.id ? (
-                        <div className="mt-2 p-2 bg-amber-50 rounded border border-amber-200 shadow-inner">
-                          <textarea
-                            className="w-full text-xs p-2 rounded border border-amber-300 focus:outline-none focus:border-amber-500 min-h-[60px] bg-white resize-y"
-                            placeholder="請輸入營主內部備註 (僅管理員可見)..."
-                            value={adminNoteText}
-                            onChange={(e) => setAdminNoteText(e.target.value)}
-                            autoFocus
-                          />
-                          <div className="flex justify-end gap-2 mt-2">
-                            <button className="text-[11px] px-2 py-1 bg-amber-200/50 rounded text-amber-700 hover:bg-amber-300/50 transition-colors font-bold" onClick={(e) => { e.stopPropagation(); setEditingAdminNoteOrderId(null); }}>取消</button>
-                            <button className="text-[11px] px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors font-bold shadow-sm disabled:opacity-50" disabled={isSubmittingReply} onClick={(e) => { e.stopPropagation(); submitAdminNote(order.id); }}>
-                              {isSubmittingReply ? '儲存中...' : '儲存備註'}
-                            </button>
+                      {adminRole !== 'viewer' && (
+                        editingAdminNoteOrderId === order.id ? (
+                          <div className="mt-2" onClick={e => e.stopPropagation()}>
+                            <textarea 
+                              className="w-full text-xs p-2 border border-amber-300 rounded bg-amber-50 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-y min-h-[60px]"
+                              placeholder="輸入僅管理員可見的備註..."
+                              value={adminNoteText}
+                              onChange={e => setAdminNoteText(e.target.value)}
+                              autoFocus
+                            />
+                            <div className="flex justify-end gap-1 mt-1">
+                              <button className="text-[11px] px-2 py-1 bg-amber-200/50 rounded text-amber-700 hover:bg-amber-300/50 transition-colors font-bold" onClick={(e) => { e.stopPropagation(); setEditingAdminNoteOrderId(null); }}>取消</button>
+                              <button className="text-[11px] px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors font-bold shadow-sm disabled:opacity-50" disabled={isSubmittingReply} onClick={(e) => { e.stopPropagation(); submitAdminNote(order.id); }}>
+                                {isSubmittingReply ? '儲存中...' : '儲存備註'}
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="mt-2 p-2 bg-amber-50 hover:bg-amber-100/80 rounded text-xs text-amber-800 border border-amber-200 cursor-pointer transition-colors group/note relative" onClick={() => { setEditingAdminNoteOrderId(order.id); setAdminNoteText(order.admin_notes || ''); }}>
-                          <div className="whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto pr-16 font-medium">
-                            📝 營主備註：<br/>{order.admin_notes || <span className="opacity-50 italic">點擊新增內部備註...</span>}
+                        ) : (
+                          <div className="mt-2 p-2 bg-amber-50 hover:bg-amber-100/80 rounded text-xs text-amber-800 border border-amber-200 cursor-pointer transition-colors group/note relative" onClick={() => { setEditingAdminNoteOrderId(order.id); setAdminNoteText(order.admin_notes || ''); }}>
+                            <div className="flex items-center justify-center gap-1 opacity-60 group-hover/note:opacity-100 font-medium">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                              {order.admin_notes ? '編輯營主備註' : '新增營主備註'}
+                            </div>
                           </div>
-                          <span className="absolute top-2 right-2 opacity-0 group-hover/note:opacity-100 text-amber-600 font-bold bg-white px-1.5 py-0.5 rounded shadow-sm border border-amber-200">編輯 ✏️</span>
-                        </div>
+                        )
                       )}
                     </div>
                     <div className="mt-auto">
@@ -634,31 +640,33 @@ export default function OrdersManager() {
 
 
                 {/* 操作按鈕 */}
-                <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors mr-auto">
-                    刪除
-                  </button>
-                  {order.status === 'pending' && (
-                    <button onClick={() => updateOrderStatus(order.id, 'paid')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
-                      標記已付款
+                {adminRole !== 'viewer' && (
+                  <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors mr-auto">
+                      刪除
                     </button>
-                  )}
-                  {order.status === 'deposit_paid' && (
-                    <button onClick={() => updateOrderStatus(order.id, 'paid')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-teal-600 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-md transition-colors shadow-sm">
-                      標記已付尾款
-                    </button>
-                  )}
-                  {order.status === 'paid' && (
-                    <button onClick={() => updateOrderStatus(order.id, 'checked_in')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors shadow-sm">
-                      ✅ 標記已報到
-                    </button>
-                  )}
-                  {order.status !== 'cancelled' && (
-                    <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-stone-600 bg-white hover:bg-stone-100 border border-stone-200 rounded-md transition-colors">
-                      取消訂單
-                    </button>
-                  )}
-                </div>
+                    {order.status === 'pending' && (
+                      <button onClick={() => updateOrderStatus(order.id, 'paid')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
+                        標記已付款
+                      </button>
+                    )}
+                    {order.status === 'deposit_paid' && (
+                      <button onClick={() => updateOrderStatus(order.id, 'paid')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-teal-600 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-md transition-colors shadow-sm">
+                        標記已付尾款
+                      </button>
+                    )}
+                    {order.status === 'paid' && (
+                      <button onClick={() => updateOrderStatus(order.id, 'checked_in')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors shadow-sm">
+                        ✅ 標記已報到
+                      </button>
+                    )}
+                    {order.status !== 'cancelled' && (
+                      <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-stone-600 bg-white hover:bg-stone-100 border border-stone-200 rounded-md transition-colors">
+                        取消訂單
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
               );
             })}
