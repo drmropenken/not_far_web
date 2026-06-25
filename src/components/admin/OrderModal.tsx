@@ -245,8 +245,8 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     }
 
     const orderId = rpcData.order_id;
-    // 手動接單：使用 89 + 訂單 ID 末 5 碼
-    const seq5 = (orderId % 100000).toString().padStart(5, '0');
+    // 手動接單：因為資料庫 ID 是 UUID 字串無法做數學運算，改採隨機 5 碼
+    const seq5 = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
     const finalVirtualAccount = `962948189${seq5}`;
     // 強制把 payment_method 寫入，避免 RPC 沒有支援該欄位
     await supabase.from('nf_orders').update({ 
