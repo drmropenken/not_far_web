@@ -6,6 +6,7 @@ type Item = {
   name: string;
   category: string;
   total_quantity: number;
+  image_url?: string | null;
 };
 
 type InventoryRecord = {

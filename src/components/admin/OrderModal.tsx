@@ -8,6 +8,7 @@ type Item = {
   price_weekday: number;
   price_holiday: number;
   total_quantity: number;
+  image_url?: string | null;
 };
 
 type OrderModalProps = {

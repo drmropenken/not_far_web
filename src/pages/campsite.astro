@@ -1,6 +1,16 @@
 ---
 import SEO from "../components/public/SEO.astro";
+import { supabase } from '../lib/supabase';
+import ImageCarousel from '../components/public/ImageCarousel';
 import "../styles/global.css";
+
+// Fetch items for dynamic images
+const { data: items } = await supabase.from('nf_items').select('name, image_url');
+
+const getImageUrls = (nameStr: string) => {
+  const item = items?.find(i => i.name.includes(nameStr) || nameStr.includes(i.name));
+  return item?.image_url ? item.image_url.split(',').map((u: string) => u.trim()).filter(Boolean) : [];
+};
 ---
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -80,9 +90,15 @@ import "../styles/global.css";
       <p class="section-subtitle">從傳統露營到豪華住宿，滿足各種需求</p>
       
       <div class="accommodation-grid">
-        <div class="accommodation-card fade-in">
-          <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a150c7d791dc.jpeg" alt="六人大巴露營車">
-          <div class="card-body">
+        <div class="accommodation-card fade-in flex flex-col h-full">
+          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+            {getImageUrls('六人大巴露營車').length > 0 ? (
+              <ImageCarousel client:visible images={getImageUrls('六人大巴露營車')} alt="六人大巴露營車" className="w-full h-full" />
+            ) : (
+              <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a150c7d791dc.jpeg" alt="六人大巴露營車" style="width: 100%; height: 100%; object-fit: cover;">
+            )}
+          </div>
+          <div class="card-body flex-1">
             <h3>🚌 六人大巴露營車</h3>
             <p>免裝備豪華露營體驗！車內配有雙人床與沙發床，並設有獨立衛浴、冷氣等設施，讓您輕鬆享受大自然。</p>
             <div class="tags">
@@ -94,9 +110,15 @@ import "../styles/global.css";
           </div>
         </div>
 
-        <div class="accommodation-card fade-in">
-          <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a150e09b75ef.jpeg" alt="十人包棟">
-          <div class="card-body">
+        <div class="accommodation-card fade-in flex flex-col h-full">
+          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+            {getImageUrls('十人包棟').length > 0 ? (
+              <ImageCarousel client:visible images={getImageUrls('十人包棟')} alt="十人包棟" className="w-full h-full" />
+            ) : (
+              <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a150e09b75ef.jpeg" alt="十人包棟" style="width: 100%; height: 100%; object-fit: cover;">
+            )}
+          </div>
+          <div class="card-body flex-1">
             <h3>🏠 十人包棟</h3>
             <p>大家族或三五好友出遊首選！專屬的包棟空間，內有5張雙人床，並提供冷氣與完善的衛浴設備。</p>
             <div class="tags">
@@ -107,9 +129,15 @@ import "../styles/global.css";
           </div>
         </div>
 
-        <div class="accommodation-card fade-in">
-          <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a140d6500e04.jpeg" alt="豪華野奢帳篷組">
-          <div class="card-body">
+        <div class="accommodation-card fade-in flex flex-col h-full">
+          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+            {getImageUrls('豪華野奢帳篷組').length > 0 ? (
+              <ImageCarousel client:visible images={getImageUrls('豪華野奢帳篷組')} alt="豪華野奢帳篷組" className="w-full h-full" />
+            ) : (
+              <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a140d6500e04.jpeg" alt="豪華野奢帳篷組" style="width: 100%; height: 100%; object-fit: cover;">
+            )}
+          </div>
+          <div class="card-body flex-1">
             <h3>⛺ 豪華野奢帳篷組</h3>
             <p>極致奢華的免裝備露營！含雙人床、電扇與專屬客廳帳，提供一泊三食（含燒烤或火鍋晚餐），享受尊榮服務。</p>
             <div class="tags">
@@ -120,9 +148,15 @@ import "../styles/global.css";
           </div>
         </div>
 
-        <div class="accommodation-card fade-in">
-          <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a150a9af2e74.jpeg" alt="四人石茅屋">
-          <div class="card-body">
+        <div class="accommodation-card fade-in flex flex-col h-full">
+          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+            {getImageUrls('四人石茅屋').length > 0 ? (
+              <ImageCarousel client:visible images={getImageUrls('四人石茅屋')} alt="四人石茅屋" className="w-full h-full" />
+            ) : (
+              <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a150dbab8cc1.jpeg" alt="四人石茅屋" style="width: 100%; height: 100%; object-fit: cover;">
+            )}
+          </div>
+          <div class="card-body flex-1">
             <h3>🛖 四人石茅屋</h3>
             <p>一秒踏進日本合掌村！外型超可愛的三角茅屋，內部空間寬敞，適合家庭同住，並設有獨立衛浴與冷氣。</p>
             <div class="tags">
@@ -133,9 +167,15 @@ import "../styles/global.css";
           </div>
         </div>
         
-        <div class="accommodation-card fade-in">
-          <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a150ba4a5bab.jpeg" alt="四人水管屋雅房">
-          <div class="card-body">
+        <div class="accommodation-card fade-in flex flex-col h-full">
+          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+            {getImageUrls('四人水管屋雅房').length > 0 ? (
+              <ImageCarousel client:visible images={getImageUrls('四人水管屋雅房')} alt="四人水管屋雅房" className="w-full h-full" />
+            ) : (
+              <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a150d6f461ea.jpeg" alt="四人水管屋雅房" style="width: 100%; height: 100%; object-fit: cover;">
+            )}
+          </div>
+          <div class="card-body flex-1">
             <h3>🛖 四人水管屋雅房</h3>
             <p>造型獨特的水管屋，像極了可愛的汽水罐！備有冷氣與雙人床，車子可直接停在一旁，方便又特別。</p>
             <div class="tags">
@@ -146,9 +186,15 @@ import "../styles/global.css";
           </div>
         </div>
 
-        <div class="accommodation-card fade-in">
-          <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a150f2016ab1.jpeg" alt="欖仁樹區">
-          <div class="card-body">
+        <div class="accommodation-card fade-in flex flex-col h-full">
+          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+            {getImageUrls('欖仁樹區 (一至二帳包區)').length > 0 ? (
+              <ImageCarousel client:visible images={getImageUrls('欖仁樹區 (一至二帳包區)')} alt="欖仁樹區 (一至二帳包區)" className="w-full h-full" />
+            ) : (
+              <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a150eb01ff7a.jpeg" alt="欖仁樹區 (一至二帳包區)" style="width: 100%; height: 100%; object-fit: cover;">
+            )}
+          </div>
+          <div class="card-body flex-1">
             <h3>🌳 欖仁樹區 (一至二帳包區)</h3>
             <p>樹蔭環繞的舒適營位，適合三五好友小包區。提供獨立的搭帳空間，鄰近公共衛浴，享受靜謐的露營時光。</p>
             <div class="tags">
@@ -159,9 +205,15 @@ import "../styles/global.css";
           </div>
         </div>
 
-        <div class="accommodation-card fade-in">
-          <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a15118ede679.jpeg" alt="草原區">
-          <div class="card-body">
+        <div class="accommodation-card fade-in flex flex-col h-full">
+          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+            {getImageUrls('草原區').length > 0 ? (
+              <ImageCarousel client:visible images={getImageUrls('草原區')} alt="草原區" className="w-full h-full" />
+            ) : (
+              <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a15118ede679.jpeg" alt="草原區" style="width: 100%; height: 100%; object-fit: cover;">
+            )}
+          </div>
+          <div class="card-body flex-1">
             <h3>🏕️ 草原區 (四至五帳包區)</h3>
             <p>遼闊的大草皮，適合多個家庭聯合包區！孩子們可以盡情奔跑玩耍，享受無拘無束的大自然。</p>
             <div class="tags">
@@ -172,9 +224,15 @@ import "../styles/global.css";
           </div>
         </div>
 
-        <div class="accommodation-card fade-in">
-          <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a15104c90b7d.jpeg" alt="湖岸一區">
-          <div class="card-body">
+        <div class="accommodation-card fade-in flex flex-col h-full">
+          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+            {getImageUrls('湖岸一區 (六帳包區)').length > 0 ? (
+              <ImageCarousel client:visible images={getImageUrls('湖岸一區 (六帳包區)')} alt="湖岸一區 (六帳包區)" className="w-full h-full" />
+            ) : (
+              <img src="https://asiacamp-image.pages.dev/upload/room_manage/365/365_room_manage_6a150c05872cc.jpeg" alt="湖岸一區 (六帳包區)" style="width: 100%; height: 100%; object-fit: cover;">
+            )}
+          </div>
+          <div class="card-body flex-1">
             <h3>🏞️ 湖岸一區 (六帳包區)</h3>
             <p>絕佳的湖畔景觀，適合大型團體包區。面積廣達 50M*9M，給您最寬敞、最舒適的水岸露營體驗。</p>
             <div class="tags">

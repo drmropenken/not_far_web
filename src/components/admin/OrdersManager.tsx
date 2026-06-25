@@ -10,6 +10,7 @@ type Item = {
   price_weekday: number;
   price_holiday: number;
   price_original: number;
+  image_url?: string | null;
 };
 
 type OrderItem = {

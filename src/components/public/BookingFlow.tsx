@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import liff from '@line/liff';
 import { supabase } from '../../lib/supabase';
+import ImageCarousel from './ImageCarousel';
 
 type Item = {
   id: string;
@@ -10,6 +11,7 @@ type Item = {
   price_holiday: number;
   price_original: number;
   total_quantity: number;
+  image_url?: string | null;
 };
 
 type SelectedItem = {
@@ -272,7 +274,14 @@ export default function BookingFlow() {
               <span>{catStyle.icon}</span>{catStyle.label}
             </span>
             <h3 className="font-black text-slate-800 text-lg leading-tight">{item.name}</h3>
-            <div className="text-sm text-slate-500 font-bold mt-1 flex items-center gap-1.5 flex-wrap">
+            
+            {item.image_url && (
+              <div className="mt-3 mb-2 rounded-xl overflow-hidden aspect-video w-full max-w-sm border border-slate-100 shadow-sm">
+                <ImageCarousel images={item.image_url.split(',').map(u => u.trim()).filter(Boolean)} alt={item.name} />
+              </div>
+            )}
+            
+            <div className="text-sm text-slate-500 font-bold mt-2 flex items-center gap-1.5 flex-wrap">
               {item.price_original > 0 && (
                 <span className="line-through text-slate-400 font-normal text-xs">原價 ${item.price_original}</span>
               )}

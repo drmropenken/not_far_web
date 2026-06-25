@@ -11,6 +11,7 @@ type Item = {
   price_weekday: number;
   price_holiday: number;
   sort_order: number;
+  image_url?: string | null;
 };
 
 export default function ItemsManager() {
@@ -339,6 +340,16 @@ export default function ItemsManager() {
                   onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value)})}
                   className="w-full md:w-1/4 border border-gray-300 rounded-lg p-2 outline-none"
                   required
+                />
+              </div>
+
+              <div className="pt-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">圖片網址 (多張請用半形逗號分隔)</label>
+                <textarea 
+                  value={formData.image_url || ''}
+                  onChange={(e) => setFormData({...formData, image_url: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg p-2 outline-none min-h-[80px]"
+                  placeholder="https://example.com/img1.jpg, https://example.com/img2.jpg"
                 />
               </div>
 
