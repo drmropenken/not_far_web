@@ -289,7 +289,7 @@ export default function MyOrdersFlow() {
                           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                             <p className="text-xs text-blue-600 font-bold mb-2">🏦 專屬匯款帳號 (銀行代碼 812 台新銀行)</p>
                             <p className="text-xl font-black text-blue-800 tracking-widest">{selectedOrder.virtual_account}</p>
-                            <p className="text-xs text-blue-500 mt-2">請於下單後 30 天內完成匯款，以免訂單被自動取消喔！</p>
+                            <p className="text-xs text-blue-500 mt-2">請於下單後 10 日內完成匯款，以免訂單被自動取消喔！</p>
                           </div>
                         )}
                       </div>

@@ -864,7 +864,7 @@ export default function BookingFlow() {
               <h1 className="text-2xl font-black text-slate-800 tracking-wider">訂單已成立！</h1>
               <p className="text-sm text-slate-500 font-medium leading-relaxed">
                 您的訂單編號為：<strong className="text-slate-800">{finalOrderInfo.orderNo}</strong><br />
-                請於 <strong className="text-rose-500">30 天內</strong> 完成匯款，逾期系統將自動取消訂單。
+                請於 <strong className="text-rose-500">10 日內</strong> 完成匯款，逾期系統將自動取消訂單。
               </p>
 
               <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-left space-y-4">

@@ -138,7 +138,7 @@ export const sendOrderNotification = async (orderData: any, actionType: EmailAct
             <tr>
               <td style="padding: 16px 0; color: #64748b;" colspan="2">
                 <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 16px;">
-                  <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;">💳 專屬匯款帳號 (請於 3 日內完成匯款)</div>
+                  <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;">💳 專屬匯款帳號 (請於 10 日內完成匯款)</div>
                   <div style="font-weight: bold; color: #333;">銀行代碼：812 (台新銀行)</div>
                   <div style="font-weight: black; font-family: monospace; font-size: 18px; color: #0f172a; margin-top: 4px; letter-spacing: 1px;">${orderData.virtual_account}</div>
                 </div>
