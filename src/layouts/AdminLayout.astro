@@ -211,6 +211,7 @@ const { title, description } = Astro.props;
     sidebarOverlay?.addEventListener("click", closeMobileSidebar);
 
     desktopMenuBtn?.addEventListener("click", () => {
+      sidebar?.classList.toggle("md:ml-0");
       sidebar?.classList.toggle("md:-ml-56");
     });
   </script>
