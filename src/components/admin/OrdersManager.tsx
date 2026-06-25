@@ -144,6 +144,15 @@ export default function OrdersManager() {
       alert('更新失敗: ' + error.message);
     } else {
       fetchOrders();
+      try {
+        const actionType = newStatus === 'cancelled' ? 'cancelled' : 'status_update';
+        const updatedOrder = { ...orderToUpdate, ...updateData };
+        fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ actionType, orderData: updatedOrder })
+        });
+      } catch (e) { console.error('Email error', e); }
     }
   };
 
@@ -213,6 +222,17 @@ export default function OrdersManager() {
       setReplyingToOrderId(null);
       setReplyText('');
       fetchOrders();
+      try {
+        const currentOrder = orders.find(o => o.id === orderId);
+        if (currentOrder) {
+          const updatedOrder = { ...currentOrder, notes: newNote };
+          fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ actionType: 'status_update', orderData: updatedOrder })
+          });
+        }
+      } catch (e) { console.error('Email error', e); }
     }
   };
 
@@ -267,6 +287,14 @@ export default function OrdersManager() {
     } else {
       fetchOrders();
       setEditingFinancialsId(null);
+      try {
+        const updatedOrder = { ...currentOrder, total_amount: total, deposit_amount: deposit, status: finalStatus };
+        fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ actionType: 'status_update', orderData: updatedOrder })
+        });
+      } catch (e) { console.error('Email error', e); }
     }
   };
 

@@ -464,6 +464,21 @@ export default function BookingFlow() {
 
       const orderId = rpcData.order_id;
 
+      // Email Notification
+      try {
+        const itemsText = selectedItems.map(({ item, quantity }) => `<li>${item.name} x ${quantity}</li>`).join('');
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            actionType: 'new_order',
+            orderData: { ...orderDataPayload, itemsText }
+          })
+        });
+      } catch (e) {
+        console.error('Email failed to send', e);
+      }
+
       // 5. Redirect or Show Success
       if (method === 'ecpay') {
         window.location.href = `/api/ecpay/create?order_id=${orderId}`;

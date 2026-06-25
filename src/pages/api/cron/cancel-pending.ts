@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
+import { sendOrderNotification } from '../../../lib/email';
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -16,7 +17,7 @@ export const GET: APIRoute = async () => {
     // 尋找所有未付款的訂單
     const { data: pendingOrders, error: fetchError } = await supabase
       .from('nf_orders')
-      .select('id, created_at, payment_method, check_in_date, check_out_date, nf_order_items(item_id, quantity, nf_items(category, name))')
+      .select('*, nf_order_items(item_id, quantity, nf_items(category, name))')
       .eq('status', 'pending');
 
     if (fetchError) {
@@ -83,6 +84,12 @@ export const GET: APIRoute = async () => {
         .eq('id', order.id);
         
       console.log(`Cron: Successfully cancelled order ID ${order.id}`);
+
+      try {
+        await sendOrderNotification({ ...order, status: 'cancelled' }, 'cancelled');
+      } catch (e) {
+        console.error('Cron: Email notification failed for cancelled order', order.id, e);
+      }
     }
 
     return new Response(`Successfully cancelled ${expiredOrders.length} expired orders.`, { status: 200 });
