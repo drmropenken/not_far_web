@@ -82,7 +82,7 @@ export default function OrdersManager() {
           nf_items (*)
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('check_in_date', { ascending: true });
 
     if (error) {
       console.error('Error fetching orders:', error);
