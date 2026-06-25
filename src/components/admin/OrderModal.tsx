@@ -254,6 +254,24 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
       virtual_account: finalVirtualAccount 
     }).eq('id', orderId);
 
+    // 寄出新訂單通知信
+    try {
+      const fullOrderData = {
+        ...orderDataPayload,
+        id: orderId,
+        virtual_account: finalVirtualAccount,
+        payment_method: 'bank_transfer',
+        nf_order_items: orderItemsPayload
+      };
+      await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actionType: 'new_order', orderData: fullOrderData })
+      });
+    } catch (err) {
+      console.error('Failed to send email notification:', err);
+    }
+
     setSaving(false);
     onSuccess();
     onClose();
