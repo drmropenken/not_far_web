@@ -275,7 +275,9 @@ export default function OrdersManager() {
     const matchesSearch = searchTerm === '' || 
       order.order_no.toLowerCase().includes(searchTerm.toLowerCase()) || 
       order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer_phone.includes(searchTerm);
+      order.customer_phone.includes(searchTerm) ||
+      order.check_in_date.includes(searchTerm) ||
+      order.check_out_date.includes(searchTerm);
     return matchesStatus && matchesSearch;
   });
 
@@ -356,7 +358,7 @@ export default function OrdersManager() {
           <div className="relative flex-1 sm:w-64">
             <input 
               type="text" 
-              placeholder="搜尋姓名、電話、訂單編號..." 
+              placeholder="搜尋姓名、電話、訂單、日期..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
