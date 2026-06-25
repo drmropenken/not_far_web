@@ -466,7 +466,12 @@ export default function BookingFlow() {
       if (method === 'bank_transfer') {
         const phoneLast5 = customerInfo.phone.slice(-5).padStart(5, '0');
         finalVirtualAccount = `962948188${phoneLast5}`;
-        await supabase.from('nf_orders').update({ virtual_account: finalVirtualAccount }).eq('id', orderId);
+        await supabase.from('nf_orders').update({ 
+          payment_method: method,
+          virtual_account: finalVirtualAccount 
+        }).eq('id', orderId);
+      } else if (method === 'ecpay') {
+        await supabase.from('nf_orders').update({ payment_method: method }).eq('id', orderId);
       }
 
       // Email Notification

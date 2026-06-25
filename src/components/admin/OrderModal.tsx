@@ -248,7 +248,11 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     // 手動接單：使用 89 + 訂單 ID 末 5 碼
     const seq5 = (orderId % 100000).toString().padStart(5, '0');
     const finalVirtualAccount = `962948189${seq5}`;
-    await supabase.from('nf_orders').update({ virtual_account: finalVirtualAccount }).eq('id', orderId);
+    // 強制把 payment_method 寫入，避免 RPC 沒有支援該欄位
+    await supabase.from('nf_orders').update({ 
+      payment_method: 'bank_transfer',
+      virtual_account: finalVirtualAccount 
+    }).eq('id', orderId);
 
     setSaving(false);
     onSuccess();
