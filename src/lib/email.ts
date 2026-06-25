@@ -110,20 +110,47 @@ export const sendOrderNotification = async (orderData: any, actionType: EmailAct
               <td style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">聯絡電話</td>
               <td style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold;">${orderData.customer_phone}</td>
             </tr>
+            ${orderData.notes && orderData.notes.match(/\[人數:\s*(.*?)\]/) ? `
+            <tr>
+              <td style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">入住人數</td>
+              <td style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #3b82f6;">${orderData.notes.match(/\[人數:\s*(.*?)\]/)[1]}</td>
+            </tr>
+            ` : ''}
             <tr>
               <td style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">入住日期</td>
               <td style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold;">${orderData.check_in_date} ~ ${orderData.check_out_date}</td>
             </tr>
             <tr>
-              <td style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">總金額</td>
-              <td style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-weight: black; color: #e11d48; font-size: 18px;">NT$ ${(orderData.total_amount || 0).toLocaleString()}</td>
+              <td style="padding: 12px 0; ${!orderData.deposit_amount ? 'border-bottom: 1px solid #f1f5f9;' : ''} color: #64748b;">總金額</td>
+              <td style="padding: 12px 0; ${!orderData.deposit_amount ? 'border-bottom: 1px solid #f1f5f9;' : ''} font-weight: black; color: #333; font-size: 16px;">NT$ ${(orderData.total_amount || 0).toLocaleString()}</td>
             </tr>
+            ${orderData.deposit_amount > 0 ? `
+            <tr>
+              <td style="padding: 12px 0; color: #64748b;">已收定金</td>
+              <td style="padding: 12px 0; font-weight: bold; color: #059669;">NT$ ${orderData.deposit_amount.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">現場需付尾款</td>
+              <td style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-weight: black; color: #e11d48; font-size: 18px;">NT$ ${Math.max(0, (orderData.total_amount || 0) - orderData.deposit_amount).toLocaleString()}</td>
+            </tr>
+            ` : ''}
+            ${orderData.payment_method === 'bank_transfer' && orderData.virtual_account ? `
+            <tr>
+              <td style="padding: 16px 0; color: #64748b;" colspan="2">
+                <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 16px;">
+                  <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;">💳 專屬匯款帳號 (請於 3 日內完成匯款)</div>
+                  <div style="font-weight: bold; color: #333;">銀行代碼：812 (台新銀行)</div>
+                  <div style="font-weight: black; font-family: monospace; font-size: 18px; color: #0f172a; margin-top: 4px; letter-spacing: 1px;">${orderData.virtual_account}</div>
+                </div>
+              </td>
+            </tr>
+            ` : ''}
           </table>
 
-          ${orderData.notes ? `
+          ${orderData.notes && orderData.notes.replace(/\[Email:.*?\]\s*/g, '').replace(/\[人數:.*?\]\s*/g, '').trim() ? `
           <div style="margin-top: 24px; background-color: #fffbeb; padding: 16px; border-left: 4px solid #f59e0b; border-radius: 4px;">
             <h3 style="color: #b45309; margin-top: 0; margin-bottom: 8px; font-size: 15px;">💬 備註與回覆</h3>
-            <p style="margin: 0; white-space: pre-wrap; line-height: 1.6; color: #451a03;">${orderData.notes.replace(/\[Email:.*?\]\s*/g, '')}</p>
+            <p style="margin: 0; white-space: pre-wrap; line-height: 1.6; color: #451a03;">${orderData.notes.replace(/\[Email:.*?\]\s*/g, '').replace(/\[人數:.*?\]\s*/g, '').trim()}</p>
           </div>
           ` : ''}
 
