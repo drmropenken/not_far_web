@@ -137,7 +137,7 @@ export default function BookingFlow() {
           setSession(session);
           setCustomerInfo(prev => ({
             ...prev,
-            email: session.user.email || '',
+            email: session.user.email?.includes('@line.notfar.com') ? '' : (session.user.email || ''),
             name: session.user.user_metadata?.full_name || ''
           }));
           setStep(prev => prev === 0 ? 1 : prev);
@@ -153,7 +153,7 @@ export default function BookingFlow() {
         setSession(session);
         setCustomerInfo(prev => ({
           ...prev,
-          email: session.user.email || '',
+          email: session.user.email?.includes('@line.notfar.com') ? '' : (session.user.email || ''),
           name: session.user.user_metadata?.full_name || ''
         }));
         setStep(prev => prev === 0 ? 1 : prev);

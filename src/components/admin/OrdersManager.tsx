@@ -457,7 +457,7 @@ export default function OrdersManager() {
                       </div>
                     </div>
 
-                    {order.payment_method === 'bank_transfer' && order.status === 'pending' && (
+                    {order.payment_method === 'bank_transfer' && order.virtual_account && (
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex flex-col gap-1.5 mt-2 shadow-sm">
                         <div className="text-amber-800 font-bold text-xs flex items-center gap-1.5">
                           <span>🏦</span> 虛擬帳號匯款

@@ -305,7 +305,7 @@ export default function MyOrdersFlow() {
                         </div>
                         {getOrderStatusInfo(selectedOrder).type === 'pending' && selectedOrder.payment_method === 'bank_transfer' && selectedOrder.virtual_account && (
                           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                            <p className="text-xs text-blue-600 font-bold mb-2">🏦 專屬匯款帳號 (銀行代碼 009 彰化銀行)</p>
+                            <p className="text-xs text-blue-600 font-bold mb-2">🏦 專屬匯款帳號 (銀行代碼 812 台新銀行)</p>
                             <p className="text-xl font-black text-blue-800 tracking-widest">{selectedOrder.virtual_account}</p>
                             <p className="text-xs text-blue-500 mt-2">請於下單後 10 天內完成匯款，以免訂單被自動取消喔！</p>
                           </div>
