@@ -490,33 +490,6 @@ export default function OrdersManager() {
                       </div>
                     </div>
 
-                    {parsed.notes && (
-                      <div className="mt-3 p-3 bg-amber-50/50 rounded-lg border border-amber-100">
-                        <h4 className="text-xs font-bold text-amber-800 flex items-center gap-1.5 mb-2">
-                          <span>💬</span> 顧客留言與對話
-                        </h4>
-                        <div className="text-xs text-stone-700 whitespace-pre-wrap leading-relaxed">
-                          {parsed.notes.split('\n\n').map((paragraph, i) => {
-                            if (paragraph.startsWith('[店家回覆]')) {
-                              return (
-                                <div key={i} className="mt-2 p-2 bg-white rounded border border-amber-200 text-amber-800 shadow-sm font-medium">
-                                  {paragraph}
-                                </div>
-                              );
-                            }
-                            if (paragraph.startsWith('[顧客補充]')) {
-                              return (
-                                <div key={i} className="mt-2 p-2 bg-emerald-50 rounded border border-emerald-200 text-emerald-800 shadow-sm font-medium">
-                                  {paragraph}
-                                </div>
-                              );
-                            }
-                            return <div key={i} className={i > 0 ? "mt-2" : ""}>{paragraph}</div>;
-                          })}
-                        </div>
-                      </div>
-                    )}
-
                     {order.payment_method === 'bank_transfer' && order.virtual_account && (
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex flex-col gap-1.5 mt-2 shadow-sm">
                         <div className="text-amber-800 font-bold text-xs flex items-center gap-1.5">
@@ -552,9 +525,10 @@ export default function OrdersManager() {
                       </ul>
                       {adminRole !== 'viewer' && (
                         replyingToOrderId === order.id ? (
-                          <div className="mt-2" onClick={e => e.stopPropagation()}>
+                          <div className="mt-2 p-2 bg-stone-50 rounded border border-stone-300 shadow-inner" onClick={e => e.stopPropagation()}>
+                            <div className="text-xs text-stone-600 mb-2 whitespace-pre-wrap max-h-32 overflow-y-auto">💬 客人備註紀錄：<br/>{parsed.notes || <span className="opacity-50 italic">無</span>}</div>
                             <textarea 
-                              className="w-full text-xs p-2 border border-stone-300 rounded focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-y min-h-[60px]"
+                              className="w-full text-xs p-2 border border-stone-300 rounded focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-y min-h-[60px] bg-white"
                               placeholder="輸入要回覆給客人的內容..."
                               value={replyText}
                               onChange={e => setReplyText(e.target.value)}
@@ -568,11 +542,28 @@ export default function OrdersManager() {
                             </div>
                           </div>
                         ) : (
-                          <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note relative" onClick={() => { setReplyingToOrderId(order.id as unknown as number); setReplyText(''); }}>
-                            <div className="flex items-center justify-center gap-1 opacity-60 group-hover/note:opacity-100 font-medium">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" /></svg>
-                              新增店家回覆
+                          <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note relative flex flex-col" onClick={() => { setReplyingToOrderId(order.id as unknown as number); setReplyText(''); }}>
+                            <div className="whitespace-pre-wrap break-words leading-relaxed max-h-32 overflow-y-auto pr-16">
+                              <span className="font-bold opacity-80">💬 客人備註與對話：</span><br/>
+                              {parsed.notes ? (
+                                <div className="mt-1 space-y-1.5">
+                                  {parsed.notes.split('\n\n').map((paragraph, i) => {
+                                    if (paragraph.startsWith('[店家回覆]')) {
+                                      return <div key={i} className="p-1.5 bg-white rounded border border-amber-200 text-amber-800 shadow-sm font-medium">{paragraph}</div>;
+                                    }
+                                    if (paragraph.startsWith('[顧客補充]')) {
+                                      return <div key={i} className="p-1.5 bg-emerald-50 rounded border border-emerald-200 text-emerald-800 shadow-sm font-medium">{paragraph}</div>;
+                                    }
+                                    return <div key={i} className={i > 0 ? "mt-1.5" : ""}>{paragraph}</div>;
+                                  })}
+                                </div>
+                              ) : <span className="opacity-50 italic mt-1 inline-block">無</span>}
                             </div>
+                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover/note:opacity-100 font-medium text-stone-500 bg-white border border-stone-200 rounded py-1 px-2 mx-auto mt-2 shadow-sm absolute bottom-2 right-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" /></svg>
+                              回覆
+                            </div>
+                            {!parsed.notes && <div className="flex items-center justify-center gap-1 opacity-60 font-medium mt-1"><svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" /></svg>新增店家回覆</div>}
                           </div>
                         )
                       )}
