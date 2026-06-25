@@ -463,7 +463,7 @@ export default function OrdersManager() {
                           <span>🏦</span> 虛擬帳號匯款
                         </div>
                         <div className="text-amber-700 text-xs">
-                          台新國際商業銀行 (812)<br/>
+                          台新銀行 (812)<br/>
                           <span className="font-black text-[15px] text-emerald-700 tracking-widest bg-white px-2 py-0.5 rounded border border-amber-200 mt-1 inline-block">{order.virtual_account}</span>
                         </div>
                       </div>
