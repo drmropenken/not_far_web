@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* ===== 全域重置與變數 ===== */
 :root {
   --primary: #2d6a4f;

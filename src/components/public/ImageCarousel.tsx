@@ -48,20 +48,20 @@ export default function ImageCarousel({ images, alt = "Image", className = "" }:
       />
       
       {/* Navigation arrows (show on hover) */}
-      <div className="absolute inset-0 flex items-center justify-between p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute inset-0 flex items-center justify-between p-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={handlePrev}
-          className="bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-black/70 backdrop-blur-sm"
+          className="bg-black/40 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-black/70 backdrop-blur-md transition-colors border-none cursor-pointer"
           aria-label="Previous image"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <button
           onClick={handleNext}
-          className="bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-black/70 backdrop-blur-sm"
+          className="bg-black/40 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-black/70 backdrop-blur-md transition-colors border-none cursor-pointer"
           aria-label="Next image"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
         </button>
       </div>
       
