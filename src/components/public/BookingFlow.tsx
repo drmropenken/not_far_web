@@ -43,6 +43,7 @@ export default function BookingFlow() {
   // Discount states
   const [discountCode, setDiscountCode] = useState('');
   const [discountPercent, setDiscountPercent] = useState(1);
+  const [discountFixedAmount, setDiscountFixedAmount] = useState(0);
   const [discountError, setDiscountError] = useState('');
   const [discountAppliedCode, setDiscountAppliedCode] = useState('');
   const [finalOrderInfo, setFinalOrderInfo] = useState<{ orderNo: string, virtualAccount: string, totalAmount: number } | null>(null);
@@ -349,16 +350,25 @@ export default function BookingFlow() {
   };
 
   const calculateTotal = () => {
-    return Math.round(calculateOriginalTotal() * discountPercent);
+    const original = calculateOriginalTotal();
+    if (discountFixedAmount > 0) {
+      return Math.max(0, original - discountFixedAmount);
+    }
+    return Math.round(original * discountPercent);
   };
 
   const calculateDiscountAmount = () => {
-    return Math.round(calculateOriginalTotal() * (1 - discountPercent));
+    const original = calculateOriginalTotal();
+    if (discountFixedAmount > 0) {
+      return Math.min(original, discountFixedAmount);
+    }
+    return Math.round(original * (1 - discountPercent));
   };
 
   const handleVerifyDiscount = async () => {
     if (!discountCode.trim()) {
       setDiscountPercent(1);
+      setDiscountFixedAmount(0);
       setDiscountError('');
       setDiscountAppliedCode('');
       return;
@@ -371,11 +381,13 @@ export default function BookingFlow() {
       .single();
 
     if (data) {
-      setDiscountPercent(data.discount_percent);
+      setDiscountPercent(data.discount_percent || 1);
+      setDiscountFixedAmount(data.discount_fixed_amount || 0);
       setDiscountError('');
       setDiscountAppliedCode(data.code);
     } else {
       setDiscountPercent(1);
+      setDiscountFixedAmount(0);
       setDiscountError('無效的折扣碼或已停用');
       setDiscountAppliedCode('');
     }
@@ -540,6 +552,7 @@ export default function BookingFlow() {
                   type="date"
                   value={dates.checkIn}
                   min={new Date().toLocaleDateString('en-CA')}
+                  max={(() => { const d = new Date(); d.setMonth(d.getMonth() + 6); return d.toLocaleDateString('en-CA'); })()}
                   onChange={(e) => setDates({ ...dates, checkIn: e.target.value, checkOut: '' })}
                   className="w-full text-xl font-black text-slate-800 bg-white border-2 border-emerald-200/60 rounded-xl px-4 py-4 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all shadow-inner"
                 />
@@ -685,7 +698,14 @@ export default function BookingFlow() {
                     <button type="button" onClick={handleVerifyDiscount} className="bg-slate-800 text-white px-5 rounded-xl font-bold hover:bg-slate-700 transition-colors whitespace-nowrap text-sm">套用</button>
                   </div>
                   {discountError && <p className="text-rose-500 text-sm mt-1.5 font-bold">{discountError}</p>}
-                  {discountPercent < 1 && <p className="text-emerald-600 text-sm mt-1.5 font-bold">成功套用 {discountAppliedCode}，享 {(discountPercent * 10).toFixed(1).replace('.0', '')} 折優惠！</p>}
+                  {(discountPercent < 1 || discountFixedAmount > 0) && (
+                    <p className="text-emerald-600 text-sm mt-1.5 font-bold">
+                      成功套用 {discountAppliedCode}，
+                      {discountFixedAmount > 0 
+                        ? `現折 NT$ ${discountFixedAmount} 元！` 
+                        : `享 ${(discountPercent * 10).toFixed(1).replace('.0', '')} 折優惠！`}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -788,11 +808,11 @@ export default function BookingFlow() {
                     <span>原價總計</span>
                     <span>NT$ {calculateOriginalTotal().toLocaleString()}</span>
                   </div>
-                  {discountPercent < 1 && (
-                    <div className="flex justify-between items-center text-sm text-rose-500 font-bold">
+                  {(discountPercent < 1 || discountFixedAmount > 0) && (
+                    <li className="flex justify-between items-center text-emerald-600 font-bold">
                       <span>折扣金額 ({discountAppliedCode})</span>
                       <span>- NT$ {calculateDiscountAmount().toLocaleString()}</span>
-                    </div>
+                    </li>
                   )}
                   <div className="flex justify-between items-end mt-2 pt-2 border-t border-emerald-200/50">
                     <span>最終結帳金額</span>

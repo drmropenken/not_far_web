@@ -5,6 +5,7 @@ type DiscountCode = {
   id: string;
   code: string;
   discount_percent: number;
+  discount_fixed_amount?: number;
   is_active: boolean;
   created_at: string;
 };
@@ -14,7 +15,9 @@ export default function DiscountsManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [newCode, setNewCode] = useState('');
+  const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
   const [newPercent, setNewPercent] = useState<number>(0.9); // Default 90%
+  const [newFixedAmount, setNewFixedAmount] = useState<number>(100); // Default 100 NTD
   const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
@@ -40,9 +43,17 @@ export default function DiscountsManager() {
   const handleAddDiscount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCode.trim()) return;
-    if (newPercent <= 0 || newPercent > 1) {
-      alert('折扣比例必須大於 0 且小於等於 1 (例如 0.9 代表 9 折)');
-      return;
+    
+    if (discountType === 'percent') {
+      if (newPercent <= 0 || newPercent > 1) {
+        alert('折扣比例必須大於 0 且小於等於 1 (例如 0.9 代表 9 折)');
+        return;
+      }
+    } else {
+      if (newFixedAmount <= 0) {
+        alert('固定扣除金額必須大於 0');
+        return;
+      }
     }
 
     setSaving(true);
@@ -50,7 +61,8 @@ export default function DiscountsManager() {
       .from('nf_discount_codes')
       .insert([{
         code: newCode.trim().toUpperCase(),
-        discount_percent: newPercent,
+        discount_percent: discountType === 'percent' ? newPercent : 1,
+        discount_fixed_amount: discountType === 'fixed' ? newFixedAmount : 0,
         is_active: true
       }]);
 
@@ -63,7 +75,9 @@ export default function DiscountsManager() {
       }
     } else {
       setNewCode('');
+      setDiscountType('percent');
       setNewPercent(0.9);
+      setNewFixedAmount(100);
       setIsAdding(false);
       fetchDiscounts();
     }
@@ -128,23 +142,61 @@ export default function DiscountsManager() {
               placeholder="例如：SUMMER2026"
             />
           </div>
-          <div className="flex-1 w-full">
-            <label className="block text-sm font-bold text-stone-600 mb-1.5">折扣比例 <span className="text-rose-500">*</span></label>
-            <div className="flex items-center gap-3">
-              <input 
-                required 
-                type="number" 
-                step="0.01"
-                min="0.01"
-                max="1"
-                value={newPercent} 
-                onChange={e => setNewPercent(parseFloat(e.target.value))} 
-                className="w-full border border-stone-300 rounded-xl p-3 focus:ring-2 focus:ring-amber-500 outline-none font-mono text-stone-800" 
-              />
-              <span className="text-stone-500 font-bold whitespace-nowrap text-sm">
-                = {newPercent === 1 ? '無折扣' : newPercent < 1 && newPercent > 0 ? `打 ${newPercent * 10} 折` : '錯誤數值'}
-              </span>
+          <div className="flex-1 w-full flex flex-col gap-3">
+            <div>
+              <label className="block text-sm font-bold text-stone-600 mb-1.5">折扣方式 <span className="text-rose-500">*</span></label>
+              <div className="flex gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => setDiscountType('percent')}
+                  className={`flex-1 py-2 text-sm font-bold rounded-lg border ${discountType === 'percent' ? 'bg-amber-100 border-amber-400 text-amber-800' : 'bg-white border-stone-200 text-stone-500 hover:bg-stone-50'}`}
+                >打折 (百分比)</button>
+                <button 
+                  type="button" 
+                  onClick={() => setDiscountType('fixed')}
+                  className={`flex-1 py-2 text-sm font-bold rounded-lg border ${discountType === 'fixed' ? 'bg-amber-100 border-amber-400 text-amber-800' : 'bg-white border-stone-200 text-stone-500 hover:bg-stone-50'}`}
+                >固定扣除金額</button>
+              </div>
             </div>
+
+            {discountType === 'percent' ? (
+              <div>
+                <label className="block text-sm font-bold text-stone-600 mb-1.5">折扣比例 <span className="text-rose-500">*</span></label>
+                <div className="flex items-center gap-3">
+                  <input 
+                    required 
+                    type="number" 
+                    step="0.01"
+                    min="0.01"
+                    max="1"
+                    value={newPercent} 
+                    onChange={e => setNewPercent(parseFloat(e.target.value))} 
+                    className="w-full border border-stone-300 rounded-xl p-3 focus:ring-2 focus:ring-amber-500 outline-none font-mono text-stone-800" 
+                  />
+                  <span className="text-stone-500 font-bold whitespace-nowrap text-sm">
+                    = {newPercent === 1 ? '無折扣' : newPercent < 1 && newPercent > 0 ? `打 ${newPercent * 10} 折` : '錯誤數值'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-bold text-stone-600 mb-1.5">扣除金額 (NT$) <span className="text-rose-500">*</span></label>
+                <div className="flex items-center gap-3">
+                  <input 
+                    required 
+                    type="number" 
+                    step="1"
+                    min="1"
+                    value={newFixedAmount} 
+                    onChange={e => setNewFixedAmount(parseInt(e.target.value))} 
+                    className="w-full border border-stone-300 rounded-xl p-3 focus:ring-2 focus:ring-amber-500 outline-none font-mono text-stone-800" 
+                  />
+                  <span className="text-stone-500 font-bold whitespace-nowrap text-sm">
+                    = 折 NT$ {newFixedAmount} 元
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
           <button 
             type="submit" 
@@ -188,9 +240,11 @@ export default function DiscountsManager() {
                     </td>
                     <td className="p-4 text-center">
                       <span className="font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                        {(discount.discount_percent * 10).toFixed(1).replace('.0', '')} 折
+                        {discount.discount_fixed_amount && discount.discount_fixed_amount > 0 
+                          ? `折 $${discount.discount_fixed_amount}`
+                          : `${(discount.discount_percent * 10).toFixed(1).replace('.0', '')} 折`
+                        }
                       </span>
-                      <div className="text-[10px] text-stone-400 mt-1 font-mono">({discount.discount_percent})</div>
                     </td>
                     <td className="p-4 text-center">
                       <button 
