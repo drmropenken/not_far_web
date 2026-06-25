@@ -825,7 +825,7 @@ export default function BookingFlow() {
               <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-left space-y-4">
                 <div>
                   <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">匯款銀行</span>
-                  <span className="text-lg font-black text-slate-800">玉山銀行 (808)</span>
+                  <span className="text-lg font-black text-slate-800">台新國際商業銀行 (812)</span>
                 </div>
                 <div>
                   <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">虛擬帳號</span>
