@@ -275,23 +275,8 @@ export default function BookingFlow() {
               <span>{catStyle.icon}</span>{catStyle.label}
             </span>
             <h3 className="font-black text-slate-800 text-lg leading-tight">{item.name}</h3>
-            
-            {item.image_url && (
-              <div className="mt-3 mb-2 rounded-xl overflow-hidden aspect-video w-full border border-slate-100 shadow-sm">
-                <ImageCarousel images={item.image_url.split(',').map(u => u.trim()).filter(Boolean)} alt={item.name} />
-              </div>
-            )}
-            
-            <div className="text-sm text-slate-500 font-bold mt-2 flex items-center gap-1.5 flex-wrap">
-              {item.price_original > 0 && (
-                <span className="line-through text-slate-400 font-normal text-xs">原價 ${item.price_original}</span>
-              )}
-              <span className={item.price_original > 0 ? "text-blue-600 font-black" : ""}>
-                平日 ${item.price_weekday} / 假日 ${item.price_holiday}
-              </span>
-            </div>
           </div>
-          <div className="text-right">
+          <div className="text-right shrink-0 ml-2">
             {remaining > 0 ? (
               remaining === 1 ? (
                 <span className="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-200 animate-pulse shadow-sm block w-max">🔥 僅剩最後 1 {unit}</span>
@@ -302,6 +287,21 @@ export default function BookingFlow() {
               <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 block w-max">已額滿</span>
             )}
           </div>
+        </div>
+
+        {item.image_url && (
+          <div className="mb-3 rounded-xl overflow-hidden aspect-video w-full border border-slate-100 shadow-sm">
+            <ImageCarousel images={item.image_url.split(',').map(u => u.trim()).filter(Boolean)} alt={item.name} />
+          </div>
+        )}
+        
+        <div className="text-sm text-slate-500 font-bold mb-3 flex items-center gap-1.5 flex-wrap">
+          {item.price_original > 0 && (
+            <span className="line-through text-slate-400 font-normal text-xs">原價 ${item.price_original}</span>
+          )}
+          <span className={item.price_original > 0 ? "text-blue-600 font-black" : ""}>
+            平日 ${item.price_weekday} / 假日 ${item.price_holiday}
+          </span>
         </div>
 
         <div className={`flex items-center justify-between border-t border-opacity-50 pt-3 mt-1 ${qty > 0 ? catStyle.border : 'border-slate-100'}`}>
@@ -685,7 +685,7 @@ export default function BookingFlow() {
         )}
 
         {step === 4 && (
-          <div className="flex-1 p-6 flex flex-col">
+          <div className="flex-1 p-6 flex flex-col min-h-0">
             <div className="flex items-end justify-between mb-4 gap-2">
               <h2 className="text-2xl font-black text-slate-800 leading-none">填寫訂位資料</h2>
               <button onClick={() => setStep(3)} className="text-slate-400 text-sm font-bold flex items-center gap-1 hover:text-slate-600 shrink-0">&larr; 返回修改裝備</button>
@@ -758,7 +758,7 @@ export default function BookingFlow() {
         )}
 
         {step === 5 && (
-          <div className="flex-1 p-6 flex flex-col">
+          <div className="flex-1 p-6 flex flex-col min-h-0">
             <div className="flex items-end justify-between mb-4 gap-2">
               <h2 className="text-2xl font-black text-slate-800 leading-none">確認訂單與付款</h2>
               <button onClick={() => setStep(4)} className="text-slate-400 text-sm font-bold flex items-center gap-1 hover:text-slate-600 shrink-0">&larr; 返回修改資料</button>
@@ -859,7 +859,7 @@ export default function BookingFlow() {
                 onClick={() => handleCheckout('bank_transfer')}
                 className="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-lg hover:bg-emerald-500 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
               >
-                取號匯款 (保留 30 天) <span>🏦</span>
+                取號匯款 (保留 10 天) <span>🏦</span>
               </button>
             </div>
           </div>
