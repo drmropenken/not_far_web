@@ -550,7 +550,7 @@ export default function BookingFlow() {
         )}
       </div>
 
-      <div className="flex-1 flex flex-col relative hide-scrollbar">
+      <div className="flex-1 flex flex-col relative hide-scrollbar min-h-0">
         {step === 0 && (
           <div className="flex-1 flex flex-col p-6 items-center justify-center">
             <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center space-y-6">
@@ -568,7 +568,7 @@ export default function BookingFlow() {
         )}
 
         {step === 1 && (
-          <div className="flex-1 p-6 flex flex-col">
+          <div className="flex-1 p-6 flex flex-col min-h-0">
             <h2 className="text-2xl font-black text-slate-800 mb-6">選擇入住日期</h2>
             <div className="space-y-6 flex-1">
               <div className="bg-emerald-50/60 p-6 rounded-2xl shadow-sm border border-emerald-100/50">
@@ -607,7 +607,7 @@ export default function BookingFlow() {
         )}
 
         {step === 2 && (
-          <div className="flex-1 p-6 flex flex-col">
+          <div className="flex-1 p-6 flex flex-col min-h-0">
             <button onClick={() => setStep(1)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改日期</button>
             <h2 className="text-2xl font-black text-slate-800 mb-6">選擇營位</h2>
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
@@ -635,7 +635,7 @@ export default function BookingFlow() {
         )}
 
         {step === 3 && (
-          <div className="flex-1 p-6 flex flex-col">
+          <div className="flex-1 p-6 flex flex-col min-h-0">
             <button onClick={() => setStep(2)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改營位</button>
             <h2 className="text-2xl font-black text-slate-800 mb-6">加購裝備與食材服務</h2>
 
