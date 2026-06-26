@@ -531,7 +531,7 @@ export default function BookingFlow() {
 
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 relative">
+    <div className="flex flex-col h-full bg-slate-50 relative">
       {/* Header */}
       <div className="bg-white px-5 py-4 shadow-sm z-10 flex items-center justify-between sticky top-0">
         <a href="/" className="font-black text-slate-800 tracking-wide flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -550,7 +550,7 @@ export default function BookingFlow() {
         )}
       </div>
 
-      <div className="flex-1 overflow-auto flex flex-col relative hide-scrollbar">
+      <div className="flex-1 flex flex-col relative hide-scrollbar">
         {step === 0 && (
           <div className="flex-1 flex flex-col p-6 items-center justify-center">
             <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center space-y-6">

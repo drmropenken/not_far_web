@@ -22,7 +22,7 @@ export default function ImageCarousel({ images, alt = "Image", className = "" }:
       <img
         src={images[0]}
         alt={alt}
-        className={`object-cover ${className}`}
+        className={`w-full h-full object-cover object-center ${className}`}
       />
     );
   }
@@ -40,11 +40,11 @@ export default function ImageCarousel({ images, alt = "Image", className = "" }:
   };
 
   return (
-    <div className={`relative group overflow-hidden ${className}`}>
+    <div className={`relative group w-full h-full overflow-hidden ${className}`}>
       <img
         src={images[currentIndex]}
         alt={`${alt} - ${currentIndex + 1}`}
-        className="w-full h-full object-cover transition-transform duration-300"
+        className="w-full h-full object-cover object-center transition-transform duration-300"
       />
       
       {/* Navigation arrows (show on hover) */}
