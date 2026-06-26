@@ -594,7 +594,7 @@ export default function BookingFlow() {
                 />
               </div>
             </div>
-            <div className="pt-6 mt-auto">
+            <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm -mx-6 px-6 pb-6 pt-4 mt-auto border-t border-slate-200 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
               <button
                 onClick={() => setStep(2)}
                 disabled={!dates.checkIn || !dates.checkOut}
@@ -622,7 +622,7 @@ export default function BookingFlow() {
                 </div>
               )}
             </div>
-            <div className="pt-6 mt-auto border-t border-slate-100 shrink-0">
+            <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm -mx-6 px-6 pb-6 pt-4 mt-auto border-t border-slate-200 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
               <button
                 onClick={() => setStep(3)}
                 disabled={selectedItems.filter(i => i.item.category === 'campsite').length === 0}
@@ -669,7 +669,7 @@ export default function BookingFlow() {
                 </div>
               )}
             </div>
-            <div className="pt-6 mt-auto border-t border-slate-100 shrink-0">
+            <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm -mx-6 px-6 pb-6 pt-4 mt-auto border-t border-slate-200 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
               <button
                 onClick={() => setStep(4)}
                 className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
@@ -739,7 +739,7 @@ export default function BookingFlow() {
                 </div>
               </div>
             </div>
-            <div className="pt-6 mt-auto border-t border-slate-100 shrink-0">
+            <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm -mx-6 px-6 pb-6 pt-4 mt-auto border-t border-slate-200 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
               <button
                 onClick={() => setStep(5)}
                 disabled={!customerInfo.name || !customerInfo.phone || !customerInfo.email}
@@ -846,7 +846,7 @@ export default function BookingFlow() {
                 </div>
               </div>
             </div>
-            <div className="pt-6 mt-auto border-t border-slate-100 shrink-0 space-y-3">
+            <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm -mx-6 px-6 pb-6 pt-4 mt-auto border-t border-slate-200 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] space-y-3">
               <button
                 onClick={() => handleCheckout('bank_transfer')}
                 className="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-lg hover:bg-emerald-500 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
