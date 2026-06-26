@@ -256,12 +256,13 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
 
     // 寄出新訂單通知信
     try {
+      const itemsText = selectedItems.map(si => `<li>${si.item.name} x ${si.quantity}</li>`).join('');
       const fullOrderData = {
         ...orderDataPayload,
         id: orderId,
         virtual_account: finalVirtualAccount,
         payment_method: 'bank_transfer',
-        nf_order_items: orderItemsPayload
+        itemsText
       };
       await fetch('/api/send-email', {
         method: 'POST',
