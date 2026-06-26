@@ -277,7 +277,7 @@ export default function BookingFlow() {
             <h3 className="font-black text-slate-800 text-lg leading-tight">{item.name}</h3>
             
             {item.image_url && (
-              <div className="mt-3 mb-2 rounded-xl overflow-hidden aspect-video w-full max-w-sm border border-slate-100 shadow-sm">
+              <div className="mt-3 mb-2 rounded-xl overflow-hidden aspect-video w-full border border-slate-100 shadow-sm">
                 <ImageCarousel images={item.image_url.split(',').map(u => u.trim()).filter(Boolean)} alt={item.name} />
               </div>
             )}
@@ -608,8 +608,10 @@ export default function BookingFlow() {
 
         {step === 2 && (
           <div className="flex-1 p-6 flex flex-col min-h-0">
-            <button onClick={() => setStep(1)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改日期</button>
-            <h2 className="text-2xl font-black text-slate-800 mb-6">選擇營位</h2>
+            <div className="flex items-end justify-between mb-4 gap-2">
+              <h2 className="text-2xl font-black text-slate-800 leading-none">選擇營位</h2>
+              <button onClick={() => setStep(1)} className="text-slate-400 text-sm font-bold flex items-center gap-1 hover:text-slate-600 shrink-0">&larr; 返回修改日期</button>
+            </div>
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
               {fetchingItems ? (
                 <div className="flex flex-col items-center justify-center py-20 text-emerald-500">
@@ -636,8 +638,10 @@ export default function BookingFlow() {
 
         {step === 3 && (
           <div className="flex-1 p-6 flex flex-col min-h-0">
-            <button onClick={() => setStep(2)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改營位</button>
-            <h2 className="text-2xl font-black text-slate-800 mb-6">加購裝備與食材服務</h2>
+            <div className="flex items-end justify-between mb-4 gap-2">
+              <h2 className="text-2xl font-black text-slate-800 leading-none">加購裝備與食材</h2>
+              <button onClick={() => setStep(2)} className="text-slate-400 text-sm font-bold flex items-center gap-1 hover:text-slate-600 shrink-0">&larr; 返回修改營位</button>
+            </div>
 
             <div className="bg-emerald-50/80 rounded-xl p-4 mb-6 border border-emerald-200 shadow-sm">
               <h3 className="font-bold text-emerald-800 text-sm mb-2 flex items-center gap-1"><span>⛺</span> 您已選擇的營位：</h3>
@@ -682,8 +686,10 @@ export default function BookingFlow() {
 
         {step === 4 && (
           <div className="flex-1 p-6 flex flex-col">
-            <button onClick={() => setStep(3)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改加購項目</button>
-            <h2 className="text-2xl font-black text-slate-800 mb-6">填寫聯絡資料</h2>
+            <div className="flex items-end justify-between mb-4 gap-2">
+              <h2 className="text-2xl font-black text-slate-800 leading-none">填寫訂位資料</h2>
+              <button onClick={() => setStep(3)} className="text-slate-400 text-sm font-bold flex items-center gap-1 hover:text-slate-600 shrink-0">&larr; 返回修改裝備</button>
+            </div>
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
               <div className="bg-white p-5 rounded-2xl shadow-sm space-y-4">
                 <h3 className="font-bold text-slate-800 text-lg">聯絡資訊</h3>
@@ -753,8 +759,10 @@ export default function BookingFlow() {
 
         {step === 5 && (
           <div className="flex-1 p-6 flex flex-col">
-            <button onClick={() => setStep(4)} className="text-slate-400 text-sm font-bold mb-4 flex items-center gap-1 hover:text-slate-600 w-fit">&larr; 返回修改資料</button>
-            <h2 className="text-2xl font-black text-slate-800 mb-6">確認結帳</h2>
+            <div className="flex items-end justify-between mb-4 gap-2">
+              <h2 className="text-2xl font-black text-slate-800 leading-none">確認訂單與付款</h2>
+              <button onClick={() => setStep(4)} className="text-slate-400 text-sm font-bold flex items-center gap-1 hover:text-slate-600 shrink-0">&larr; 返回修改資料</button>
+            </div>
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4 mb-4">
                 <h3 className="font-bold text-slate-500 uppercase tracking-wider text-xs border-b border-slate-100 pb-2">入住資訊</h3>
