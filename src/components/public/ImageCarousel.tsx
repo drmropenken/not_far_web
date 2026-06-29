@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface ImageCarouselProps {
   images: string[];
@@ -8,6 +8,17 @@ interface ImageCarouselProps {
 
 export default function ImageCarousel({ images, alt = "Image", className = "" }: ImageCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (images.length <= 1 || isPaused) return;
+
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [images.length, isPaused]);
 
   if (!images || images.length === 0) {
     return (
@@ -40,12 +51,24 @@ export default function ImageCarousel({ images, alt = "Image", className = "" }:
   };
 
   return (
-    <div className={`relative group w-full h-full overflow-hidden ${className}`}>
-      <img
-        src={images[currentIndex]}
-        alt={`${alt} - ${currentIndex + 1}`}
-        className="w-full h-full object-cover object-center transition-transform duration-300"
-      />
+    <div 
+      className={`relative group w-full h-full overflow-hidden ${className}`}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <div 
+        className="flex h-full w-full transition-transform duration-500 ease-in-out"
+        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+      >
+        {images.map((src, idx) => (
+          <img
+            key={idx}
+            src={src}
+            alt={`${alt} - ${idx + 1}`}
+            className="w-full h-full shrink-0 object-cover object-center"
+          />
+        ))}
+      </div>
       
       {/* Navigation arrows (show on hover) */}
       <div className="absolute inset-0 flex items-center justify-between p-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -66,11 +89,19 @@ export default function ImageCarousel({ images, alt = "Image", className = "" }:
       </div>
       
       {/* Dots indicator */}
-      <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1">
+      <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
         {images.map((_, idx) => (
-          <div
+          <button
             key={idx}
-            className={`w-1.5 h-1.5 rounded-full ${idx === currentIndex ? 'bg-white' : 'bg-white/50'}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCurrentIndex(idx);
+            }}
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              idx === currentIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/80'
+            }`}
+            aria-label={`Go to image ${idx + 1}`}
           />
         ))}
       </div>
