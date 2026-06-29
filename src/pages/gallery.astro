@@ -54,7 +54,7 @@ const roomItems = items?.filter((i: any) => i.category === 'campsite' && i.image
     <div class="container">
       <div class="gallery-grid" id="galleryGrid">
         <!-- 環境 -->
-        {[1, 2, 3, 4, 5, 6].map((num) => (
+        {[1, 3, 5, 6].map((num) => (
           <div class="gallery-item fade-in">
             <img src={`/images/environment/${num}.jpeg`} alt={`營區環境 ${num}`} loading="lazy" />
             <div class="overlay">
@@ -63,57 +63,31 @@ const roomItems = items?.filter((i: any) => i.category === 'campsite' && i.image
             </div>
           </div>
         ))}
-        
-        <!-- 營區景色 -->
-        <div class="gallery-item fade-in">
-          <img src="/images/cabin.jpg" alt="不遠山莊大草原">
-          <div class="overlay">
-            <h4>🌿 大草原</h4>
-            <p>孩子們奔跑的綠色天堂</p>
+
+        <!-- 營區與活動 (去重複) -->
+        {[
+          { src: '/images/cabin.jpg', title: '🌿 大草原', desc: '孩子們奔跑的綠色天堂' },
+          { src: '/images/tent.jpg', title: '🌲 森林步道', desc: '漫步在芬多精的懷抱中' },
+          { src: '/images/pipe.jpg', title: '🌳 綠意盎然', desc: '保留大量原生樹種' },
+          { src: 'https://static.wixstatic.com/media/2dfe85_895753b110d146808b7088c22a82b710~mv2.jpg', title: '🌙 營區夜景', desc: '夜晚燈火點綴的夢幻森林與營火' },
+          { src: 'https://static.wixstatic.com/media/2dfe85_b22d2373b6e94504915de48f929553d0~mv2.jpg', title: '⭐ 星空賞螢', desc: '無光害的滿天星斗與螢火蟲' },
+          { src: 'https://static.wixstatic.com/media/7abe18_1c06bd5c1e1f46699a71c2aed060aae0~mv2.jpg', title: '🌺 蓮花池', desc: '靜謐的湖畔風光與櫻花美景' },
+          { src: 'https://static.wixstatic.com/media/7abe18_49ca372653b2465d8690c88299cce670~mv2.jpg', title: '🥾 健行步道', desc: '探索自然之美' },
+          { src: 'https://static.wixstatic.com/media/2dfe85_275286058a214928b4073c0f327dcf92~mv2.jpg', title: '🍖 豪華烤肉', desc: '生食級干貝、精選肉品' },
+          { src: 'https://static.wixstatic.com/media/7abe18_415a7be96fe3459f858ee4babfc6b6c6~mv2.jpg', title: '🍲 暖心火鍋', desc: '濃白雞湯與麻辣湯底' },
+          { src: 'https://static.wixstatic.com/media/7abe18_dd36d61242444e0c8eb5e2fa8c64d0a8~mv2.jpg', title: '☕ 鹿角咖啡', desc: '森林系巴士咖啡廳' },
+          { src: '/images/hero.jpg', title: '🥐 自助早餐', desc: '豐盛的自助吧早餐' },
+        ].map((img) => (
+          <div class="gallery-item fade-in">
+            <img src={img.src} alt={img.title.replace(/^[^\s]+\s/, '')} loading="lazy" />
+            <div class="overlay">
+              <h4>{img.title}</h4>
+              <p>{img.desc}</p>
+            </div>
           </div>
-        </div>
+        ))}
         
-        <div class="gallery-item fade-in">
-          <img src="/images/tent.jpg" alt="森林步道">
-          <div class="overlay">
-            <h4>🌲 森林步道</h4>
-            <p>漫步在芬多精的懷抱中</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in">
-          <img src="/images/pipe.jpg" alt="營區樹林">
-          <div class="overlay">
-            <h4>🌳 綠意盎然</h4>
-            <p>保留大量原生樹種</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in">
-          <img src="https://static.wixstatic.com/media/2dfe85_895753b110d146808b7088c22a82b710~mv2.jpg" alt="營區夜景">
-          <div class="overlay">
-            <h4>🌙 夜景</h4>
-            <p>夜晚燈火點綴的夢幻森林</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in">
-          <img src="https://static.wixstatic.com/media/2dfe85_b22d2373b6e94504915de48f929553d0~mv2.jpg" alt="星空">
-          <div class="overlay">
-            <h4>⭐ 星空</h4>
-            <p>無光害的滿天星斗</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in">
-          <img src="https://static.wixstatic.com/media/7abe18_1c06bd5c1e1f46699a71c2aed060aae0~mv2.jpg" alt="蓮花池">
-          <div class="overlay">
-            <h4>🌺 蓮花池</h4>
-            <p>靜謐的湖畔風光</p>
-          </div>
-        </div>
-        
-        <!-- 住宿 (動態渲染) -->
+        <!-- 住宿 (資料庫關聯) -->
         {roomItems.map((item: any) => {
           const images = item.image_url.split(',').map((u: string) => u.trim()).filter(Boolean);
           const displayName = item.name.replace('住宿-', '').replace('上營區-', '').replace('下營區-', '');
@@ -127,88 +101,6 @@ const roomItems = items?.filter((i: any) => i.category === 'campsite' && i.image
             </div>
           ));
         })}
-        
-        <!-- 活動 -->
-        <div class="gallery-item fade-in" data-category="activity">
-          <img src="/images/tent.jpg" alt="跳跳床">
-          <div class="overlay">
-            <h4>🤸 跳跳床</h4>
-            <p>大人小孩都玩瘋了</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="activity">
-          <img src="/images/pipe.jpg" alt="兒童遊戲區">
-          <div class="overlay">
-            <h4>🎠 兒童遊戲區</h4>
-            <p>沙坑、鞦韆、溜滑梯</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="activity">
-          <img src="https://static.wixstatic.com/media/2dfe85_895753b110d146808b7088c22a82b710~mv2.jpg" alt="營火晚會">
-          <div class="overlay">
-            <h4>🔥 營火晚會</h4>
-            <p>星空下的溫暖時光</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="activity">
-          <img src="https://static.wixstatic.com/media/2dfe85_b22d2373b6e94504915de48f929553d0~mv2.jpg" alt="賞螢">
-          <div class="overlay">
-            <h4>✨ 賞螢</h4>
-            <p>夏季限定的螢火蟲盛宴</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="activity">
-          <img src="https://static.wixstatic.com/media/7abe18_1c06bd5c1e1f46699a71c2aed060aae0~mv2.jpg" alt="賞櫻">
-          <div class="overlay">
-            <h4>🌸 賞櫻</h4>
-            <p>春季櫻花盛開美景</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="activity">
-          <img src="https://static.wixstatic.com/media/7abe18_49ca372653b2465d8690c88299cce670~mv2.jpg" alt="健行">
-          <div class="overlay">
-            <h4>🥾 健行步道</h4>
-            <p>探索自然之美</p>
-          </div>
-        </div>
-        
-        <!-- 美食 -->
-        <div class="gallery-item fade-in" data-category="food">
-          <img src="https://static.wixstatic.com/media/2dfe85_275286058a214928b4073c0f327dcf92~mv2.jpg" alt="烤肉">
-          <div class="overlay">
-            <h4>🍖 豪華烤肉</h4>
-            <p>生食級干貝、精選肉品</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="food">
-          <img src="https://static.wixstatic.com/media/7abe18_415a7be96fe3459f858ee4babfc6b6c6~mv2.jpg" alt="火鍋">
-          <div class="overlay">
-            <h4>🍲 暖心火鍋</h4>
-            <p>濃白雞湯與麻辣湯底</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="food">
-          <img src="https://static.wixstatic.com/media/7abe18_dd36d61242444e0c8eb5e2fa8c64d0a8~mv2.jpg" alt="鹿角咖啡">
-          <div class="overlay">
-            <h4>☕ 鹿角咖啡</h4>
-            <p>森林系巴士咖啡廳</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="food">
-          <img src="/images/hero.jpg" alt="早餐">
-          <div class="overlay">
-            <h4>🥐 自助早餐</h4>
-            <p>豐盛的自助吧早餐</p>
-          </div>
-        </div>
       </div>
     </div>
   </section>
