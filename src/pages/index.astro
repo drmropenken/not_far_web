@@ -121,139 +121,153 @@ const getImageUrls = (searchName: string) => {
       <p class="section-subtitle">從童話合掌村到野奢帳篷，每一種住宿都是一場獨特的體驗</p>
       
       <div class="accommodation-grid">
-        <div class="accommodation-card fade-in flex flex-col h-full">
-          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
-            {getImageUrls('豪華野奢帳篷組').length > 0 ? (
-              <ImageCarousel client:visible images={getImageUrls('豪華野奢帳篷組')} alt="豪華野奢帳篷組" className="w-full h-full" />
-            ) : (
-              <img src="/images/rooms/glamping.jpeg" alt="豪華野奢帳篷組" style="width: 100%; height: 100%; object-fit: cover;">
-            )}
-          </div>
-          <div class="card-body flex-1">
-            <h3>⛺ 豪華野奢帳篷組</h3>
-            <p>極致奢華的免裝備露營！含雙人床、電扇與專屬客廳帳，提供一泊三食（含燒烤或火鍋晚餐），享受尊榮服務。</p>
-            <div class="tags">
-              <span class="tag">可住 4-6 人</span>
-              <span class="tag">一泊三食</span>
-              <span class="tag">免裝備</span>
+        {items?.find(i => i.name.includes('豪華野奢帳篷')) && (
+          <div class="accommodation-card fade-in flex flex-col h-full">
+            <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+              {getImageUrls('豪華野奢帳篷組').length > 0 ? (
+                <ImageCarousel client:visible images={getImageUrls('豪華野奢帳篷組')} alt="豪華野奢帳篷組" className="w-full h-full" />
+              ) : (
+                <img src="/images/rooms/glamping.jpeg" alt="豪華野奢帳篷組" style="width: 100%; height: 100%; object-fit: cover;">
+              )}
+            </div>
+            <div class="card-body flex-1">
+              <h3>⛺ 豪華野奢帳篷組</h3>
+              <p>極致奢華的免裝備露營！含雙人床、電扇與專屬客廳帳，提供一泊三食（含燒烤或火鍋晚餐），享受尊榮服務。</p>
+              <div class="tags">
+                <span class="tag">可住 4-6 人</span>
+                <span class="tag">一泊三食</span>
+                <span class="tag">免裝備</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        <div class="accommodation-card fade-in flex flex-col h-full">
-          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
-            {getImageUrls('四人石茅屋').length > 0 ? (
-              <ImageCarousel client:visible images={getImageUrls('四人石茅屋')} alt="四人石茅屋" className="w-full h-full" />
-            ) : (
-              <img src="/images/rooms/stone-hut.jpeg" alt="四人石茅屋" style="width: 100%; height: 100%; object-fit: cover;">
-            )}
-          </div>
-          <div class="card-body flex-1">
-            <h3>🛖 四人石茅屋</h3>
-            <p>一秒踏進日本合掌村！外型超可愛的三角茅屋，內部空間寬敞，適合家庭同住，並設有獨立衛浴與冷氣。</p>
-            <div class="tags">
-              <span class="tag">可住 4 人</span>
-              <span class="tag">獨立衛浴</span>
-              <span class="tag">含早餐</span>
+        {items?.find(i => i.name.includes('四人石茅屋')) && (
+          <div class="accommodation-card fade-in flex flex-col h-full">
+            <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+              {getImageUrls('四人石茅屋').length > 0 ? (
+                <ImageCarousel client:visible images={getImageUrls('四人石茅屋')} alt="四人石茅屋" className="w-full h-full" />
+              ) : (
+                <img src="/images/rooms/stone-hut.jpeg" alt="四人石茅屋" style="width: 100%; height: 100%; object-fit: cover;">
+              )}
+            </div>
+            <div class="card-body flex-1">
+              <h3>🛖 四人石茅屋</h3>
+              <p>一秒踏進日本合掌村！外型超可愛的三角茅屋，內部空間寬敞，適合家庭同住，並設有獨立衛浴與冷氣。</p>
+              <div class="tags">
+                <span class="tag">可住 4 人</span>
+                <span class="tag">獨立衛浴</span>
+                <span class="tag">含早餐</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        <div class="accommodation-card fade-in flex flex-col h-full">
-          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
-            {getImageUrls('四人水管屋雅房').length > 0 ? (
-              <ImageCarousel client:visible images={getImageUrls('四人水管屋雅房')} alt="四人水管屋雅房" className="w-full h-full" />
-            ) : (
-              <img src="/images/rooms/pipe-house.jpeg" alt="四人水管屋雅房" style="width: 100%; height: 100%; object-fit: cover;">
-            )}
-          </div>
-          <div class="card-body flex-1">
-            <h3>🛖 四人水管屋雅房</h3>
-            <p>造型獨特的水管屋，像極了可愛的汽水罐！備有冷氣與雙人床，車子可直接停在一旁，方便又特別。</p>
-            <div class="tags">
-              <span class="tag">可住 4 人</span>
-              <span class="tag">冷氣</span>
-              <span class="tag">含早餐</span>
+        {items?.find(i => i.name.includes('四人水管屋雅房')) && (
+          <div class="accommodation-card fade-in flex flex-col h-full">
+            <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+              {getImageUrls('四人水管屋雅房').length > 0 ? (
+                <ImageCarousel client:visible images={getImageUrls('四人水管屋雅房')} alt="四人水管屋雅房" className="w-full h-full" />
+              ) : (
+                <img src="/images/rooms/pipe-house.jpeg" alt="四人水管屋雅房" style="width: 100%; height: 100%; object-fit: cover;">
+              )}
+            </div>
+            <div class="card-body flex-1">
+              <h3>🛖 四人水管屋雅房</h3>
+              <p>造型獨特的水管屋，像極了可愛的汽水罐！備有冷氣與雙人床，車子可直接停在一旁，方便又特別。</p>
+              <div class="tags">
+                <span class="tag">可住 4 人</span>
+                <span class="tag">冷氣</span>
+                <span class="tag">含早餐</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        <div class="accommodation-card fade-in flex flex-col h-full">
-          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
-            {getImageUrls('欖仁樹區').length > 0 ? (
-              <ImageCarousel client:visible images={getImageUrls('欖仁樹區')} alt="欖仁樹區 (一至二帳包區)" className="w-full h-full" />
-            ) : (
-              <img src="/images/rooms/tree-zone.jpeg" alt="欖仁樹區 (一至二帳包區)" style="width: 100%; height: 100%; object-fit: cover;">
-            )}
-          </div>
-          <div class="card-body flex-1">
-            <h3>🌳 欖仁樹區 (一至二帳包區)</h3>
-            <p>樹蔭環繞的舒適營位，適合三五好友小包區。提供獨立的搭帳空間，鄰近公共衛浴，享受靜謐的露營時光。</p>
-            <div class="tags">
-              <span class="tag">包區營位</span>
-              <span class="tag">可住 4-8 人</span>
-              <span class="tag">可攜寵物</span>
+        {items?.find(i => i.name.includes('欖仁樹區')) && (
+          <div class="accommodation-card fade-in flex flex-col h-full">
+            <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+              {getImageUrls('欖仁樹區').length > 0 ? (
+                <ImageCarousel client:visible images={getImageUrls('欖仁樹區')} alt="欖仁樹區 (一至二帳包區)" className="w-full h-full" />
+              ) : (
+                <img src="/images/rooms/tree-zone.jpeg" alt="欖仁樹區 (一至二帳包區)" style="width: 100%; height: 100%; object-fit: cover;">
+              )}
+            </div>
+            <div class="card-body flex-1">
+              <h3>🌳 欖仁樹區 (一至二帳包區)</h3>
+              <p>樹蔭環繞的舒適營位，適合三五好友小包區。提供獨立的搭帳空間，鄰近公共衛浴，享受靜謐的露營時光。</p>
+              <div class="tags">
+                <span class="tag">包區營位</span>
+                <span class="tag">可住 4-8 人</span>
+                <span class="tag">可攜寵物</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        <div class="accommodation-card fade-in flex flex-col h-full">
-          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
-            {getImageUrls('草原一區').length > 0 ? (
-              <ImageCarousel client:visible images={getImageUrls('草原一區')} alt="草原區 (四至五帳包區)" className="w-full h-full" />
-            ) : (
-              <img src="/images/rooms/grass-zone.jpeg" alt="草原區 (四至五帳包區)" style="width: 100%; height: 100%; object-fit: cover;">
-            )}
-          </div>
-          <div class="card-body flex-1">
-            <h3>🏕️ 草原區 (四至五帳包區)</h3>
-            <p>遼闊的大草皮，適合多個家庭聯合包區！孩子們可以盡情奔跑玩耍，享受無拘無束的大自然。</p>
-            <div class="tags">
-              <span class="tag">大草皮包區</span>
-              <span class="tag">可住 16-20 人</span>
-              <span class="tag">可攜寵物</span>
+        {items?.find(i => i.name.includes('草原一區')) && (
+          <div class="accommodation-card fade-in flex flex-col h-full">
+            <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+              {getImageUrls('草原一區').length > 0 ? (
+                <ImageCarousel client:visible images={getImageUrls('草原一區')} alt="草原區 (四至五帳包區)" className="w-full h-full" />
+              ) : (
+                <img src="/images/rooms/grass-zone.jpeg" alt="草原區 (四至五帳包區)" style="width: 100%; height: 100%; object-fit: cover;">
+              )}
+            </div>
+            <div class="card-body flex-1">
+              <h3>🏕️ 草原區 (四至五帳包區)</h3>
+              <p>遼闊的大草皮，適合多個家庭聯合包區！孩子們可以盡情奔跑玩耍，享受無拘無束的大自然。</p>
+              <div class="tags">
+                <span class="tag">大草皮包區</span>
+                <span class="tag">可住 16-20 人</span>
+                <span class="tag">可攜寵物</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        <div class="accommodation-card fade-in flex flex-col h-full">
-          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
-            {getImageUrls('湖岸一區').length > 0 ? (
-              <ImageCarousel client:visible images={getImageUrls('湖岸一區')} alt="湖岸一區 (六帳包區)" className="w-full h-full" />
-            ) : (
-              <img src="/images/rooms/lake-zone.jpeg" alt="湖岸一區 (六帳包區)" style="width: 100%; height: 100%; object-fit: cover;">
-            )}
-          </div>
-          <div class="card-body flex-1">
-            <h3>🏞️ 湖岸一區 (六帳包區)</h3>
-            <p>絕佳的湖畔景觀，適合大型團體包區。面積廣達 50M*9M，給您最寬敞、最舒適的水岸露營體驗。</p>
-            <div class="tags">
-              <span class="tag">湖畔包區</span>
-              <span class="tag">可住 24 人</span>
-              <span class="tag">大型場地</span>
+        {items?.find(i => i.name.includes('湖岸一區')) && (
+          <div class="accommodation-card fade-in flex flex-col h-full">
+            <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+              {getImageUrls('湖岸一區').length > 0 ? (
+                <ImageCarousel client:visible images={getImageUrls('湖岸一區')} alt="湖岸一區 (六帳包區)" className="w-full h-full" />
+              ) : (
+                <img src="/images/rooms/lake-zone.jpeg" alt="湖岸一區 (六帳包區)" style="width: 100%; height: 100%; object-fit: cover;">
+              )}
+            </div>
+            <div class="card-body flex-1">
+              <h3>🏞️ 湖岸一區 (六帳包區)</h3>
+              <p>絕佳的湖畔景觀，適合大型團體包區。面積廣達 50M*9M，給您最寬敞、最舒適的水岸露營體驗。</p>
+              <div class="tags">
+                <span class="tag">湖畔包區</span>
+                <span class="tag">可住 24 人</span>
+                <span class="tag">大型場地</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        <div class="accommodation-card fade-in flex flex-col h-full">
-          <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
-            {getImageUrls('六人大巴露營車').length > 0 ? (
-              <ImageCarousel client:visible images={getImageUrls('六人大巴露營車')} alt="六人大巴露營車" className="w-full h-full" />
-            ) : (
-              <img src="/images/rooms/bus.jpeg" alt="六人大巴露營車" style="width: 100%; height: 100%; object-fit: cover;">
-            )}
-          </div>
-          <div class="card-body flex-1">
-            <h3>🚌 六人大巴露營車</h3>
-            <p>免裝備豪華露營體驗！車內配有雙人床與沙發床，並設有獨立衛浴、冷氣等設施，讓您輕鬆享受大自然。</p>
-            <div class="tags">
-              <span class="tag">可住 6 人</span>
-              <span class="tag">獨立衛浴</span>
-              <span class="tag">冷氣</span>
-              <span class="tag">含早餐</span>
+        {items?.find(i => i.name.includes('大巴')) && (
+          <div class="accommodation-card fade-in flex flex-col h-full">
+            <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
+              {getImageUrls('六人大巴露營車').length > 0 ? (
+                <ImageCarousel client:visible images={getImageUrls('六人大巴露營車')} alt="六人大巴露營車" className="w-full h-full" />
+              ) : (
+                <img src="/images/rooms/bus.jpeg" alt="六人大巴露營車" style="width: 100%; height: 100%; object-fit: cover;">
+              )}
+            </div>
+            <div class="card-body flex-1">
+              <h3>🚌 六人大巴露營車</h3>
+              <p>免裝備豪華露營體驗！車內配有雙人床與沙發床，並設有獨立衛浴、冷氣等設施，讓您輕鬆享受大自然。</p>
+              <div class="tags">
+                <span class="tag">可住 6 人</span>
+                <span class="tag">獨立衛浴</span>
+                <span class="tag">冷氣</span>
+                <span class="tag">含早餐</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div class="accommodation-card fade-in flex flex-col h-full">
           <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
