@@ -184,6 +184,7 @@ export default function BookingFlow() {
     const { data: items } = await supabase
       .from('nf_items')
       .select('*')
+      .eq('is_active', true)
       .order('sort_order', { ascending: true });
 
     if (!items) {

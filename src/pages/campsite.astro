@@ -6,7 +6,7 @@ import "../styles/global.css";
 import roomImagesMap from '../lib/roomImagesMap.json';
 
 // Fetch items for dynamic images and to append missing campsites
-const { data: items } = await supabase.from('nf_items').select('name, description, image_url, category');
+const { data: items } = await supabase.from('nf_items').select('name, description, image_url, category').eq('is_active', true);
 
 const getImageUrls = (searchName: string) => {
   const key = Object.keys(roomImagesMap).find(k => k.includes(searchName));

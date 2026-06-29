@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import roomImagesMap from '../lib/roomImagesMap.json';
 
 // Fetch items for dynamic images
-const { data: items } = await supabase.from('nf_items').select('name, image_url');
+const { data: items } = await supabase.from('nf_items').select('name, image_url').eq('is_active', true);
 
 const getImageUrls = (searchName: string) => {
   const key = Object.keys(roomImagesMap).find(k => k.includes(searchName));

@@ -12,6 +12,7 @@ type Item = {
   price_holiday: number;
   sort_order: number;
   image_url?: string | null;
+  is_active: boolean;
 };
 
 export default function ItemsManager() {
@@ -31,6 +32,7 @@ export default function ItemsManager() {
     price_weekday: 0,
     price_holiday: 0,
     sort_order: 1,
+    is_active: true,
   });
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export default function ItemsManager() {
         price_weekday: 0,
         price_holiday: 0,
         sort_order: items.length + 1,
+        is_active: true,
       });
     }
     setShowModal(true);
@@ -200,6 +203,7 @@ export default function ItemsManager() {
                   <th className="p-4 font-semibold">每日數量</th>
                   <th className="p-4 font-semibold">平日價</th>
                   <th className="p-4 font-semibold">假日價</th>
+                  <th className="p-4 font-semibold">狀態</th>
                   <th className="p-4 font-semibold">排序</th>
                   <th className="p-4 font-semibold text-right">操作</th>
                 </tr>
@@ -224,6 +228,11 @@ export default function ItemsManager() {
                       <td className="p-4">{item.total_quantity}</td>
                       <td className="p-4 text-gray-600">${item.price_weekday}</td>
                       <td className="p-4 text-gray-600">${item.price_holiday}</td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${item.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {item.is_active ? '已上架' : '已停用'}
+                        </span>
+                      </td>
                       <td className="p-4 text-gray-400">{item.sort_order}</td>
                       <td className="p-4 text-right space-x-2">
                         <button onClick={() => handleOpenModal(item)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">編輯</button>
@@ -332,15 +341,32 @@ export default function ItemsManager() {
                 </div>
               </div>
 
-              <div className="pt-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">排序 (越小越前面)</label>
-                <input 
-                  type="number" 
-                  value={formData.sort_order}
-                  onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value)})}
-                  className="w-full md:w-1/4 border border-gray-300 rounded-lg p-2 outline-none"
-                  required
-                />
+              <div className="pt-2 grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">排序 (越小越前面)</label>
+                  <input 
+                    type="number" 
+                    value={formData.sort_order}
+                    onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value)})}
+                    className="w-full border border-gray-300 rounded-lg p-2 outline-none"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col justify-center">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">上架狀態</label>
+                  <label className="relative inline-flex items-center cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer"
+                      checked={formData.is_active ?? true}
+                      onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                    <span className="ml-3 text-sm font-medium text-gray-900">
+                      {formData.is_active ? '✅ 上架中 (顯示)' : '❌ 已停用 (隱藏)'}
+                    </span>
+                  </label>
+                </div>
               </div>
 
               <div className="pt-2">
