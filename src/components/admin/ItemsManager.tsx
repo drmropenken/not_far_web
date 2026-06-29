@@ -130,6 +130,24 @@ export default function ItemsManager() {
     setLoading(false);
   };
 
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus;
+    // Update local state immediately for fast UI feedback
+    setItems(items.map(item => item.id === id ? { ...item, is_active: newStatus } : item));
+    
+    const { error } = await supabase
+      .from('nf_items')
+      .update({ is_active: newStatus })
+      .eq('id', id);
+      
+    if (error) {
+      console.error('Update active status error:', error);
+      alert('更新狀態失敗！');
+      // Revert if failed
+      fetchItems();
+    }
+  };
+
   const categoryLabels = {
     campsite: '⛺️ 營位',
     equipment: '🪑 裝備租借',
@@ -203,8 +221,7 @@ export default function ItemsManager() {
                   <th className="p-4 font-semibold">每日數量</th>
                   <th className="p-4 font-semibold">平日價</th>
                   <th className="p-4 font-semibold">假日價</th>
-                  <th className="p-4 font-semibold">狀態</th>
-                  <th className="p-4 font-semibold">排序</th>
+                  <th className="p-4 font-semibold">上架</th>
                   <th className="p-4 font-semibold text-right">操作</th>
                 </tr>
               </thead>
@@ -229,11 +246,16 @@ export default function ItemsManager() {
                       <td className="p-4 text-gray-600">${item.price_weekday}</td>
                       <td className="p-4 text-gray-600">${item.price_holiday}</td>
                       <td className="p-4">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${item.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                          {item.is_active ? '已上架' : '已停用'}
-                        </span>
+                        <label className="relative inline-flex items-center cursor-pointer select-none">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer"
+                            checked={item.is_active}
+                            onChange={() => handleToggleActive(item.id, item.is_active)}
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                        </label>
                       </td>
-                      <td className="p-4 text-gray-400">{item.sort_order}</td>
                       <td className="p-4 text-right space-x-2">
                         <button onClick={() => handleOpenModal(item)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">編輯</button>
                         <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700 text-sm font-medium">刪除</button>
