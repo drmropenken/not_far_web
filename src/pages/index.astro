@@ -184,6 +184,29 @@ const getImageUrls = (searchName: string) => {
           </div>
         )}
 
+        {items?.find(i => i.name.includes('木屋棧板')) && (
+          <div class="accommodation-card fade-in flex flex-col h-full">
+            <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl bg-slate-100">
+              {getImageUrls('木屋棧板').length > 0 ? (
+                <ImageCarousel client:visible images={getImageUrls('木屋棧板')} alt="木屋棧板" className="w-full h-full" />
+              ) : (
+                <div class="w-full h-full flex items-center justify-center">
+                  <span class="text-slate-400 text-sm font-bold">暫無圖片</span>
+                </div>
+              )}
+            </div>
+            <div class="card-body flex-1">
+              <h3>🏕️ 木屋棧板</h3>
+              <p>設有專屬的木棧板與遮頂設施，不怕日曬雨淋，提供平整舒適的搭帳空間，給您最安心的露營體驗。</p>
+              <div class="tags">
+                <span class="tag">木棧板營位</span>
+                <span class="tag">平整舒適</span>
+                <span class="tag">遮雨棚</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {items?.find(i => i.name.includes('欖仁樹區')) && (
           <div class="accommodation-card fade-in flex flex-col h-full">
             <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
