@@ -1,6 +1,11 @@
 ---
 import SEO from "../components/public/SEO.astro";
 import "../styles/global.css";
+import { supabase } from '../lib/supabase';
+
+// Fetch items for dynamic gallery
+const { data: items } = await supabase.from('nf_items').select('name, image_url, category');
+const roomItems = items?.filter((i: any) => i.category === 'campsite' && i.image_url) || [];
 ---
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -47,17 +52,20 @@ import "../styles/global.css";
   <!-- 圖庫分類 -->
   <section class="section">
     <div class="container">
-      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px;">
-        <button class="btn btn-primary" onclick="filterGallery('all')">全部</button>
-        <button class="btn btn-outline" onclick="filterGallery('scenery')">營區景色</button>
-        <button class="btn btn-outline" onclick="filterGallery('room')">住宿</button>
-        <button class="btn btn-outline" onclick="filterGallery('activity')">活動</button>
-        <button class="btn btn-outline" onclick="filterGallery('food')">美食</button>
-      </div>
-      
       <div class="gallery-grid" id="galleryGrid">
+        <!-- 環境 -->
+        {[1, 2, 3, 4, 5, 6].map((num) => (
+          <div class="gallery-item fade-in">
+            <img src={`/images/environment/${num}.jpeg`} alt={`營區環境 ${num}`} loading="lazy" />
+            <div class="overlay">
+              <h4>🍃 營區環境</h4>
+              <p>不遠山莊的周邊設施</p>
+            </div>
+          </div>
+        ))}
+        
         <!-- 營區景色 -->
-        <div class="gallery-item fade-in" data-category="scenery">
+        <div class="gallery-item fade-in">
           <img src="/images/cabin.jpg" alt="不遠山莊大草原">
           <div class="overlay">
             <h4>🌿 大草原</h4>
@@ -65,7 +73,7 @@ import "../styles/global.css";
           </div>
         </div>
         
-        <div class="gallery-item fade-in" data-category="scenery">
+        <div class="gallery-item fade-in">
           <img src="/images/tent.jpg" alt="森林步道">
           <div class="overlay">
             <h4>🌲 森林步道</h4>
@@ -73,7 +81,7 @@ import "../styles/global.css";
           </div>
         </div>
         
-        <div class="gallery-item fade-in" data-category="scenery">
+        <div class="gallery-item fade-in">
           <img src="/images/pipe.jpg" alt="營區樹林">
           <div class="overlay">
             <h4>🌳 綠意盎然</h4>
@@ -81,7 +89,7 @@ import "../styles/global.css";
           </div>
         </div>
         
-        <div class="gallery-item fade-in" data-category="scenery">
+        <div class="gallery-item fade-in">
           <img src="https://static.wixstatic.com/media/2dfe85_895753b110d146808b7088c22a82b710~mv2.jpg" alt="營區夜景">
           <div class="overlay">
             <h4>🌙 夜景</h4>
@@ -89,7 +97,7 @@ import "../styles/global.css";
           </div>
         </div>
         
-        <div class="gallery-item fade-in" data-category="scenery">
+        <div class="gallery-item fade-in">
           <img src="https://static.wixstatic.com/media/2dfe85_b22d2373b6e94504915de48f929553d0~mv2.jpg" alt="星空">
           <div class="overlay">
             <h4>⭐ 星空</h4>
@@ -97,7 +105,7 @@ import "../styles/global.css";
           </div>
         </div>
         
-        <div class="gallery-item fade-in" data-category="scenery">
+        <div class="gallery-item fade-in">
           <img src="https://static.wixstatic.com/media/7abe18_1c06bd5c1e1f46699a71c2aed060aae0~mv2.jpg" alt="蓮花池">
           <div class="overlay">
             <h4>🌺 蓮花池</h4>
@@ -105,62 +113,20 @@ import "../styles/global.css";
           </div>
         </div>
         
-        <!-- 住宿 -->
-        <div class="gallery-item fade-in" data-category="room">
-          <img src="/images/rooms/bus.jpeg" alt="六人大巴露營車">
-          <div class="overlay">
-            <h4>🚌 六人大巴露營車</h4>
-            <p>免裝備豪華露營體驗</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="room">
-          <img src="/images/rooms/house.jpeg" alt="十人包棟">
-          <div class="overlay">
-            <h4>🏠 十人包棟</h4>
-            <p>三五好友出遊首選空間</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="room">
-          <img src="/images/rooms/glamping.jpeg" alt="豪華野奢帳篷組">
-          <div class="overlay">
-            <h4>⛺ 豪華野奢帳篷組</h4>
-            <p>一泊三食極致奢華</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="room">
-          <img src="/images/rooms/stone-hut.jpeg" alt="四人石茅屋">
-          <div class="overlay">
-            <h4>🛖 四人石茅屋</h4>
-            <p>一秒踏進日本童話世界</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="room">
-          <img src="/images/rooms/pipe-house.jpeg" alt="四人水管屋雅房">
-          <div class="overlay">
-            <h4>🛖 四人水管屋雅房</h4>
-            <p>獨特造型的住宿體驗</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="room">
-          <img src="/images/rooms/tree-zone.jpeg" alt="欖仁樹區">
-          <div class="overlay">
-            <h4>🌳 欖仁樹區</h4>
-            <p>樹蔭環繞的舒適營位</p>
-          </div>
-        </div>
-        
-        <div class="gallery-item fade-in" data-category="room">
-          <img src="/images/rooms/lake-zone.jpeg" alt="湖岸一區">
-          <div class="overlay">
-            <h4>🏞️ 湖岸一區</h4>
-            <p>絕美的湖畔風光與舒適空間</p>
-          </div>
-        </div>
+        <!-- 住宿 (動態渲染) -->
+        {roomItems.map((item: any) => {
+          const images = item.image_url.split(',').map((u: string) => u.trim()).filter(Boolean);
+          const displayName = item.name.replace('住宿-', '').replace('上營區-', '').replace('下營區-', '');
+          return images.map((imgUrl: string, idx: number) => (
+            <div class="gallery-item fade-in">
+              <img src={imgUrl} alt={`${displayName} - 圖片 ${idx + 1}`} loading="lazy" />
+              <div class="overlay">
+                <h4>⛺ {displayName}</h4>
+                <p>不遠山莊精選營地與住宿</p>
+              </div>
+            </div>
+          ));
+        })}
         
         <!-- 活動 -->
         <div class="gallery-item fade-in" data-category="activity">
@@ -296,29 +262,13 @@ import "../styles/global.css";
 
   <script src="/script.js" is:inline></script>
   <script is:inline>
-    // 圖庫篩選功能
-    function filterGallery(category) {
+    // Reveal animation for all images immediately without filtering
+    document.addEventListener('DOMContentLoaded', () => {
       const items = document.querySelectorAll('.gallery-item');
-      const buttons = document.querySelectorAll('[onclick^="filterGallery"]');
-      
-      buttons.forEach(btn => {
-        if (btn.getAttribute('onclick').includes(category)) {
-          btn.className = 'btn btn-primary';
-        } else {
-          btn.className = 'btn btn-outline';
-        }
+      items.forEach((item, index) => {
+        setTimeout(() => item.classList.add('visible'), index * 30);
       });
-      
-      items.forEach(item => {
-        if (category === 'all' || item.getAttribute('data-category') === category) {
-          item.style.display = 'block';
-          setTimeout(() => item.classList.add('visible'), 50);
-        } else {
-          item.style.display = 'none';
-          item.classList.remove('visible');
-        }
-      });
-    }
+    });
   </script>
 </body>
 </html>
