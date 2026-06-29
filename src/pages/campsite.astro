@@ -3,14 +3,17 @@ import SEO from "../components/public/SEO.astro";
 import { supabase } from '../lib/supabase';
 import ImageCarousel from '../components/public/ImageCarousel';
 import "../styles/global.css";
+import roomImagesMap from '../lib/roomImagesMap.json';
 
 // Fetch items for dynamic images and to append missing campsites
 const { data: items } = await supabase.from('nf_items').select('name, description, image_url, category');
 
-const getImageUrls = (nameStr: string) => {
-  const coreNameMatch = nameStr.match(/(大巴|包棟|帳篷組|石茅屋|水管屋|欖仁樹|草原一區|湖岸)/);
-  const coreName = coreNameMatch ? coreNameMatch[0] : nameStr;
-  const item = items?.find(i => i.name.includes(coreName));
+const getImageUrls = (searchName: string) => {
+  const key = Object.keys(roomImagesMap).find(k => k.includes(searchName));
+  if (key && (roomImagesMap as any)[key].length > 0) {
+    return (roomImagesMap as any)[key];
+  }
+  const item = items?.find(i => i.name.includes(searchName));
   return item?.image_url ? item.image_url.split(',').map((u: string) => u.trim()).filter(Boolean) : [];
 };
 
@@ -19,8 +22,8 @@ const hardcodedKeywords = ['豪華野奢帳篷', '石茅屋', '水管屋', '欖�
 const missingCampsites = items?.filter(item => {
   if (item.category !== 'campsite') return false;
   const isHardcoded = hardcodedKeywords.some(kw => item.name.includes(kw));
-  // Only include if it's not hardcoded and has images (or description)
-  return !isHardcoded && (item.image_url || item.description);
+  const hasLocalImages = (roomImagesMap as any)[item.name]?.length > 0;
+  return !isHardcoded && (item.image_url || item.description || hasLocalImages);
 }) || [];
 ---
 <!DOCTYPE html>
@@ -254,7 +257,9 @@ const missingCampsites = items?.filter(item => {
         </div>
 
         {missingCampsites.map((item: any) => {
-          const images = item.image_url ? item.image_url.split(',').map((u: string) => u.trim()).filter(Boolean) : [];
+          const mappedImages = (roomImagesMap as any)[item.name] || [];
+          const dbImages = item.image_url ? item.image_url.split(',').map((u: string) => u.trim()).filter(Boolean) : [];
+          const images = mappedImages.length > 0 ? mappedImages : dbImages;
           return (
             <div class="accommodation-card fade-in flex flex-col h-full">
               <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl bg-slate-100 flex items-center justify-center">

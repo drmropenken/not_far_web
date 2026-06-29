@@ -3,14 +3,17 @@ import "../styles/global.css";
 import SEO from "../components/public/SEO.astro";
 import ImageCarousel from '../components/public/ImageCarousel';
 import { supabase } from '../lib/supabase';
+import roomImagesMap from '../lib/roomImagesMap.json';
 
 // Fetch items for dynamic images
 const { data: items } = await supabase.from('nf_items').select('name, image_url');
 
-const getImageUrls = (nameStr: string) => {
-  const coreNameMatch = nameStr.match(/(大巴|包棟|帳篷組|石茅屋|水管屋|欖仁樹|草原|湖岸)/);
-  const coreName = coreNameMatch ? coreNameMatch[0] : nameStr;
-  const item = items?.find(i => i.name.includes(coreName));
+const getImageUrls = (searchName: string) => {
+  const key = Object.keys(roomImagesMap).find(k => k.includes(searchName));
+  if (key && (roomImagesMap as any)[key].length > 0) {
+    return (roomImagesMap as any)[key];
+  }
+  const item = items?.find(i => i.name.includes(searchName));
   return item?.image_url ? item.image_url.split(',').map((u: string) => u.trim()).filter(Boolean) : [];
 };
 ---

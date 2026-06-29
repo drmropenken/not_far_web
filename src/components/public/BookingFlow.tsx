@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import liff from '@line/liff';
 import { supabase } from '../../lib/supabase';
 import ImageCarousel from './ImageCarousel';
+import roomImagesMap from '../../lib/roomImagesMap.json';
 
 type Item = {
   id: string;
@@ -289,11 +290,19 @@ export default function BookingFlow() {
           </div>
         </div>
 
-        {item.image_url && (
-          <div className="mb-3 rounded-xl overflow-hidden aspect-video w-full border border-slate-100 shadow-sm">
-            <ImageCarousel images={item.image_url.split(',').map(u => u.trim()).filter(Boolean)} alt={item.name} />
-          </div>
-        )}
+        {(() => {
+          const mappedImages = roomImagesMap[item.name as keyof typeof roomImagesMap] || [];
+          const dbImages = item.image_url ? item.image_url.split(',').map(u => u.trim()).filter(Boolean) : [];
+          const itemImages = mappedImages.length > 0 ? mappedImages : dbImages;
+          
+          if (itemImages.length === 0) return null;
+          
+          return (
+            <div className="mb-3 rounded-xl overflow-hidden aspect-video w-full border border-slate-100 shadow-sm">
+              <ImageCarousel images={itemImages} alt={item.name} />
+            </div>
+          );
+        })()}
         
         <div className="text-sm text-slate-500 font-bold mb-3 flex items-center gap-1.5 flex-wrap">
           {item.price_original > 0 && (
