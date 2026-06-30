@@ -30,6 +30,7 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [availabilityMap, setAvailabilityMap] = useState<Record<string, number>>({});
   
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -74,6 +75,13 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     }
   }, [isOpen]);
 
+  // Re-fetch availability whenever dates change
+  useEffect(() => {
+    if (formData.check_in_date && formData.check_out_date) {
+      fetchAvailability(formData.check_in_date, formData.check_out_date);
+    }
+  }, [formData.check_in_date, formData.check_out_date]);
+
   const fetchItems = async () => {
     setLoading(true);
     const { data } = await supabase
@@ -92,6 +100,40 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
       setItems(data);
     }
     setLoading(false);
+  };
+
+  const fetchAvailability = async (checkIn: string, checkOut: string) => {
+    if (!checkIn || !checkOut) return;
+    // Collect all dates in the range
+    const dates: string[] = [];
+    for (let d = new Date(checkIn); d < new Date(checkOut); d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+    if (dates.length === 0) return;
+
+    const { data } = await supabase
+      .from('nf_inventory')
+      .select('item_id, available_quantity')
+      .in('date', dates);
+
+    if (!data) return;
+
+    // For each item, find the minimum available quantity across all dates (bottleneck)
+    const minMap: Record<string, number> = {};
+    for (const row of data) {
+      if (minMap[row.item_id] === undefined) {
+        minMap[row.item_id] = row.available_quantity;
+      } else {
+        minMap[row.item_id] = Math.min(minMap[row.item_id], row.available_quantity);
+      }
+    }
+    setAvailabilityMap(minMap);
+
+    // Clamp existing selected quantities
+    setSelectedItems(prev => prev.map(si => {
+      const available = minMap[si.item.id] ?? si.item.total_quantity;
+      return { ...si, quantity: Math.min(si.quantity, Math.max(1, available)) };
+    }));
   };
 
   const handleVerifyDiscount = async () => {
@@ -121,14 +163,16 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     if (existing) {
       setSelectedItems(selectedItems.filter(i => i.item.id !== item.id));
     } else {
-      setSelectedItems([...selectedItems, { item, quantity: 1 }]);
+      const available = availabilityMap[item.id] ?? item.total_quantity;
+      setSelectedItems([...selectedItems, { item, quantity: Math.min(1, available) }]);
     }
   };
 
   const updateQuantity = (itemId: string, delta: number) => {
     setSelectedItems(prev => prev.map(i => {
       if (i.item.id === itemId) {
-        const newQ = Math.max(1, i.quantity + delta);
+        const available = availabilityMap[itemId] ?? i.item.total_quantity;
+        const newQ = Math.max(1, Math.min(i.quantity + delta, available));
         return { ...i, quantity: newQ };
       }
       return i;
@@ -425,20 +469,31 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
                       }
                       
                       const catStyle = getCategoryStyle(item.category);
+                      const available = availabilityMap[item.id] ?? item.total_quantity;
+                      const isSoldOut = available <= 0;
                       
                       return (
-                        <div key={item.id} className={`p-3 rounded-xl border-2 transition-all ${isSelected ? `${catStyle.border} ${catStyle.activeBg}` : 'border-stone-100 hover:border-stone-300'}`}>
-                          <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleItem(item)}>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-5 h-5 rounded flex items-center justify-center border shrink-0 ${isSelected ? `${catStyle.btnBg} border-transparent` : 'bg-white border-stone-300'}`}>
+                        <div key={item.id} className={`p-3 rounded-xl border-2 transition-all ${isSoldOut && !isSelected ? 'border-stone-100 opacity-50' : isSelected ? `${catStyle.border} ${catStyle.activeBg}` : 'border-stone-100 hover:border-stone-300'}`}>
+                          <div className="flex justify-between items-center cursor-pointer" onClick={() => !isSoldOut && toggleItem(item)}>
+                            <div className="flex items-center gap-3 flex-1">
+                              <div className={`w-5 h-5 rounded flex items-center justify-center border shrink-0 ${isSelected ? `${catStyle.btnBg} border-transparent` : isSoldOut ? 'bg-stone-100 border-stone-200' : 'bg-white border-stone-300'}`}>
                                 {isSelected && <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>}
                               </div>
-                              <div className="flex flex-col gap-1 items-start">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded border flex items-center gap-1 ${catStyle.badge}`}>
-                                    <span>{catStyle.icon}</span>{catStyle.label}
-                                  </span>
-                                  <h5 className="font-bold text-stone-800 leading-tight">{item.name}</h5>
+                              <div className="flex flex-col gap-1 items-start flex-1">
+                                <div className="flex items-center gap-2 flex-wrap justify-between w-full">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded border flex items-center gap-1 ${catStyle.badge}`}>
+                                      <span>{catStyle.icon}</span>{catStyle.label}
+                                    </span>
+                                    <h5 className="font-bold text-stone-800 leading-tight">{item.name}</h5>
+                                  </div>
+                                  {Object.keys(availabilityMap).length > 0 && (
+                                    <span className={`px-2 py-0.5 text-xs font-bold rounded-full shrink-0 ${
+                                      isSoldOut ? 'bg-red-100 text-red-600' : available <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                                    }`}>
+                                      {isSoldOut ? '已額滿' : `剩餘 ${available}`}
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="text-xs text-stone-500">平日 ${item.price_weekday} / 假日 ${item.price_holiday}</p>
                               </div>
@@ -448,11 +503,16 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
                           {isSelected && (
                             <div className={`mt-3 pt-3 border-t ${catStyle.border} border-opacity-50`}>
                               <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-semibold text-stone-600">數量</span>
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-semibold text-stone-600">數量</span>
+                                  {Object.keys(availabilityMap).length > 0 && (
+                                    <span className="text-xs text-stone-400">最多可選 {available} 個</span>
+                                  )}
+                                </div>
                                 <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-lg p-1 shadow-sm">
                                   <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, -1); }} className={`w-8 h-8 rounded-md flex items-center justify-center ${catStyle.btnHover} text-stone-600 font-bold transition-colors`}>-</button>
                                   <span className={`w-8 text-center font-bold ${catStyle.btnText}`}>{selectedData?.quantity}</span>
-                                  <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1); }} className={`w-8 h-8 rounded-md flex items-center justify-center ${catStyle.btnHover} text-stone-600 font-bold transition-colors`}>+</button>
+                                  <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1); }} disabled={(selectedData?.quantity ?? 0) >= available} className={`w-8 h-8 rounded-md flex items-center justify-center ${catStyle.btnHover} text-stone-600 font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed`}>+</button>
                                 </div>
                               </div>
                               {formData.check_in_date && formData.check_out_date && (
