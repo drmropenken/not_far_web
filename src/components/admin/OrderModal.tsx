@@ -487,13 +487,11 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
                                     </span>
                                     <h5 className="font-bold text-stone-800 leading-tight">{item.name}</h5>
                                   </div>
-                                  {Object.keys(availabilityMap).length > 0 && (
-                                    <span className={`px-2 py-0.5 text-xs font-bold rounded-full shrink-0 ${
-                                      isSoldOut ? 'bg-red-100 text-red-600' : available <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-                                    }`}>
-                                      {isSoldOut ? '已額滿' : `剩餘 ${available}`}
-                                    </span>
-                                  )}
+                                  <span className={`px-2 py-0.5 text-xs font-bold rounded-full shrink-0 ${
+                                    isSoldOut ? 'bg-red-100 text-red-600' : available <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                                  }`}>
+                                    {isSoldOut ? '已額滿' : `剩餘 ${available}`}
+                                  </span>
                                 </div>
                                 <p className="text-xs text-stone-500">平日 ${item.price_weekday} / 假日 ${item.price_holiday}</p>
                               </div>
@@ -505,15 +503,17 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
                               <div className="flex justify-between items-center mb-2">
                                 <div className="flex flex-col">
                                   <span className="text-sm font-semibold text-stone-600">數量</span>
-                                  {Object.keys(availabilityMap).length > 0 && (
-                                    <span className="text-xs text-stone-400">最多可選 {available} 個</span>
-                                  )}
                                 </div>
                                 <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-lg p-1 shadow-sm">
                                   <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, -1); }} className={`w-8 h-8 rounded-md flex items-center justify-center ${catStyle.btnHover} text-stone-600 font-bold transition-colors`}>-</button>
                                   <span className={`w-8 text-center font-bold ${catStyle.btnText}`}>{selectedData?.quantity}</span>
                                   <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1); }} disabled={(selectedData?.quantity ?? 0) >= available} className={`w-8 h-8 rounded-md flex items-center justify-center ${catStyle.btnHover} text-stone-600 font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed`}>+</button>
                                 </div>
+                                <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
+                                  isSoldOut ? 'bg-red-100 text-red-600' : available <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                                }`}>
+                                  剩餘 {available}
+                                </span>
                               </div>
                               {formData.check_in_date && formData.check_out_date && (
                                 <div className={`flex justify-between items-start text-xs bg-white p-2 rounded border ${catStyle.border} border-opacity-30 shadow-sm`}>
