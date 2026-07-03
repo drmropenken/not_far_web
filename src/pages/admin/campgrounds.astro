@@ -52,16 +52,19 @@ const { data: campgrounds } = await supabase
                 <p class="text-sm text-stone-500 mt-1 line-clamp-2">{camp.description}</p>
               )}
             </div>
-            <div class="text-emerald-400 text-2xl group-hover:translate-x-1 transition-transform">→</div>
+            <div class="text-emerald-400/60 group-hover:text-emerald-500 transition-colors shrink-0">
+                <svg class="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+              </div>
           </div>
         </div>
       ))}
     </div>
 
     {(!campgrounds || campgrounds.length === 0) && (
-      <div class="text-center py-16 bg-white rounded-2xl border border-stone-200">
+      <div class="text-center py-20 bg-white/80 backdrop-blur-sm rounded-2xl border-2 border-dashed border-stone-300">
         <p class="text-6xl mb-4">📭</p>
-        <p class="text-stone-500 font-bold">目前沒有可管理的營區</p>
+        <p class="text-stone-500 font-bold text-lg">目前沒有可管理的營區</p>
+        <p class="text-stone-400 text-sm mt-1">請聯繫系統管理員開通權限</p>
       </div>
     )}
   </div>
@@ -69,25 +72,47 @@ const { data: campgrounds } = await supabase
   <script>
     import { supabase } from "../../lib/supabase";
 
-    // 點擊營區卡片 → 存入 localStorage → 跳轉到管理頁
-    document.getElementById('campground-list')?.addEventListener('click', async (e) => {
-      const card = e.target.closest('[data-camp-id]');
-      if (!card) return;
+    (async () => {
+      // 🔒 檢查是否已登入
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        window.location.href = '/admin/login';
+        return;
+      }
 
-      const campId = card.dataset.campId;
-      const campName = card.dataset.campName;
+      // 🔒 檢查是否為管理員
+      const { data: adminRecord } = await supabase
+        .from('nf_admins')
+        .select('role')
+        .eq('email', session.user.email.toLowerCase())
+        .single();
 
-      localStorage.setItem('camp_id', campId);
-      localStorage.setItem('camp_name', campName);
+      if (!adminRecord) {
+        await supabase.auth.signOut();
+        window.location.href = '/admin/login?error=unauthorized';
+        return;
+      }
 
-      window.location.href = '/admin';
-    });
+      // 清除舊的營區選擇，強制重新選
+      localStorage.removeItem('camp_id');
+      localStorage.removeItem('camp_name');
 
-    // 登出
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      await supabase.auth.signOut();
-      window.location.href = '/admin/login';
-    });
+      // 綁定營區卡片點擊
+      document.getElementById('campground-list')?.addEventListener('click', (e) => {
+        const card = e.target.closest('[data-camp-id]');
+        if (!card) return;
+
+        localStorage.setItem('camp_id', card.dataset.campId);
+        localStorage.setItem('camp_name', card.dataset.campName);
+        window.location.href = '/admin';
+      });
+
+      // 綁定登出
+      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        window.location.href = '/admin/login';
+      });
+    })();
   </script>
 </body>
 </html>
