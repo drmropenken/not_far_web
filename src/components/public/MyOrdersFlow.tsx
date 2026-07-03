@@ -157,10 +157,28 @@ export default function MyOrdersFlow() {
         } catch (err) {}
       }
 
-      // 2. LIFF init
+      // 2. 先檢查是否有已有的 Session（避免 LINE 覆蓋非 LINE Session）
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+
+      // 3. LIFF init
       try {
-        await liff.init({ liffId: '2010317535-p1JobvGF' }); // Same LIFF ID
+        await liff.init({ liffId: '2010317535-p1JobvGF' });
         if (liff.isLoggedIn()) {
+          // 🔑 避免 LINE 自動登入覆蓋已有的非 LINE Session（如管理員 Google 登入）
+          if (existingSession) {
+            const currentEmail = existingSession.user.email || '';
+            const isLineDummySession = currentEmail.includes('@dummy-line.com') || currentEmail.includes('@line.notfar.com');
+            if (!isLineDummySession) {
+              console.log('已有有效的非 LINE Session，跳過 LINE 自動登入');
+              if (isMounted) {
+                setSession(existingSession);
+                fetchMyOrders(existingSession);
+              }
+              setLoading(false);
+              return;
+            }
+          }
+
           setLoading(true);
           const profile = await liff.getProfile();
           if (profile.userId) {
