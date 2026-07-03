@@ -86,6 +86,10 @@ export default function OrdersManager() {
   const [onsiteAmount, setOnsiteAmount] = useState('');
   const [onsiteNotes, setOnsiteNotes] = useState('');
   const [isSubmittingOnsite, setIsSubmittingOnsite] = useState(false);
+  const [onlinePaymentOrderId, setOnlinePaymentOrderId] = useState<string | null>(null);
+  const [onlinePaymentType, setOnlinePaymentType] = useState<'credit_card' | 'bank_transfer'>('bank_transfer');
+  const [onlinePaymentAmount, setOnlinePaymentAmount] = useState('');
+  const [isSubmittingOnline, setIsSubmittingOnline] = useState(false);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -344,6 +348,18 @@ export default function OrdersManager() {
       alert('請輸入有效的收款金額');
       return;
     }
+
+    // 檢查是否溢收：剩餘待收 = 總金額 - 已收金額
+    const order = orders.find(o => o.id === onsitePaymentOrderId);
+    if (order) {
+      const totalPaid = getOrderBankAmount(order.id) + getOrderOnsiteAmount(order.id) + (order.deposit_amount || 0);
+      const remaining = Math.max(0, order.total_amount - totalPaid);
+      if (amount > remaining) {
+        alert(`⚠️ 收款金額 NT$ ${amount.toLocaleString()} 超過剩餘待收 NT$ ${remaining.toLocaleString()}，請確認後重新輸入。`);
+        return;
+      }
+    }
+
     setIsSubmittingOnsite(true);
 
     const { error } = await supabase
@@ -359,12 +375,27 @@ export default function OrdersManager() {
     setIsSubmittingOnsite(false);
     if (error) {
       alert('現場收款紀錄失敗：' + error.message);
-    } else {
-      setOnsitePaymentOrderId(null);
-      setOnsiteAmount('');
-      setOnsiteNotes('');
-      fetchOrders();
+      return;
     }
+
+    // 更新訂單狀態與金額（沿用上面的 order 變數）
+    if (order) {
+      const totalBank = getOrderBankAmount(order.id);
+      const totalOnsite = getOrderOnsiteAmount(order.id) + amount;
+      const totalPaid = totalBank + totalOnsite + (order.deposit_amount || 0);
+      const newDeposit = (order.deposit_amount || 0) + amount;
+      const newStatus = totalPaid >= order.total_amount ? 'paid' : 'deposit_paid';
+
+      await supabase.from('nf_orders').update({
+        deposit_amount: newDeposit,
+        status: newStatus
+      }).eq('id', onsitePaymentOrderId);
+    }
+
+    setOnsitePaymentOrderId(null);
+    setOnsiteAmount('');
+    setOnsiteNotes('');
+    fetchOrders();
   };
 
   const getPaymentLogs = (orderId: string): PaymentLog[] => {
@@ -381,6 +412,58 @@ export default function OrdersManager() {
     return getPaymentLogs(orderId)
       .filter(l => l.payment_type === 'onsite')
       .reduce((sum, l) => sum + l.amount, 0);
+  };
+
+  // 線上付款（信用卡／匯款）
+  const submitOnlinePayment = async () => {
+    if (!onlinePaymentOrderId) return;
+    const amount = parseInt(onlinePaymentAmount);
+    if (!amount || amount <= 0) {
+      alert('請輸入有效的收款金額');
+      return;
+    }
+
+    const order = orders.find(o => o.id === onlinePaymentOrderId);
+    if (!order) return;
+
+    const totalBank = getOrderBankAmount(order.id);
+    const totalOnsite = getOrderOnsiteAmount(order.id);
+    const totalPaid = totalBank + totalOnsite + (order.deposit_amount || 0);
+    const remaining = Math.max(0, order.total_amount - totalPaid);
+    if (amount > remaining) {
+      alert(`⚠️ 收款金額 NT$ ${amount.toLocaleString()} 超過剩餘待收 NT$ ${remaining.toLocaleString()}`);
+      return;
+    }
+
+    setIsSubmittingOnline(true);
+
+    const { error: logError } = await supabase.from('nf_payment_logs').insert({
+      order_id: onlinePaymentOrderId,
+      amount,
+      payment_type: onlinePaymentType,
+      collected_by: adminEmail,
+      notes: null
+    });
+
+    if (logError) {
+      alert('線上付款紀錄失敗：' + logError.message);
+      setIsSubmittingOnline(false);
+      return;
+    }
+
+    const newTotalPaid = totalPaid + amount;
+    const newDeposit = (order.deposit_amount || 0) + amount;
+    const newStatus = newTotalPaid >= order.total_amount ? 'paid' : 'deposit_paid';
+
+    await supabase.from('nf_orders').update({
+      deposit_amount: newDeposit,
+      status: newStatus
+    }).eq('id', onlinePaymentOrderId);
+
+    setIsSubmittingOnline(false);
+    setOnlinePaymentOrderId(null);
+    setOnlinePaymentAmount('');
+    fetchOrders();
   };
 
   const filteredOrders = orders.filter(order => {
@@ -776,32 +859,35 @@ export default function OrdersManager() {
 
                 {/* 操作按鈕 */}
                 {adminRole !== 'viewer' && (
-                  <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                  <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    {/* 左邊：刪除（僅 dr.mr.openken） */}
                     {adminEmail === 'dr.mr.openken@gmail.com' && (
-                      <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors mr-auto">
+                      <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors">
                         刪除
                       </button>
                     )}
-                    {order.status === 'pending' && (
-                      <button onClick={() => updateOrderStatus(order.id, 'paid')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
-                        標記已付款
-                      </button>
-                    )}
-                    {order.status === 'deposit_paid' && (
-                      <button onClick={() => updateOrderStatus(order.id, 'paid')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-teal-600 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-md transition-colors shadow-sm">
-                        標記已付尾款
-                      </button>
-                    )}
-                    {order.status === 'paid' && (
-                      <button onClick={() => updateOrderStatus(order.id, 'checked_in')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors shadow-sm">
-                        ✅ 標記已報到
-                      </button>
-                    )}
+                    {/* 左邊：取消訂單 */}
                     {order.status !== 'cancelled' && (
-                      <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-stone-600 bg-white hover:bg-stone-100 border border-stone-200 rounded-md transition-colors">
+                      <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="px-3 py-1.5 text-xs font-bold text-stone-600 bg-white hover:bg-stone-100 border border-stone-200 rounded-md transition-colors">
                         取消訂單
                       </button>
                     )}
+                    {/* 右邊（ml-auto 推過去） */}
+                    {order.status === 'paid' && (
+                      <button onClick={() => updateOrderStatus(order.id, 'checked_in')} className="ml-auto whitespace-nowrap px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors shadow-sm">
+                        ✅ 標記已報到
+                      </button>
+                    )}
+                    {/* 線上付款（信用卡／匯款） */}
+                    {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
+                      <button
+                        onClick={() => { setOnlinePaymentOrderId(order.id); setOnlinePaymentAmount(''); setOnlinePaymentType('bank_transfer'); }}
+                        className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors"
+                      >
+                        💳 線上付款
+                      </button>
+                    )}
+                    {/* 現場收款 */}
                     {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
                       <button onClick={() => { setOnsitePaymentOrderId(order.id); setOnsiteAmount(''); setOnsiteNotes(''); }} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
                         💵 現場收款
@@ -815,6 +901,62 @@ export default function OrdersManager() {
           </div>
         )}
       </div>
+
+      {/* 線上付款 Modal */}
+      {onlinePaymentOrderId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm" onClick={() => setOnlinePaymentOrderId(null)}>
+          <div className="bg-white rounded-2xl shadow-xl border border-stone-200 max-w-sm w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
+              <span className="text-xl">💳</span>
+              <h3 className="font-black text-stone-800">線上付款</h3>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-stone-500 mb-1.5">付款方式</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setOnlinePaymentType('credit_card')}
+                  className={`flex-1 py-2.5 text-sm font-bold rounded-xl border-2 transition-all ${onlinePaymentType === 'credit_card' ? 'bg-indigo-50 border-indigo-400 text-indigo-700' : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'}`}
+                >
+                  💳 信用卡
+                </button>
+                <button
+                  onClick={() => setOnlinePaymentType('bank_transfer')}
+                  className={`flex-1 py-2.5 text-sm font-bold rounded-xl border-2 transition-all ${onlinePaymentType === 'bank_transfer' ? 'bg-indigo-50 border-indigo-400 text-indigo-700' : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'}`}
+                >
+                  🏦 匯款
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-stone-500 mb-1.5">收款金額 <span className="text-rose-500">*</span></label>
+              <input
+                type="number"
+                min="1"
+                value={onlinePaymentAmount}
+                onChange={e => setOnlinePaymentAmount(e.target.value)}
+                placeholder="請輸入金額"
+                className="w-full border border-stone-200 rounded-xl p-3 text-lg font-black text-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+
+            <div className="bg-stone-50 rounded-xl p-3 text-xs text-stone-500 space-y-1">
+              <p>👤 經手人：<span className="font-bold text-stone-700">{adminEmail || '—'}</span></p>
+              <p>🕐 時間：<span className="font-bold text-stone-700">{new Date().toLocaleString('zh-TW')}</span></p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setOnlinePaymentOrderId(null)} disabled={isSubmittingOnline} className="flex-1 py-3 text-sm font-bold text-stone-500 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors">
+                取消
+              </button>
+              <button onClick={submitOnlinePayment} disabled={isSubmittingOnline || !onlinePaymentAmount || parseInt(onlinePaymentAmount) <= 0} className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors">
+                {isSubmittingOnline ? '送出中...' : '確認收款'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 現場收款 Modal */}
       {onsitePaymentOrderId && (
