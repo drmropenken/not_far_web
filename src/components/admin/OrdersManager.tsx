@@ -1039,7 +1039,7 @@ export default function OrdersManager() {
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-stone-600 mb-1.5">最終總金額</label>
+                <label className="block text-sm font-semibold text-stone-600 mb-1.5">訂單金額</label>
                 <div className="flex items-center gap-2 bg-stone-50 p-2 rounded-lg border border-stone-200">
                   <span className="text-stone-500">NT$</span>
                   <input 
@@ -1052,16 +1052,12 @@ export default function OrdersManager() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-stone-600 mb-1.5">已收定金</label>
+                <label className="block text-sm font-semibold text-stone-600 mb-1.5">已收金額 <span className="text-[11px] font-normal text-stone-400">（自動計算，不可修改）</span></label>
                 <div className="flex items-center gap-2 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
                   <span className="text-emerald-600">NT$</span>
-                  <input 
-                    type="number" 
-                    min="0"
-                    value={financialsForm.deposit_amount}
-                    onChange={e => setFinancialsForm({...financialsForm, deposit_amount: e.target.value})}
-                    className="flex-1 bg-transparent border-none p-0 text-right font-bold focus:ring-0 outline-none text-emerald-700"
-                  />
+                  <span className="flex-1 text-right font-bold text-emerald-700 text-lg">
+                    {(parseInt(financialsForm.deposit_amount) || 0).toLocaleString()}
+                  </span>
                 </div>
               </div>
               <div className="pt-3 border-t border-stone-100 flex justify-between items-end">
@@ -1073,7 +1069,7 @@ export default function OrdersManager() {
                 </span>
               </div>
               <div className="text-[10px] text-stone-400 text-center leading-relaxed bg-stone-50 p-2 rounded">
-                💡 提示：儲存後，若定金大於 0 且小於總額，<br/>系統會自動將訂單轉為「已付定金」狀態。
+                💡 儲存後，系統會根據訂單金額與 payment_logs 自動計算已收金額
               </div>
             </div>
             <div className="p-4 border-t border-stone-100 flex justify-end gap-2 bg-stone-50">
