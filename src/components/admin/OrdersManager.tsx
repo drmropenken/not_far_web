@@ -932,12 +932,12 @@ export default function OrdersManager() {
               <label className="block text-xs font-bold text-stone-500 mb-1.5">收款金額 <span className="text-rose-500">*</span></label>
               <input
                 type="number"
-                min="1"
                 value={onlinePaymentAmount}
                 onChange={e => setOnlinePaymentAmount(e.target.value)}
-                placeholder="請輸入金額"
+                placeholder="正數收款、負數沖正"
                 className="w-full border border-stone-200 rounded-xl p-3 text-lg font-black text-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none"
               />
+              <p className="text-[11px] text-stone-400 mt-1">💡 正數＝收款，負數＝沖正退款</p>
             </div>
 
             <div className="bg-stone-50 rounded-xl p-3 text-xs text-stone-500 space-y-1">
@@ -949,7 +949,7 @@ export default function OrdersManager() {
               <button onClick={() => setOnlinePaymentOrderId(null)} disabled={isSubmittingOnline} className="flex-1 py-3 text-sm font-bold text-stone-500 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors">
                 取消
               </button>
-              <button onClick={submitOnlinePayment} disabled={isSubmittingOnline || !onlinePaymentAmount || parseInt(onlinePaymentAmount) <= 0} className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors">
+              <button onClick={submitOnlinePayment} disabled={isSubmittingOnline || !onlinePaymentAmount || parseInt(onlinePaymentAmount) === 0} className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors">
                 {isSubmittingOnline ? '送出中...' : '確認收款'}
               </button>
             </div>
@@ -970,7 +970,6 @@ export default function OrdersManager() {
               <label className="block text-xs font-bold text-stone-500 mb-1.5">收款金額 <span className="text-rose-500">*</span></label>
               <input
                 type="number"
-                min="1"
                 value={onsiteAmount}
                 onChange={e => setOnsiteAmount(e.target.value)}
                 placeholder="正數收款、負數沖正"
