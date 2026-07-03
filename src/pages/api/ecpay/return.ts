@@ -53,17 +53,32 @@ export const POST: APIRoute = async ({ request }) => {
     const tradeAmt = params['TradeAmt'];
 
     if (rtnCode === '1' && orderNo) {
-      // Payment Success! Update DB
-      const { error } = await supabase
+      // Payment Success! Fetch order ID first
+      const { data: order, error: orderError } = await supabase
         .from('nf_orders')
-        .update({ 
-          status: 'paid',
-          deposit_amount: parseInt(tradeAmt || '0', 10)
-        })
-        .eq('order_no', orderNo);
+        .select('id')
+        .eq('order_no', orderNo)
+        .single();
       
-      if (error) {
-        console.error('Failed to update order status:', error);
+      if (orderError || !order) {
+        console.error('Failed to find order for ECPay payment log insertion:', orderError);
+      } else {
+        // Insert a new payment record into nf_payment_logs
+        const { error: logError } = await supabase
+          .from('nf_payment_logs')
+          .insert({
+            order_id: order.id,
+            amount: parseInt(tradeAmt || '0', 10),
+            payment_type: 'credit_card',
+            collected_by: 'system',
+            notes: '綠界'
+          });
+
+        if (logError) {
+          console.error('Failed to insert ECPay payment log:', logError);
+        } else {
+          console.log(`Successfully recorded ECPay credit card payment for order ${orderNo}`);
+        }
       }
     }
 
