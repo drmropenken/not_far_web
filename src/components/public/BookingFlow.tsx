@@ -623,18 +623,6 @@ export default function BookingFlow() {
               <button onClick={() => setStep(1)} className="text-slate-400 text-sm font-bold flex items-center gap-1 hover:text-slate-600 shrink-0">&larr; 返回修改日期</button>
             </div>
 
-            {selectedItems.filter(i => i.item.category === 'campsite').length === 0 && (
-              <div className="mb-4 p-4 bg-amber-50 border-2 border-amber-300 rounded-xl shadow-sm">
-                <p className="text-sm text-amber-800 font-bold flex items-start gap-2 leading-relaxed">
-                  <span className="text-lg leading-none">⚠️</span>
-                  <span>
-                    您尚未選擇營位！如僅需加購<strong>裝備租借</strong>或<strong>食材服務</strong>，可直接點選下一步。<br />
-                    如需預訂營位，請在上方選擇您喜愛的營位類型與數量。
-                  </span>
-                </p>
-              </div>
-            )}
-
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
               {fetchingItems ? (
                 <div className="flex flex-col items-center justify-center py-20 text-emerald-500">
@@ -667,10 +655,7 @@ export default function BookingFlow() {
 
             {selectedItems.filter(i => i.item.category === 'campsite').length === 0 ? (
               <div className="bg-amber-50/80 rounded-xl p-4 mb-6 border border-amber-200 shadow-sm">
-                <h3 className="font-bold text-amber-800 text-sm mb-2 flex items-center gap-1"><span>⚠️</span> 您尚未選擇營位</h3>
-                <p className="text-amber-700 text-sm font-medium">
-                  您本次僅加購裝備租借與食材服務，如需預訂營位請<a href="#" onClick={(e) => { e.preventDefault(); setStep(2); }} className="font-bold text-amber-900 underline">返回上一步</a>選擇。
-                </p>
+                <h3 className="font-bold text-amber-800 text-sm flex items-center gap-1"><span>⚠️</span> 您尚未選擇營位</h3>
               </div>
             ) : (
               <div className="bg-emerald-50/80 rounded-xl p-4 mb-6 border border-emerald-200 shadow-sm">
