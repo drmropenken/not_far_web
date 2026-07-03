@@ -1189,3 +1189,42 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER trigger_sync_order_deposit
   AFTER INSERT OR UPDATE OR DELETE ON nf_payment_logs
   FOR EACH ROW EXECUTE FUNCTION sync_order_deposit();
+
+-- ============================================================
+-- nf_* Indexes：提升查詢效能
+-- ============================================================
+
+-- nf_orders
+CREATE INDEX IF NOT EXISTS idx_nf_orders_status_date
+  ON nf_orders (status, check_in_date);
+
+CREATE INDEX IF NOT EXISTS idx_nf_orders_line_user
+  ON nf_orders (line_user_id);
+
+CREATE INDEX IF NOT EXISTS idx_nf_orders_order_no
+  ON nf_orders (order_no);
+
+CREATE INDEX IF NOT EXISTS idx_nf_orders_created_at
+  ON nf_orders (created_at DESC);
+
+-- nf_items
+CREATE INDEX IF NOT EXISTS idx_nf_items_category
+  ON nf_items (category);
+
+-- nf_inventory
+CREATE INDEX IF NOT EXISTS idx_nf_inventory_item_date
+  ON nf_inventory (item_id, date);
+
+-- nf_order_items
+CREATE INDEX IF NOT EXISTS idx_nf_order_items_order
+  ON nf_order_items (order_id);
+
+CREATE INDEX IF NOT EXISTS idx_nf_order_items_item
+  ON nf_order_items (item_id);
+
+-- nf_payment_logs
+CREATE INDEX IF NOT EXISTS idx_nf_payment_logs_order
+  ON nf_payment_logs (order_id);
+
+CREATE INDEX IF NOT EXISTS idx_nf_payment_logs_collected
+  ON nf_payment_logs (collected_by);
