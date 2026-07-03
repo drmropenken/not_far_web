@@ -704,14 +704,13 @@ export default function OrdersManager() {
                             )}
                           </div>
                           {(order.deposit_amount || 0) > 0 && order.status !== 'cancelled' && (
-                            <>
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-teal-600">🪙 已收定金</span>
                                 <span className="text-sm font-bold text-teal-600 tracking-tight">
                                   - NT$ {order.deposit_amount?.toLocaleString()}
                                 </span>
                               </div>
-                            )}
+                          )}
 
                             {getOrderOnsiteAmount(order.id) > 0 && (
                               <div className="flex items-center gap-2">
@@ -758,7 +757,6 @@ export default function OrdersManager() {
                                 </div>
                               );
                             })()}
-                          )}
                           {(!order.deposit_amount || order.deposit_amount === 0) && getOrderBankAmount(order.id) === 0 && getOrderOnsiteAmount(order.id) === 0 && order.status !== 'cancelled' && (
                             <div className="text-2xl font-bold tracking-tight mt-1 text-emerald-600">
                               NT$ {order.total_amount?.toLocaleString()}
