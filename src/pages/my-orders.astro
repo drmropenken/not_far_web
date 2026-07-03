@@ -11,7 +11,9 @@ if (!campId) {
     .select('id')
     .eq('slug', 'not-far')
     .single();
-  if (defaultCamp) campId = defaultCamp.id;
+  if (defaultCamp) {
+    return Astro.redirect(`/my-orders?camp_id=${defaultCamp.id}`);
+  }
 }
 ---
 

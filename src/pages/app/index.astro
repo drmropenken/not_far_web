@@ -4,7 +4,7 @@ import AppLayout from "../../layouts/AppLayout.astro";
 import BookingFlow from "../../components/public/BookingFlow";
 import { supabase } from "../../lib/supabase";
 
-// 從 URL 讀取 camp_id，若無則預設為不遠露營度假山莊
+// 從 URL 讀取 camp_id，若無則重新導向到帶有不遠山莊 camp_id 的網址
 let campId = Astro.url.searchParams.get('camp_id') || '';
 
 if (!campId) {
@@ -13,7 +13,9 @@ if (!campId) {
     .select('id')
     .eq('slug', 'not-far')
     .single();
-  if (defaultCamp) campId = defaultCamp.id;
+  if (defaultCamp) {
+    return Astro.redirect(`/app?camp_id=${defaultCamp.id}`);
+  }
 }
 ---
 
