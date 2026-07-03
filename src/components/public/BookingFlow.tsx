@@ -749,7 +749,10 @@ export default function BookingFlow({ campId: propCampId }: { campId?: string })
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-600 mb-1.5">手機號碼 <span className="text-rose-500">*</span></label>
-                  <input required type="tel" value={customerInfo.phone} onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="例如：0912345678" />
+                  <input required type="tel" inputMode="tel" pattern="[0-9+]*" value={customerInfo.phone} onChange={e => {
+                    const val = e.target.value.replace(/[^0-9+]/g, '');
+                    setCustomerInfo({ ...customerInfo, phone: val });
+                  }} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="例如：0912345678" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-600 mb-1.5">電子郵件 <span className="text-rose-500">*</span></label>

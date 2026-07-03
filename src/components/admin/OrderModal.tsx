@@ -368,7 +368,10 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-stone-600 mb-1.5">聯絡電話 <span className="text-rose-500">*</span></label>
-                  <input required type="tel" value={formData.customer_phone} onChange={e => setFormData({...formData, customer_phone: e.target.value})} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" placeholder="例如：0912345678"/>
+                  <input required type="tel" inputMode="tel" pattern="[0-9+]*" value={formData.customer_phone} onChange={e => {
+                    const val = e.target.value.replace(/[^0-9+]/g, '');
+                    setFormData({...formData, customer_phone: val});
+                  }} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" placeholder="例如：0912345678"/>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-stone-600 mb-1.5">電子信箱</label>
