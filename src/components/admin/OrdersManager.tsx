@@ -93,6 +93,8 @@ export default function OrdersManager() {
 
   const fetchOrders = async () => {
     setLoading(true);
+    const campId = localStorage.getItem('camp_id');
+
     const { data, error } = await supabase
       .from('nf_orders')
       .select(`
@@ -102,27 +104,32 @@ export default function OrdersManager() {
           nf_items (*)
         )
       `)
+      .eq('camp_id', campId)
       .order('check_in_date', { ascending: true });
 
     if (error) {
       console.error('Error fetching orders:', error);
     } else {
       setOrders(data || []);
-    }
 
-    // 同時撈金流明細
-    const { data: logs } = await supabase
-      .from('nf_payment_logs')
-      .select('*')
-      .order('collected_at', { ascending: true });
+      // 撈金流明細（只撈此營區的訂單）
+      if (data && data.length > 0) {
+        const orderIds = data.map(o => o.id);
+        const { data: logs } = await supabase
+          .from('nf_payment_logs')
+          .select('*')
+          .in('order_id', orderIds)
+          .order('collected_at', { ascending: true });
 
-    if (logs) {
-      const grouped: Record<string, PaymentLog[]> = {};
-      logs.forEach((log: PaymentLog) => {
-        if (!grouped[log.order_id]) grouped[log.order_id] = [];
-        grouped[log.order_id].push(log);
-      });
-      setPaymentLogs(grouped);
+        if (logs) {
+          const grouped: Record<string, PaymentLog[]> = {};
+          logs.forEach((log: PaymentLog) => {
+            if (!grouped[log.order_id]) grouped[log.order_id] = [];
+            grouped[log.order_id].push(log);
+          });
+          setPaymentLogs(grouped);
+        }
+      }
     }
 
     setLoading(false);

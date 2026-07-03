@@ -120,7 +120,7 @@ BEGIN
   INSERT INTO nf_orders (
     order_no, check_in_date, check_out_date, customer_name, customer_phone, 
     license_plate, notes, total_amount, discount_code, discount_amount, deposit_amount, 
-    status, payment_method, virtual_account, line_user_id
+    status, payment_method, virtual_account, line_user_id, camp_id
   )
   VALUES (
     p_order->>'order_no', 
@@ -137,7 +137,8 @@ BEGIN
     p_order->>'status', 
     p_order->>'payment_method', 
     p_order->>'virtual_account', 
-    p_order->>'line_user_id'
+    p_order->>'line_user_id',
+    (p_order->>'camp_id')::UUID
   )
   RETURNING id INTO v_order_id;
 

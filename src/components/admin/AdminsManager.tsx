@@ -5,6 +5,7 @@ type Admin = {
   id: string;
   email: string;
   role: 'superadmin' | 'editor' | 'viewer';
+  camp_id: string | null;
   created_at: string;
 };
 
@@ -26,10 +27,19 @@ export default function AdminsManager() {
 
   const fetchAdmins = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const campId = localStorage.getItem('camp_id');
+
+    let query = supabase
       .from('nf_admins')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*');
+
+    // 如果目前登入者不是超級管理員（無 camp_id=null 權限），只顯示此營區的管理員
+    const hasNullAccess = localStorage.getItem('admin_has_null_access') === 'true';
+    if (campId && !hasNullAccess) {
+      query = query.eq('camp_id', campId);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching admins', error);
@@ -45,9 +55,14 @@ export default function AdminsManager() {
     if (!newEmail.trim()) return;
     
     setSaving(true);
+    const campId = localStorage.getItem('camp_id');
     const { error } = await supabase
       .from('nf_admins')
-      .insert([{ email: newEmail.trim().toLowerCase(), role: newRole }]);
+      .insert([{ 
+        email: newEmail.trim().toLowerCase(), 
+        role: newRole,
+        camp_id: campId || null
+      }]);
 
     setSaving(false);
 

@@ -28,10 +28,17 @@ export default function DiscountsManager() {
 
   const fetchDiscounts = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const campId = localStorage.getItem('camp_id');
+    const query = supabase
       .from('nf_discount_codes')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*');
+    
+    // 如果有 camp_id，只顯示該營區的折扣碼
+    if (campId) {
+      query.eq('camp_id', campId);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching discounts', error);
@@ -59,13 +66,15 @@ export default function DiscountsManager() {
     }
 
     setSaving(true);
+    const campId = localStorage.getItem('camp_id');
     const { error } = await supabase
       .from('nf_discount_codes')
       .insert([{
         code: newCode.trim().toUpperCase(),
         discount_percent: discountType === 'percent' ? newPercent : 1,
         discount_fixed_amount: discountType === 'fixed' ? newFixedAmount : 0,
-        is_active: true
+        is_active: true,
+        camp_id: campId
       }]);
 
     setSaving(false);

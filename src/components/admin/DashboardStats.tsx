@@ -36,6 +36,7 @@ export default function DashboardStats() {
 
   const fetchData = async () => {
     setLoading(true);
+    const campId = localStorage.getItem('camp_id');
     
     // 獲取非取消狀態的訂單
     const { data, error } = await supabase
@@ -44,6 +45,7 @@ export default function DashboardStats() {
         id, order_no, customer_name, customer_phone, check_in_date, check_out_date, total_amount, status, created_at, notes, admin_notes,
         nf_order_items ( quantity, nf_items ( name ) )
       `)
+      .eq('camp_id', campId)
       .neq('status', 'cancelled');
       
     if (data) {

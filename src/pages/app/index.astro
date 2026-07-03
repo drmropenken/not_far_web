@@ -2,8 +2,21 @@
 
 import AppLayout from "../../layouts/AppLayout.astro";
 import BookingFlow from "../../components/public/BookingFlow";
+import { supabase } from "../../lib/supabase";
+
+// 從 URL 讀取 camp_id，若無則預設為不遠露營度假山莊
+let campId = Astro.url.searchParams.get('camp_id') || '';
+
+if (!campId) {
+  const { data: defaultCamp } = await supabase
+    .from('nf_campgrounds')
+    .select('id')
+    .eq('slug', 'not-far')
+    .single();
+  if (defaultCamp) campId = defaultCamp.id;
+}
 ---
 
-<AppLayout title="線上預訂 - 不遠露營度假山莊">
-  <BookingFlow client:only="react" />
+<AppLayout title="線上預訂 - SunnyCampTW">
+  <BookingFlow client:only="react" campId={campId} />
 </AppLayout>

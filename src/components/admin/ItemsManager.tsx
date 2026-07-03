@@ -41,9 +41,11 @@ export default function ItemsManager() {
 
   const fetchItems = async () => {
     setLoading(true);
+    const campId = localStorage.getItem('camp_id');
     const { data, error } = await supabase
       .from('nf_items')
       .select('*')
+      .eq('camp_id', campId)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
     
@@ -101,10 +103,10 @@ export default function ItemsManager() {
         fetchItems();
       }
     } else {
-      // Insert
+      // Insert — 帶入 camp_id
       const { error } = await supabase
         .from('nf_items')
-        .insert([formData]);
+        .insert([{ ...formData, camp_id: localStorage.getItem('camp_id') }]);
       
       if (error) {
         console.error('Insert error:', error);

@@ -95,11 +95,20 @@ export default function InventoryCalendar() {
 
   const fetchData = async () => {
     setLoading(true);
-    // 1. 取得所有營位、裝備與服務
+    const campId = localStorage.getItem('camp_id');
+    
+    // 1. 取得此營區的營位、裝備與服務
     const { data: itemsData } = await supabase
       .from('nf_items')
       .select('id, name, category, total_quantity')
+      .eq('camp_id', campId)
       .order('sort_order', { ascending: true });
+
+    // 先計算當月日期範圍
+    const year = currentDate.getFullYear();
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+    const startDate = `${year}-${month}-01`;
+    const endDate = `${year}-${month}-${daysInMonth}`;
 
     if (itemsData) {
       const categoryWeight: Record<string, number> = { campsite: 1, equipment: 2, service: 3 };
@@ -110,22 +119,21 @@ export default function InventoryCalendar() {
         return 0;
       });
       setItems(itemsData);
+
+      // 2. 取得當月的庫存紀錄（只撈此營區的商品）
+      const itemIds = itemsData.map(i => i.id);
+
+      const { data: invData } = await supabase
+        .from('nf_inventory')
+        .select('*')
+        .in('item_id', itemIds)
+        .gte('date', startDate)
+        .lte('date', endDate);
+
+      if (invData) setInventory(invData);
     }
 
-    // 2. 取得當月的特別庫存紀錄
-    const year = currentDate.getFullYear();
-    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-    const startDate = `${year}-${month}-01`;
-    const endDate = `${year}-${month}-${daysInMonth}`;
-
-    const { data: invData } = await supabase
-      .from('nf_inventory')
-      .select('*')
-      .gte('date', startDate)
-      .lte('date', endDate);
-
-    if (invData) setInventory(invData);
-
+    // 3. 取得此營區的訂單
     const { data: ordersData } = await supabase
       .from('nf_orders')
       .select(`
@@ -135,6 +143,7 @@ export default function InventoryCalendar() {
           nf_items ( category, name )
         )
       `)
+      .eq('camp_id', campId)
       .neq('status', 'cancelled')
       .lte('check_in_date', endDate)
       .gte('check_out_date', startDate);

@@ -84,9 +84,11 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
 
   const fetchItems = async () => {
     setLoading(true);
+    const campId = localStorage.getItem('camp_id');
     const { data } = await supabase
       .from('nf_items')
       .select('*')
+      .eq('camp_id', campId)
       .order('sort_order', { ascending: true });
     
     if (data) {
@@ -104,6 +106,16 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
 
   const fetchAvailability = async (checkIn: string, checkOut: string) => {
     if (!checkIn || !checkOut) return;
+    const campId = localStorage.getItem('camp_id');
+    
+    // 先取得此營區的所有商品 ID
+    const { data: campItems } = await supabase
+      .from('nf_items')
+      .select('id')
+      .eq('camp_id', campId);
+    if (!campItems) return;
+    const itemIds = campItems.map(i => i.id);
+
     // Collect all dates in the range
     const dates: string[] = [];
     for (let d = new Date(checkIn); d < new Date(checkOut); d.setDate(d.getDate() + 1)) {
@@ -114,6 +126,7 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     const { data } = await supabase
       .from('nf_inventory')
       .select('item_id, available_quantity')
+      .in('item_id', itemIds)
       .in('date', dates);
 
     if (!data) return;
@@ -142,11 +155,13 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
       setDiscountError('');
       return;
     }
+    const campId = localStorage.getItem('camp_id');
     const { data } = await supabase
       .from('nf_discount_codes')
       .select('*')
       .eq('code', formData.discount_code)
       .eq('is_active', true)
+      .or(`camp_id.eq.${campId},camp_id.is.null`)
       .single();
       
     if (data) {
@@ -266,7 +281,8 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
       deposit_amount: deposit,
       status: finalStatus,
       payment_method: 'bank_transfer', // 手動建單預設為匯款
-      virtual_account: null
+      virtual_account: null,
+      camp_id: localStorage.getItem('camp_id')
     };
 
     const orderItemsPayload = selectedItems.map(si => ({

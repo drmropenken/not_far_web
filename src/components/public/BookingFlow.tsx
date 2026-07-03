@@ -29,7 +29,13 @@ const getCategoryStyle = (category: string) => {
   }
 };
 
-export default function BookingFlow() {
+export default function BookingFlow({ campId: propCampId }: { campId?: string }) {
+  // 如果沒傳 prop，試著從 URL 參數讀取
+  const getCampId = () => {
+    if (propCampId) return propCampId;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('camp_id') || '';
+  };
   const [step, setStep] = useState(0); // 0: Login, 1: Date, 2: Campsite, 3: Addons, 4: Info, 5: Confirm, 6: Success
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -200,11 +206,13 @@ export default function BookingFlow() {
     const start = new Date(dates.checkIn);
     const end = new Date(dates.checkOut);
 
-    // 1. Fetch all items
+    // 1. Fetch all items for this camp
+    const campId = getCampId();
     const { data: items } = await supabase
       .from('nf_items')
       .select('*')
       .eq('is_active', true)
+      .eq('camp_id', campId)
       .order('sort_order', { ascending: true });
 
     if (!items) {
@@ -221,13 +229,15 @@ export default function BookingFlow() {
       return a.sort_order - b.sort_order;
     });
 
-    // 2. Fetch inventory for the period
+    // 2. Fetch inventory for the period (filter by camp's items)
+    const itemIds = items.map(i => i.id);
     const startStr = start.toISOString().split('T')[0];
     const endStr = new Date(end.getTime() - 86400000).toISOString().split('T')[0];
 
     const { data: inventory } = await supabase
       .from('nf_inventory')
       .select('*')
+      .in('item_id', itemIds)
       .gte('date', startStr)
       .lte('date', endStr);
 
@@ -403,11 +413,13 @@ export default function BookingFlow() {
       setDiscountAppliedCode('');
       return;
     }
+    const campId = getCampId();
     const { data } = await supabase
       .from('nf_discount_codes')
       .select('*')
       .eq('code', discountCode.trim().toUpperCase())
       .eq('is_active', true)
+      .or(`camp_id.eq.${campId},camp_id.is.null`)
       .single();
 
     if (data) {
@@ -469,7 +481,8 @@ export default function BookingFlow() {
         status: 'pending',
         payment_method: method,
         virtual_account: null, // 先填 null，等拿到 ID 後再更新
-        line_user_id: session?.user?.user_metadata?.line_id || null
+        line_user_id: session?.user?.user_metadata?.line_id || null,
+        camp_id: getCampId()
       };
 
       const orderItemsPayload = selectedItems.map(({ item, quantity }) => ({
