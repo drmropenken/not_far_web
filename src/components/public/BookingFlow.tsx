@@ -622,6 +622,19 @@ export default function BookingFlow() {
               <h2 className="text-2xl font-black text-slate-800 leading-none">選擇營位</h2>
               <button onClick={() => setStep(1)} className="text-slate-400 text-sm font-bold flex items-center gap-1 hover:text-slate-600 shrink-0">&larr; 返回修改日期</button>
             </div>
+
+            {selectedItems.filter(i => i.item.category === 'campsite').length === 0 && (
+              <div className="mb-4 p-4 bg-amber-50 border-2 border-amber-300 rounded-xl shadow-sm">
+                <p className="text-sm text-amber-800 font-bold flex items-start gap-2 leading-relaxed">
+                  <span className="text-lg leading-none">⚠️</span>
+                  <span>
+                    您尚未選擇營位！如僅需加購<strong>裝備租借</strong>或<strong>食材服務</strong>，可直接點選下一步。<br />
+                    如需預訂營位，請在上方選擇您喜愛的營位類型與數量。
+                  </span>
+                </p>
+              </div>
+            )}
+
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
               {fetchingItems ? (
                 <div className="flex flex-col items-center justify-center py-20 text-emerald-500">
@@ -637,8 +650,7 @@ export default function BookingFlow() {
             <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm -mx-6 px-6 pb-6 pt-4 mt-auto border-t border-slate-200 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
               <button
                 onClick={() => setStep(3)}
-                disabled={selectedItems.filter(i => i.item.category === 'campsite').length === 0}
-                className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2"
               >
                 下一步 (加購裝備與食材) <span>&rarr;</span>
               </button>
@@ -653,17 +665,26 @@ export default function BookingFlow() {
               <button onClick={() => setStep(2)} className="text-slate-400 text-sm font-bold flex items-center gap-1 hover:text-slate-600 shrink-0">&larr; 返回修改營位</button>
             </div>
 
-            <div className="bg-emerald-50/80 rounded-xl p-4 mb-6 border border-emerald-200 shadow-sm">
-              <h3 className="font-bold text-emerald-800 text-sm mb-2 flex items-center gap-1"><span>⛺</span> 您已選擇的營位：</h3>
-              <div className="space-y-1.5">
-                {selectedItems.filter(i => i.item.category === 'campsite').map(s => (
-                  <div key={s.item.id} className="text-emerald-700 font-black text-sm flex justify-between items-center bg-white/60 px-3 py-2 rounded-lg border border-emerald-100/50 shadow-sm">
-                    <span>{s.item.name}</span>
-                    <span className="bg-emerald-200/50 text-emerald-800 px-2 py-0.5 rounded text-xs">x {s.quantity}</span>
-                  </div>
-                ))}
+            {selectedItems.filter(i => i.item.category === 'campsite').length === 0 ? (
+              <div className="bg-amber-50/80 rounded-xl p-4 mb-6 border border-amber-200 shadow-sm">
+                <h3 className="font-bold text-amber-800 text-sm mb-2 flex items-center gap-1"><span>⚠️</span> 您尚未選擇營位</h3>
+                <p className="text-amber-700 text-sm font-medium">
+                  您本次僅加購裝備租借與食材服務，如需預訂營位請<a href="#" onClick={(e) => { e.preventDefault(); setStep(2); }} className="font-bold text-amber-900 underline">返回上一步</a>選擇。
+                </p>
               </div>
-            </div>
+            ) : (
+              <div className="bg-emerald-50/80 rounded-xl p-4 mb-6 border border-emerald-200 shadow-sm">
+                <h3 className="font-bold text-emerald-800 text-sm mb-2 flex items-center gap-1"><span>⛺</span> 您已選擇的營位：</h3>
+                <div className="space-y-1.5">
+                  {selectedItems.filter(i => i.item.category === 'campsite').map(s => (
+                    <div key={s.item.id} className="text-emerald-700 font-black text-sm flex justify-between items-center bg-white/60 px-3 py-2 rounded-lg border border-emerald-100/50 shadow-sm">
+                      <span>{s.item.name}</span>
+                      <span className="bg-emerald-200/50 text-emerald-800 px-2 py-0.5 rounded text-xs">x {s.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
               <div className="space-y-4">
@@ -900,13 +921,22 @@ export default function BookingFlow() {
                 </div>
               </div>
 
-              <div className="bg-rose-50 text-rose-700 p-4 rounded-xl border border-rose-200 text-sm font-bold flex gap-2 items-start text-left">
-                <span className="text-lg leading-none">⚠️</span>
-                <span>強烈建議您現在立刻「截圖」或記下此頁面的帳號資訊。為保障您的隱私，關閉此頁面後將無法再次查看！</span>
+              <div className="bg-emerald-50 text-emerald-700 p-5 rounded-xl border border-emerald-200 text-sm font-bold space-y-3 text-left">
+                <p className="flex items-start gap-2 leading-relaxed">
+                  <span className="text-base leading-none mt-0.5">📋</span>
+                  <span>可至 <a href="https://not-far-web.vercel.app/my-orders" className="text-emerald-800 underline font-black" target="_blank">我的訂單</a> 查詢訂單狀態與明細，亦可於該頁面留言給我們。</span>
+                </p>
+                <p className="flex items-start gap-2 leading-relaxed">
+                  <span className="text-base leading-none mt-0.5">💬</span>
+                  <span>如有進一步問題，歡迎透過官方 LINE <a href="https://line.me/ti/p/@paq1032x" className="text-emerald-800 underline font-black" target="_blank">@paq1032x</a> 洽詢</span>
+                </p>
               </div>
 
-              <div className="pt-4">
-                <a href="/" className="block w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest">
+              <div className="pt-4 space-y-3">
+                <a href="/my-orders" className="block w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest">
+                  查看我的訂單
+                </a>
+                <a href="/" className="block w-full bg-slate-200 text-slate-700 font-bold py-3.5 rounded-xl hover:bg-slate-300 transition-colors text-base tracking-widest">
                   返回首頁
                 </a>
               </div>
