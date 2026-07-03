@@ -1156,3 +1156,36 @@ CREATE POLICY "Allow superadmin and editor to delete payment logs"
     WHERE (("a"."email" = ("auth"."jwt"() ->> 'email'::"text"))
       AND ("a"."role" = ANY (ARRAY['superadmin'::"text", 'editor'::"text"])))
   )));
+
+-- ============================================================
+-- Trigger: 自動同步 payment_logs 到 orders.deposit_amount
+-- ============================================================
+CREATE OR REPLACE FUNCTION sync_order_deposit()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_total INT;
+  v_order_id UUID;
+BEGIN
+  v_order_id := COALESCE(NEW.order_id, OLD.order_id);
+
+  SELECT COALESCE(SUM(amount), 0) INTO v_total
+  FROM nf_payment_logs
+  WHERE order_id = v_order_id;
+
+  UPDATE nf_orders
+  SET deposit_amount = v_total,
+      status = CASE
+        WHEN v_total >= total_amount THEN 'paid'
+        WHEN v_total > 0 THEN 'deposit_paid'
+        ELSE 'pending'
+      END
+  WHERE id = v_order_id;
+
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+CREATE TRIGGER trigger_sync_order_deposit
+  AFTER INSERT OR UPDATE OR DELETE ON nf_payment_logs
+  FOR EACH ROW EXECUTE FUNCTION sync_order_deposit();

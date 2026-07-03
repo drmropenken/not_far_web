@@ -385,17 +385,7 @@ export default function OrdersManager() {
       return;
     }
 
-    // 更新 deposit_amount = payment_logs 總和 + 更新狀態
-    if (order) {
-      const totalFromLogs = getOrderOnlineAmount(order.id) + getOrderOnsiteAmount(order.id);
-      const newStatus = totalFromLogs >= order.total_amount ? 'paid' : 'deposit_paid';
-
-      await supabase.from('nf_orders').update({
-        deposit_amount: totalFromLogs,
-        status: newStatus
-      }).eq('id', onsitePaymentOrderId);
-    }
-
+    // DB Trigger 會自動更新 deposit_amount & status
     setOnsitePaymentOrderId(null);
     setOnsiteAmount('');
     setOnsiteNotes('');
@@ -466,15 +456,7 @@ export default function OrdersManager() {
       return;
     }
 
-    // 重新計算 deposit_amount = payment_logs 總和
-    totalFromLogs = getOrderOnlineAmount(order.id) + getOrderOnsiteAmount(order.id);
-    const newStatus = totalFromLogs >= order.total_amount ? 'paid' : 'deposit_paid';
-
-    await supabase.from('nf_orders').update({
-      deposit_amount: totalFromLogs,
-      status: newStatus
-    }).eq('id', onlinePaymentOrderId);
-
+    // DB Trigger 會自動更新 deposit_amount & status
     setIsSubmittingOnline(false);
     setOnlinePaymentOrderId(null);
     setOnlinePaymentAmount('');
