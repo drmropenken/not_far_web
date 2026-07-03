@@ -164,8 +164,12 @@ export const sendOrderNotification = async (orderData: any, actionType: EmailAct
           ` : ''}
 
           <div style="margin-top: 32px; text-align: center;">
+            <div style="margin-bottom: 16px; font-size: 14px; color: #333;">
+              <span>🔍 立即查詢訂單狀態與明細：</span><br>
+              <a href="https://not-far-web.vercel.app/my-orders" style="color: #059669; font-weight: bold;">前往不遠山莊官網 → 我的訂單查詢</a>
+            </div>
             <a href="https://not-far-web.vercel.app/" style="background-color: #0f172a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; letter-spacing: 1px;">前往不遠山莊官網</a>
-            <p style="margin-top: 16px; font-size: 14px; color: #64748b;">如有任何問題，歡迎透過官方 LINE 聯繫我們！</p>
+            <p style="margin-top: 16px; font-size: 14px; color: #64748b;">如有任何問題，歡迎透過 <a href="https://line.me/ti/p/@paq1032x" style="color: #059669; font-weight: bold; text-decoration: underline;">官方 LINE (@paq1032x)</a> 聯繫我們！</p>
           </div>
         </div>
       </div>
