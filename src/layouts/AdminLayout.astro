@@ -217,6 +217,14 @@ const { title, description } = Astro.props;
         const campName = localStorage.getItem('camp_name');
         campNameDisplay.textContent = campName || '選擇營區';
       }
+
+      // 在網址列顯示 camp_id（不重新載入頁面）
+      const currentCampId = localStorage.getItem('camp_id');
+      if (currentCampId && !window.location.search.includes('camp_id=')) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('camp_id', currentCampId);
+        window.history.replaceState({}, '', url.toString());
+      }
     }
     
     // 初始化檢查

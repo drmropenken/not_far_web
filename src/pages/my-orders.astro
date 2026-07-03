@@ -1,8 +1,20 @@
 ---
 import AppLayout from "../layouts/AppLayout.astro";
 import MyOrdersFlow from "../components/public/MyOrdersFlow";
+import { supabase } from "../lib/supabase";
+
+let campId = Astro.url.searchParams.get('camp_id') || '';
+
+if (!campId) {
+  const { data: defaultCamp } = await supabase
+    .from('nf_campgrounds')
+    .select('id')
+    .eq('slug', 'not-far')
+    .single();
+  if (defaultCamp) campId = defaultCamp.id;
+}
 ---
 
-<AppLayout title="我的訂單 - 不遠露營度假山莊">
-  <MyOrdersFlow client:only="react" />
+<AppLayout title="我的訂單 - SunnyCampTW">
+  <MyOrdersFlow client:only="react" campId={campId} />
 </AppLayout>

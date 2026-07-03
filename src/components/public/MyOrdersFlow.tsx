@@ -51,7 +51,12 @@ const getStatusBadge = (order: any) => {
   return <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border ${info.colorClass}`}>{info.label}</span>;
 };
 
-export default function MyOrdersFlow() {
+export default function MyOrdersFlow({ campId: propCampId }: { campId?: string }) {
+  const getCampId = () => {
+    if (propCampId) return propCampId;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('camp_id') || '';
+  };
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<any[]>([]);
@@ -240,6 +245,7 @@ export default function MyOrdersFlow() {
 
   const fetchMyOrders = async (currentSession: any) => {
     setLoading(true);
+    const campId = getCampId();
     const email = currentSession.user.email;
     const lineId = currentSession.user.user_metadata?.line_id;
 
@@ -255,9 +261,11 @@ export default function MyOrdersFlow() {
     }
 
     if (filterStr) {
-      const { data: finalData, error: finalError } = await supabase.from('nf_orders')
+      const { data: finalData, error: finalError } = await supabase
+        .from('nf_orders')
         .select(`*, nf_order_items (*, nf_items (*))`)
         .or(filterStr)
+        .eq('camp_id', campId)
         .order('created_at', { ascending: false });
         
       if (!finalError) {
