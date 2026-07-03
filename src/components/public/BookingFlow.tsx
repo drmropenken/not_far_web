@@ -917,14 +917,6 @@ export default function BookingFlow() {
                 </p>
               </div>
 
-              <div className="pt-4 space-y-3">
-                <a href="/my-orders" className="block w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest">
-                  查看我的訂單
-                </a>
-                <a href="/" className="block w-full bg-slate-200 text-slate-700 font-bold py-3.5 rounded-xl hover:bg-slate-300 transition-colors text-base tracking-widest">
-                  返回首頁
-                </a>
-              </div>
             </div>
           </div>
         )}
