@@ -385,16 +385,14 @@ export default function OrdersManager() {
       return;
     }
 
-    // 更新訂單狀態與金額（沿用上面的 order 變數）
+    // 更新訂單狀態（不再更新 deposit_amount，以免重複計算）
     if (order) {
       const totalBank = getOrderBankAmount(order.id);
       const totalOnsite = getOrderOnsiteAmount(order.id) + amount;
       const totalPaid = totalBank + totalOnsite + (order.deposit_amount || 0);
-      const newDeposit = (order.deposit_amount || 0) + amount;
       const newStatus = totalPaid >= order.total_amount ? 'paid' : 'deposit_paid';
 
       await supabase.from('nf_orders').update({
-        deposit_amount: newDeposit,
         status: newStatus
       }).eq('id', onsitePaymentOrderId);
     }
@@ -466,11 +464,9 @@ export default function OrdersManager() {
       return;
     }
 
-    const newDeposit = (order.deposit_amount || 0) + amount;
     const newStatus = newTotalPaid >= order.total_amount ? 'paid' : 'deposit_paid';
 
     await supabase.from('nf_orders').update({
-      deposit_amount: newDeposit,
       status: newStatus
     }).eq('id', onlinePaymentOrderId);
 
@@ -800,16 +796,17 @@ export default function OrdersManager() {
                               </button>
                             )}
                           </div>
-                          {(order.deposit_amount || 0) > 0 && order.status !== 'cancelled' && (
+                          {/* 線上付款（信用卡 + 匯款，從 payment_logs 算） */}
+                          {getOrderBankAmount(order.id) > 0 && (
                               <div className="flex items-center gap-2">
-                                <span className="text-xs text-teal-600">🪙 已收定金</span>
-                                <span className="text-sm font-bold text-teal-600 tracking-tight">
-                                  - NT$ {order.deposit_amount?.toLocaleString()}
+                                <span className="text-xs text-indigo-600">💳 線上付款</span>
+                                <span className="text-sm font-bold text-indigo-600 tracking-tight">
+                                  - NT$ {getOrderBankAmount(order.id).toLocaleString()}
                                 </span>
                               </div>
                           )}
-
-                            {getOrderOnsiteAmount(order.id) > 0 && (
+                          {/* 現場收款（從 payment_logs 算） */}
+                          {getOrderOnsiteAmount(order.id) > 0 && (
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-emerald-600">💵 現場收款</span>
                                 <span className="text-sm font-bold text-emerald-600 tracking-tight">
@@ -817,6 +814,15 @@ export default function OrdersManager() {
                                 </span>
                               </div>
                             )}
+                          {/* 手動輸入的定金（從 deposit_amount） */}
+                          {(order.deposit_amount || 0) > 0 && order.status !== 'cancelled' && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-teal-600">🪙 手動定金</span>
+                                <span className="text-sm font-bold text-teal-600 tracking-tight">
+                                  - NT$ {order.deposit_amount?.toLocaleString()}
+                                </span>
+                              </div>
+                          )}
 
                             {(() => {
                               const bankAmount = getOrderBankAmount(order.id);
@@ -886,27 +892,29 @@ export default function OrdersManager() {
                         取消訂單
                       </button>
                     )}
-                    {/* 右邊（ml-auto 推過去） */}
-                    {order.status === 'paid' && (
-                      <button onClick={() => updateOrderStatus(order.id, 'checked_in')} className="ml-auto whitespace-nowrap px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors shadow-sm">
-                        ✅ 標記已報到
-                      </button>
-                    )}
-                    {/* 線上付款（信用卡／匯款） */}
-                    {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
-                      <button
-                        onClick={() => { setOnlinePaymentOrderId(order.id); setOnlinePaymentAmount(''); setOnlinePaymentType('bank_transfer'); }}
-                        className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors"
-                      >
-                        💳 線上付款
-                      </button>
-                    )}
-                    {/* 現場收款 */}
-                    {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
-                      <button onClick={() => { setOnsitePaymentOrderId(order.id); setOnsiteAmount(''); setOnsiteNotes(''); }} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
-                        💵 現場收款
-                      </button>
-                    )}
+                    {/* 右邊區塊（ml-auto 推到底） */}
+                    <div className="ml-auto flex flex-wrap items-center gap-2">
+                      {order.status === 'paid' && (
+                        <button onClick={() => updateOrderStatus(order.id, 'checked_in')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors shadow-sm">
+                          ✅ 標記已報到
+                        </button>
+                      )}
+                      {/* 線上付款（信用卡／匯款） */}
+                      {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
+                        <button
+                          onClick={() => { setOnlinePaymentOrderId(order.id); setOnlinePaymentAmount(''); setOnlinePaymentType('bank_transfer'); }}
+                          className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors"
+                        >
+                          💳 線上付款
+                        </button>
+                      )}
+                      {/* 現場收款 */}
+                      {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
+                        <button onClick={() => { setOnsitePaymentOrderId(order.id); setOnsiteAmount(''); setOnsiteNotes(''); }} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
+                          💵 現場收款
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
