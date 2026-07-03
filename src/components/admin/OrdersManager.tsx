@@ -344,18 +344,25 @@ export default function OrdersManager() {
   const submitOnsitePayment = async () => {
     if (!onsitePaymentOrderId) return;
     const amount = parseInt(onsiteAmount);
-    if (!amount || amount <= 0) {
-      alert('請輸入有效的收款金額');
+    if (!amount || amount === 0) {
+      alert('請輸入有效的金額（正數收款、負數沖正）');
       return;
     }
 
-    // 檢查是否溢收：剩餘待收 = 總金額 - 已收金額
     const order = orders.find(o => o.id === onsitePaymentOrderId);
     if (order) {
       const totalPaid = getOrderBankAmount(order.id) + getOrderOnsiteAmount(order.id) + (order.deposit_amount || 0);
-      const remaining = Math.max(0, order.total_amount - totalPaid);
-      if (amount > remaining) {
-        alert(`⚠️ 收款金額 NT$ ${amount.toLocaleString()} 超過剩餘待收 NT$ ${remaining.toLocaleString()}，請確認後重新輸入。`);
+      const newTotalPaid = totalPaid + amount;
+
+      // 多收（正數）時檢查是否超過剩餘待收
+      if (amount > 0 && newTotalPaid > order.total_amount) {
+        alert(`⚠️ 溢收！最多只能再收 NT$ ${Math.max(0, order.total_amount - totalPaid).toLocaleString()}`);
+        return;
+      }
+
+      // 退款（負數）時檢查會不會退超過已收總額
+      if (amount < 0 && newTotalPaid < 0) {
+        alert(`⚠️ 退款不能超過已收總額 NT$ ${totalPaid.toLocaleString()}`);
         return;
       }
     }
@@ -418,8 +425,8 @@ export default function OrdersManager() {
   const submitOnlinePayment = async () => {
     if (!onlinePaymentOrderId) return;
     const amount = parseInt(onlinePaymentAmount);
-    if (!amount || amount <= 0) {
-      alert('請輸入有效的收款金額');
+    if (!amount || amount === 0) {
+      alert('請輸入有效的金額（正數收款、負數沖正）');
       return;
     }
 
@@ -429,9 +436,17 @@ export default function OrdersManager() {
     const totalBank = getOrderBankAmount(order.id);
     const totalOnsite = getOrderOnsiteAmount(order.id);
     const totalPaid = totalBank + totalOnsite + (order.deposit_amount || 0);
-    const remaining = Math.max(0, order.total_amount - totalPaid);
-    if (amount > remaining) {
-      alert(`⚠️ 收款金額 NT$ ${amount.toLocaleString()} 超過剩餘待收 NT$ ${remaining.toLocaleString()}`);
+    const newTotalPaid = totalPaid + amount;
+
+    // 多收時檢查
+    if (amount > 0 && newTotalPaid > order.total_amount) {
+      alert(`⚠️ 溢收！最多只能再收 NT$ ${Math.max(0, order.total_amount - totalPaid).toLocaleString()}`);
+      return;
+    }
+
+    // 退款時檢查
+    if (amount < 0 && newTotalPaid < 0) {
+      alert(`⚠️ 退款不能超過已收總額 NT$ ${totalPaid.toLocaleString()}`);
       return;
     }
 
@@ -451,7 +466,6 @@ export default function OrdersManager() {
       return;
     }
 
-    const newTotalPaid = totalPaid + amount;
     const newDeposit = (order.deposit_amount || 0) + amount;
     const newStatus = newTotalPaid >= order.total_amount ? 'paid' : 'deposit_paid';
 
@@ -974,9 +988,10 @@ export default function OrdersManager() {
                 min="1"
                 value={onsiteAmount}
                 onChange={e => setOnsiteAmount(e.target.value)}
-                placeholder="請輸入金額"
+                placeholder="正數收款、負數沖正"
                 className="w-full border border-stone-200 rounded-xl p-3 text-lg font-black text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none"
               />
+              <p className="text-[11px] text-stone-400 mt-1">💡 正數＝收款，負數＝沖正退款</p>
             </div>
 
             <div>
@@ -985,7 +1000,7 @@ export default function OrdersManager() {
                 type="text"
                 value={onsiteNotes}
                 onChange={e => setOnsiteNotes(e.target.value)}
-                placeholder="現金 / 街口 / 其他"
+                placeholder="現金 / 街口 / 退款原因"
                 className="w-full border border-stone-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
               />
             </div>
