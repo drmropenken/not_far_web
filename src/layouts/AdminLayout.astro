@@ -151,46 +151,42 @@ const { title, description } = Astro.props;
         return;
       }
 
-      const { data: adminRecord, error: adminError } = await supabase
+      // 查詢該 Email 的所有管理員紀錄（同一個 Email 可有多筆，綁不同 camp_id）
+      const { data: adminRecords, error: adminError } = await supabase
         .from('nf_admins')
         .select('role, camp_id')
-        .eq('email', userEmail.toLowerCase())
-        .single();
+        .eq('email', userEmail.toLowerCase());
 
-      if (adminError || !adminRecord) {
+      if (adminError || !adminRecords || adminRecords.length === 0) {
         console.error('Auth Error:', adminError, 'Email:', userEmail);
         await supabase.auth.signOut();
         window.location.href = "/admin/login?error=unauthorized";
         return;
       }
 
-      // 將角色、Email、Camp ID 存入 localStorage
-      localStorage.setItem('admin_role', adminRecord.role);
+      // 收集該管理員可存取的 camp_id 列表
+      const campIds = adminRecords.map(r => r.camp_id).filter(Boolean);
+      const hasNullAccess = adminRecords.some(r => r.camp_id === null);
+
+      // 儲存角色、Email、可存取的營區 ID 列表
+      localStorage.setItem('admin_role', adminRecords[0].role);
       localStorage.setItem('admin_email', userEmail);
+      localStorage.setItem('admin_camp_ids', JSON.stringify(campIds));
+      localStorage.setItem('admin_has_null_access', hasNullAccess ? 'true' : 'false');
 
       const existingCampId = localStorage.getItem('camp_id');
       const currentPath = window.location.pathname;
 
-      // 如果管理員有綁定特定營區，直接存入
-      if (adminRecord.camp_id) {
-        localStorage.setItem('camp_id', adminRecord.camp_id);
-        // 同時預載營區名稱
-        const { data: camp } = await supabase
-          .from('nf_campgrounds')
-          .select('name')
-          .eq('id', adminRecord.camp_id)
-          .single();
-        if (camp) localStorage.setItem('camp_name', camp.name);
-      } else {
-        // camp_id = NULL → 可管所有營區
-        // 如果還沒選營區、且目前不在選單頁 → 導去選
-        if (!existingCampId && !currentPath.includes('/admin/campgrounds')) {
-          window.location.href = '/admin/campgrounds';
-          return;
-        }
-        // 如果有選過，確保 camp_name 在 localStorage
+      // 如果還沒選營區且不在選單頁 → 導去選
+      if (!existingCampId && !currentPath.includes('/admin/campgrounds')) {
+        window.location.href = '/admin/campgrounds';
+        return;
+      }
+
+      // 如果有選過，確保 camp_name 存在
+      if (existingCampId) {
         const storedName = localStorage.getItem('camp_name');
-        if (!storedName && existingCampId) {
+        if (!storedName) {
           const { data: camp } = await supabase
             .from('nf_campgrounds')
             .select('name')
@@ -235,13 +231,9 @@ const { title, description } = Astro.props;
       });
     }
 
-    // 綁定切換營區按鈕
+    // 綁定切換營區按鈕（所有人都可以按）
     const switchCampBtn = document.getElementById("switch-camp-btn");
     if (switchCampBtn) {
-      const adminRole = localStorage.getItem('admin_role');
-      if (adminRole !== 'viewer') {
-        switchCampBtn.classList.remove('hidden');
-      }
       switchCampBtn.addEventListener("click", () => {
         localStorage.removeItem('camp_id');
         localStorage.removeItem('camp_name');
