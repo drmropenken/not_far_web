@@ -42,6 +42,16 @@ type Order = {
   nf_order_items: OrderItem[];
 };
 
+type PaymentLog = {
+  id: string;
+  order_id: string;
+  amount: number;
+  payment_type: 'bank_transfer' | 'onsite';
+  collected_by: string;
+  collected_at: string;
+  notes: string | null;
+};
+
 const parseOrderNotes = (notesStr: string | null) => {
   if (!notesStr) return { email: '', people: '', notes: '' };
   const emailMatch = notesStr.match(/\[Email:\s*(.*?)\]/);
@@ -70,6 +80,12 @@ export default function OrdersManager() {
   const [editingAdminNoteOrderId, setEditingAdminNoteOrderId] = useState<string | null>(null);
   const [adminNoteText, setAdminNoteText] = useState('');
   const [adminRole, setAdminRole] = useState<string | null>(null);
+  const [adminEmail, setAdminEmail] = useState<string | null>(null);
+  const [paymentLogs, setPaymentLogs] = useState<Record<string, PaymentLog[]>>({});
+  const [onsitePaymentOrderId, setOnsitePaymentOrderId] = useState<string | null>(null);
+  const [onsiteAmount, setOnsiteAmount] = useState('');
+  const [onsiteNotes, setOnsiteNotes] = useState('');
+  const [isSubmittingOnsite, setIsSubmittingOnsite] = useState(false);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -89,12 +105,29 @@ export default function OrdersManager() {
     } else {
       setOrders(data || []);
     }
+
+    // 同時撈金流明細
+    const { data: logs } = await supabase
+      .from('nf_payment_logs')
+      .select('*')
+      .order('collected_at', { ascending: true });
+
+    if (logs) {
+      const grouped: Record<string, PaymentLog[]> = {};
+      logs.forEach((log: PaymentLog) => {
+        if (!grouped[log.order_id]) grouped[log.order_id] = [];
+        grouped[log.order_id].push(log);
+      });
+      setPaymentLogs(grouped);
+    }
+
     setLoading(false);
   };
 
   useEffect(() => {
     fetchOrders();
     setAdminRole(localStorage.getItem('admin_role') || 'viewer');
+    setAdminEmail(localStorage.getItem('admin_email') || '');
   }, []);
 
   const updateOrderStatus = async (orderId: string, newStatus: 'pending' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled') => {
@@ -301,6 +334,53 @@ export default function OrdersManager() {
         });
       } catch (e) { console.error('Email error', e); }
     }
+  };
+
+  // 現場收款處理
+  const submitOnsitePayment = async () => {
+    if (!onsitePaymentOrderId) return;
+    const amount = parseInt(onsiteAmount);
+    if (!amount || amount <= 0) {
+      alert('請輸入有效的收款金額');
+      return;
+    }
+    setIsSubmittingOnsite(true);
+
+    const { error } = await supabase
+      .from('nf_payment_logs')
+      .insert({
+        order_id: onsitePaymentOrderId,
+        amount,
+        payment_type: 'onsite',
+        collected_by: adminEmail,
+        notes: onsiteNotes.trim() || null
+      });
+
+    setIsSubmittingOnsite(false);
+    if (error) {
+      alert('現場收款紀錄失敗：' + error.message);
+    } else {
+      setOnsitePaymentOrderId(null);
+      setOnsiteAmount('');
+      setOnsiteNotes('');
+      fetchOrders();
+    }
+  };
+
+  const getPaymentLogs = (orderId: string): PaymentLog[] => {
+    return paymentLogs[orderId] || [];
+  };
+
+  const getOrderBankAmount = (orderId: string): number => {
+    return getPaymentLogs(orderId)
+      .filter(l => l.payment_type === 'bank_transfer')
+      .reduce((sum, l) => sum + l.amount, 0);
+  };
+
+  const getOrderOnsiteAmount = (orderId: string): number => {
+    return getPaymentLogs(orderId)
+      .filter(l => l.payment_type === 'onsite')
+      .reduce((sum, l) => sum + l.amount, 0);
   };
 
   const filteredOrders = orders.filter(order => {
@@ -631,32 +711,62 @@ export default function OrdersManager() {
                                   - NT$ {order.deposit_amount?.toLocaleString()}
                                 </span>
                               </div>
-                              <div className="flex justify-end items-end gap-2 mt-1 pt-1 border-t border-stone-200 border-dashed">
-                                {order.deposit_amount && order.deposit_amount > order.total_amount ? (
-                                  <>
-                                    <span className="text-xs text-rose-500 font-bold mb-1">
-                                      🚨 需退款
-                                    </span>
+                            )}
+
+                            {getOrderOnsiteAmount(order.id) > 0 && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-emerald-600">💵 現場收款</span>
+                                <span className="text-sm font-bold text-emerald-600 tracking-tight">
+                                  - NT$ {getOrderOnsiteAmount(order.id).toLocaleString()}
+                                </span>
+                              </div>
+                            )}
+
+                            {(() => {
+                              const bankAmount = getOrderBankAmount(order.id);
+                              const onsiteAmount = getOrderOnsiteAmount(order.id);
+                              const totalPaid = bankAmount + onsiteAmount + (order.deposit_amount || 0);
+
+                              if (order.deposit_amount && order.deposit_amount > order.total_amount) {
+                                return (
+                                  <div className="flex justify-end items-end gap-2 mt-1 pt-1 border-t border-stone-200 border-dashed">
+                                    <span className="text-xs text-rose-500 font-bold mb-1">🚨 需退款</span>
                                     <span className="text-2xl font-black tracking-tight text-rose-600">
                                       NT$ {(order.deposit_amount - order.total_amount).toLocaleString()}
                                     </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="text-xs text-stone-500 font-bold mb-1">
-                                      {order.status === 'paid' || order.status === 'checked_in' ? '實收尾款' : '待收尾款'}
+                                  </div>
+                                );
+                              }
+
+                              if (totalPaid >= order.total_amount) {
+                                return (
+                                  <div className="flex justify-end items-end gap-2 mt-1 pt-1 border-t border-stone-200 border-dashed">
+                                    <span className="text-xs text-emerald-600 font-bold mb-1">✅ 已結清</span>
+                                    <span className="text-2xl font-black tracking-tight text-emerald-600">
+                                      NT$ {totalPaid.toLocaleString()}
                                     </span>
-                                    <span className={`text-2xl font-black tracking-tight ${order.status === 'paid' || order.status === 'checked_in' ? 'text-stone-500' : 'text-rose-600'}`}>
-                                      NT$ {Math.max(0, order.total_amount - (order.deposit_amount || 0)).toLocaleString()}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </>
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <div className="flex justify-end items-end gap-2 mt-1 pt-1 border-t border-stone-200 border-dashed">
+                                  <span className="text-xs text-rose-500 font-bold mb-1">待收</span>
+                                  <span className="text-2xl font-black tracking-tight text-rose-600">
+                                    NT$ {Math.max(0, order.total_amount - totalPaid).toLocaleString()}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           )}
-                          {(!order.deposit_amount || order.deposit_amount === 0 || order.status === 'cancelled') && (
-                            <div className={`text-2xl font-bold tracking-tight mt-1 ${order.status === 'cancelled' ? 'text-stone-400' : 'text-emerald-600'}`}>
+                          {(!order.deposit_amount || order.deposit_amount === 0) && getOrderBankAmount(order.id) === 0 && getOrderOnsiteAmount(order.id) === 0 && order.status !== 'cancelled' && (
+                            <div className="text-2xl font-bold tracking-tight mt-1 text-emerald-600">
                               NT$ {order.total_amount?.toLocaleString()}
+                            </div>
+                          )}
+                          {order.status === 'cancelled' && (
+                            <div className="text-2xl font-bold tracking-tight mt-1 text-stone-400">
+                              已取消
                             </div>
                           )}
                         </div>
@@ -669,9 +779,11 @@ export default function OrdersManager() {
                 {/* 操作按鈕 */}
                 {adminRole !== 'viewer' && (
                   <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors mr-auto">
-                      刪除
-                    </button>
+                    {adminEmail === 'dr.mr.openken@gmail.com' && (
+                      <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors mr-auto">
+                        刪除
+                      </button>
+                    )}
                     {order.status === 'pending' && (
                       <button onClick={() => updateOrderStatus(order.id, 'paid')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
                         標記已付款
@@ -692,6 +804,11 @@ export default function OrdersManager() {
                         取消訂單
                       </button>
                     )}
+                    {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
+                      <button onClick={() => { setOnsitePaymentOrderId(order.id); setOnsiteAmount(''); setOnsiteNotes(''); }} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
+                        💵 現場收款
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -700,6 +817,55 @@ export default function OrdersManager() {
           </div>
         )}
       </div>
+
+      {/* 現場收款 Modal */}
+      {onsitePaymentOrderId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm" onClick={() => setOnsitePaymentOrderId(null)}>
+          <div className="bg-white rounded-2xl shadow-xl border border-stone-200 max-w-sm w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
+              <span className="text-xl">💵</span>
+              <h3 className="font-black text-stone-800">現場收款</h3>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-stone-500 mb-1.5">收款金額 <span className="text-rose-500">*</span></label>
+              <input
+                type="number"
+                min="1"
+                value={onsiteAmount}
+                onChange={e => setOnsiteAmount(e.target.value)}
+                placeholder="請輸入金額"
+                className="w-full border border-stone-200 rounded-xl p-3 text-lg font-black text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-stone-500 mb-1.5">備註（選填）</label>
+              <input
+                type="text"
+                value={onsiteNotes}
+                onChange={e => setOnsiteNotes(e.target.value)}
+                placeholder="現金 / 街口 / 其他"
+                className="w-full border border-stone-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              />
+            </div>
+
+            <div className="bg-stone-50 rounded-xl p-3 text-xs text-stone-500 space-y-1">
+              <p>👤 經手人：<span className="font-bold text-stone-700">{adminEmail || '—'}</span></p>
+              <p>🕐 時間：<span className="font-bold text-stone-700">{new Date().toLocaleString('zh-TW')}</span></p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setOnsitePaymentOrderId(null)} disabled={isSubmittingOnsite} className="flex-1 py-3 text-sm font-bold text-stone-500 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors">
+                取消
+              </button>
+              <button onClick={submitOnsitePayment} disabled={isSubmittingOnsite || !onsiteAmount || parseInt(onsiteAmount) <= 0} className="flex-1 py-3 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors">
+                {isSubmittingOnsite ? '送出中...' : '確認收款'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 編輯訂單金額 Modal */}
       {editingFinancialsId && (

@@ -1080,3 +1080,79 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT REFERENCES
 
 
 
+
+-- ============================================================
+-- 金流明細表：記錄每一筆實際收款
+-- payment_type: 'bank_transfer' = 匯款, 'onsite' = 現場收款
+-- collected_by: 管理員 Email（誰經手的）
+-- ============================================================
+CREATE TABLE IF NOT EXISTS "public"."nf_payment_logs" (
+    "id"              "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "order_id"        "uuid" NOT NULL REFERENCES "public"."nf_orders"("id") ON DELETE CASCADE,
+    "amount"          integer NOT NULL,
+    "payment_type"    "text" NOT NULL,
+    "collected_by"    "text" NOT NULL,
+    "collected_at"    timestamp with time zone DEFAULT "now"() NOT NULL,
+    "notes"           "text"
+);
+
+
+ALTER TABLE "public"."nf_payment_logs" OWNER TO "postgres";
+
+-- ============================================================
+-- 金流明細表：記錄每一筆實際收款
+-- payment_type: 'bank_transfer' = 匯款, 'onsite' = 現場收款
+-- collected_by: 管理員 Email（誰經手的）
+-- ============================================================
+CREATE TABLE IF NOT EXISTS "public"."nf_payment_logs" (
+    "id"              "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "order_id"        "uuid" NOT NULL REFERENCES "public"."nf_orders"("id") ON DELETE CASCADE,
+    "amount"          integer NOT NULL,
+    "payment_type"    "text" NOT NULL,
+    "collected_by"    "text" NOT NULL,
+    "collected_at"    timestamp with time zone DEFAULT "now"() NOT NULL,
+    "notes"           "text"
+);
+
+
+ALTER TABLE "public"."nf_payment_logs" OWNER TO "postgres";
+
+-- ============================================================
+-- nf_payment_logs RLS Policies
+-- ============================================================
+ALTER TABLE "public"."nf_payment_logs" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "Allow admins to read payment logs"
+  ON "public"."nf_payment_logs"
+  FOR SELECT
+  USING ((EXISTS (
+    SELECT 1 FROM "public"."nf_admins" "a"
+    WHERE ("a"."email" = ("auth"."jwt"() ->> 'email'::"text"))
+  )));
+
+
+CREATE POLICY "Allow authenticated users to insert payment logs"
+  ON "public"."nf_payment_logs"
+  FOR INSERT
+  WITH CHECK (("auth"."role"() = 'authenticated'::"text"));
+
+
+CREATE POLICY "Allow superadmin and editor to update payment logs"
+  ON "public"."nf_payment_logs"
+  FOR UPDATE
+  USING ((EXISTS (
+    SELECT 1 FROM "public"."nf_admins" "a"
+    WHERE (("a"."email" = ("auth"."jwt"() ->> 'email'::"text"))
+      AND ("a"."role" = ANY (ARRAY['superadmin'::"text", 'editor'::"text"])))
+  )));
+
+
+CREATE POLICY "Allow superadmin and editor to delete payment logs"
+  ON "public"."nf_payment_logs"
+  FOR DELETE
+  USING ((EXISTS (
+    SELECT 1 FROM "public"."nf_admins" "a"
+    WHERE (("a"."email" = ("auth"."jwt"() ->> 'email'::"text"))
+      AND ("a"."role" = ANY (ARRAY['superadmin'::"text", 'editor'::"text"])))
+  )));

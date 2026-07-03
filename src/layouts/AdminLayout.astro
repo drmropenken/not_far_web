@@ -161,8 +161,9 @@ const { title, description } = Astro.props;
         return;
       }
 
-      // 將角色存入 localStorage 供其他前端元件判斷是否隱藏編輯按鈕
+      // 將角色與 Email 存入 localStorage 供其他前端元件判斷
       localStorage.setItem('admin_role', adminRecord.role);
+      localStorage.setItem('admin_email', userEmail);
 
       // 渲染使用者資訊
       const userNameDisplay = document.getElementById("user-name-display");
