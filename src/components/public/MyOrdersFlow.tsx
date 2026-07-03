@@ -61,6 +61,12 @@ export default function MyOrdersFlow() {
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  
+  // Contact editing states
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [editPhone, setEditPhone] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [isSavingContact, setIsSavingContact] = useState(false);
 
   const handleAppendNote = async () => {
     if (!replyText.trim() || !selectedOrder) return;
@@ -80,6 +86,52 @@ export default function MyOrdersFlow() {
       setOrders(orders.map(o => o.id === selectedOrder.id ? { ...o, notes: appendedNotes } : o));
       setIsReplying(false);
       setReplyText('');
+    }
+  };
+
+  const handleSaveContact = async () => {
+    if (!selectedOrder) return;
+    if (!editPhone.trim()) {
+      alert('請填寫手機號碼');
+      return;
+    }
+    setIsSavingContact(true);
+
+    // Update phone directly (column exists)
+    // Update email inside notes field
+    const currentNotes = selectedOrder.notes || '';
+    const updatedNotes = currentNotes.replace(
+      /\[Email:\s*.*?\]/, 
+      `[Email: ${editEmail.trim()}]`
+    );
+    // If no [Email] tag exists yet, append one
+    const finalNotes = updatedNotes === currentNotes && editEmail.trim()
+      ? `[Email: ${editEmail.trim()}] ${currentNotes}`
+      : updatedNotes;
+
+    const { error } = await supabase
+      .from('nf_orders')
+      .update({ 
+        customer_phone: editPhone.trim(),
+        notes: finalNotes
+      })
+      .eq('id', selectedOrder.id);
+
+    setIsSavingContact(false);
+    if (error) {
+      alert('更新失敗：' + error.message);
+    } else {
+      setSelectedOrder({ 
+        ...selectedOrder, 
+        customer_phone: editPhone.trim(),
+        notes: finalNotes
+      });
+      setOrders(orders.map(o => o.id === selectedOrder.id ? { 
+        ...o, 
+        customer_phone: editPhone.trim(),
+        notes: finalNotes
+      } : o));
+      setIsEditingContact(false);
     }
   };
 
@@ -297,12 +349,75 @@ export default function MyOrdersFlow() {
 
                     {/* 預訂內容 */}
                     <div>
-                      <h3 className="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">入住資訊</h3>
+                      <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
+                        <h3 className="font-bold text-slate-700">入住資訊</h3>
+                        {!isEditingContact && (
+                          <button 
+                            onClick={() => {
+                              setEditPhone(selectedOrder.customer_phone || '');
+                              setEditEmail(parseOrderNotes(selectedOrder.notes).email || '');
+                              setIsEditingContact(true);
+                            }} 
+                            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition-colors font-bold"
+                          >
+                            編輯聯絡資訊
+                          </button>
+                        )}
+                      </div>
                       <div className="space-y-2 text-sm text-slate-600 font-medium mb-4">
                         <p>🏠 入住：<span className="text-slate-800 font-bold">{selectedOrder.check_in_date}</span></p>
                         <p>👋 退房：<span className="text-slate-800 font-bold">{selectedOrder.check_out_date}</span></p>
-                        <p>👤 聯絡人：{selectedOrder.customer_name} ({selectedOrder.customer_phone})</p>
-                        {parseOrderNotes(selectedOrder.notes).email && <p>✉️ Email：{parseOrderNotes(selectedOrder.notes).email}</p>}
+                        
+                        {isEditingContact ? (
+                          <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200 mt-2">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">聯絡人姓名</label>
+                              <p className="text-slate-800 font-bold bg-white px-3 py-2 rounded-lg border border-slate-200">{selectedOrder.customer_name}</p>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">手機號碼 <span className="text-rose-500">*</span></label>
+                              <input 
+                                type="tel" 
+                                value={editPhone} 
+                                onChange={(e) => setEditPhone(e.target.value)}
+                                className="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                                placeholder="請輸入手機號碼"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">電子郵件</label>
+                              <input 
+                                type="email" 
+                                value={editEmail} 
+                                onChange={(e) => setEditEmail(e.target.value)}
+                                className="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                                placeholder="請輸入電子郵件"
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2">
+                              <button 
+                                onClick={() => setIsEditingContact(false)} 
+                                disabled={isSavingContact}
+                                className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                              >
+                                取消
+                              </button>
+                              <button 
+                                onClick={handleSaveContact} 
+                                disabled={isSavingContact || !editPhone.trim()}
+                                className="px-4 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                              >
+                                {isSavingContact ? '儲存中...' : '儲存'}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p>👤 聯絡人：{selectedOrder.customer_name} ({selectedOrder.customer_phone})</p>
+                            {parseOrderNotes(selectedOrder.notes).email && <p>✉️ Email：{parseOrderNotes(selectedOrder.notes).email}</p>}
+                          </>
+                        )}
+                        
                         {parseOrderNotes(selectedOrder.notes).people && <p>👥 入住人數：{parseOrderNotes(selectedOrder.notes).people}</p>}
                       </div>
 
