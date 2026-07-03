@@ -117,6 +117,22 @@ const { title, description } = Astro.props;
 
     // 簡單的客戶端身分驗證檢查
     async function checkAuth() {
+      // 🔑 處理 Google OAuth 回傳 Hash（與 BookingFlow 同樣邏輯）
+      const hash = window.location.hash;
+      if (hash.includes('access_token') && hash.includes('refresh_token')) {
+        try {
+          const hashParams = new URLSearchParams(hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          if (accessToken && refreshToken) {
+            await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        } catch (err) {
+          console.error('Admin OAuth hash handling error:', err);
+        }
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {

@@ -83,6 +83,26 @@ export default function BookingFlow() {
         await liff.init({ liffId: '2010317535-p1JobvGF' });
 
         if (liff.isLoggedIn()) {
+          // 🔑 避免 LINE 自動登入覆蓋已有的非 LINE Session（如管理員 Google 登入）
+          if (existingSession) {
+            const currentEmail = existingSession.user.email || '';
+            const isLineDummySession = currentEmail.includes('@dummy-line.com') || currentEmail.includes('@line.notfar.com');
+            if (!isLineDummySession) {
+              console.log('已有有效的非 LINE Session，跳過 LINE 自動登入');
+              if (isMounted) {
+                setSession(existingSession);
+                setCustomerInfo(prev => ({
+                  ...prev,
+                  email: currentEmail,
+                  name: existingSession.user.user_metadata?.full_name || ''
+                }));
+                setStep(prev => prev === 0 ? 1 : prev);
+              }
+              setLoading(false);
+              return;
+            }
+          }
+
           // Only show loading if we don't already have a session rendering the UI
           if (!existingSession) {
             setLoading(true);
