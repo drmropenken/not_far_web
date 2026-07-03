@@ -1,0 +1,93 @@
+---
+import "../../styles/global.css";
+import { supabase } from "../../lib/supabase";
+
+// 服務端渲染：取得所有營區列表
+const { data: campgrounds } = await supabase
+  .from('nf_campgrounds')
+  .select('id, name, slug, description')
+  .order('name', { ascending: true });
+---
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>選擇營區 | 營主管理系統</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body class="bg-stone-50 min-h-screen flex items-center justify-center p-6" style="font-family: 'Noto Sans TC', sans-serif;">
+  
+  <!-- 登出按鈕 -->
+  <div class="fixed top-4 right-4 z-10">
+    <button id="logout-btn" class="px-4 py-2 text-sm font-bold text-stone-500 bg-white hover:bg-stone-100 border border-stone-200 rounded-xl transition-colors shadow-sm">
+      登出
+    </button>
+  </div>
+
+  <div class="w-full max-w-3xl">
+    <div class="text-center mb-10">
+      <div class="text-5xl mb-4">🏕️</div>
+      <h1 class="text-3xl font-black text-stone-800 tracking-wider">選擇營區</h1>
+      <p class="text-stone-500 font-medium mt-2">請選擇您要管理的營區</p>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2" id="campground-list">
+      {(campgrounds || []).map(camp => (
+        <div
+          class="bg-white p-6 rounded-2xl border-2 border-stone-200 hover:border-emerald-400 hover:shadow-lg transition-all cursor-pointer group"
+          data-camp-id={camp.id}
+          data-camp-name={camp.name}
+        >
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-xl bg-emerald-100 flex items-center justify-center text-2xl shrink-0 group-hover:scale-110 transition-transform">
+              ⛺️
+            </div>
+            <div class="flex-1 min-w-0">
+              <h2 class="text-xl font-black text-stone-800 group-hover:text-emerald-700 transition-colors truncate">{camp.name}</h2>
+              {camp.description && (
+                <p class="text-sm text-stone-500 mt-1 line-clamp-2">{camp.description}</p>
+              )}
+            </div>
+            <div class="text-emerald-400 text-2xl group-hover:translate-x-1 transition-transform">→</div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {(!campgrounds || campgrounds.length === 0) && (
+      <div class="text-center py-16 bg-white rounded-2xl border border-stone-200">
+        <p class="text-6xl mb-4">📭</p>
+        <p class="text-stone-500 font-bold">目前沒有可管理的營區</p>
+      </div>
+    )}
+  </div>
+
+  <script>
+    import { supabase } from "../../lib/supabase";
+
+    // 點擊營區卡片 → 存入 localStorage → 跳轉到管理頁
+    document.getElementById('campground-list')?.addEventListener('click', async (e) => {
+      const card = e.target.closest('[data-camp-id]');
+      if (!card) return;
+
+      const campId = card.dataset.campId;
+      const campName = card.dataset.campName;
+
+      localStorage.setItem('camp_id', campId);
+      localStorage.setItem('camp_name', campName);
+
+      window.location.href = '/admin';
+    });
+
+    // 登出
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/admin/login';
+    });
+  </script>
+</body>
+</html>

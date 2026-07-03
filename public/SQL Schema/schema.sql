@@ -1228,3 +1228,63 @@ CREATE INDEX IF NOT EXISTS idx_nf_payment_logs_order
 
 CREATE INDEX IF NOT EXISTS idx_nf_payment_logs_collected
   ON nf_payment_logs (collected_by);
+
+-- ============================================================
+-- 營區基本資料表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS "public"."nf_campgrounds" (
+    "id"              "uuid" DEFAULT "gen_random_uuid"() NOT NULL PRIMARY KEY,
+    "name"            "text" NOT NULL,
+    "slug"            "text" NOT NULL UNIQUE,
+    "description"     "text",
+    "created_at"      timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."nf_campgrounds" OWNER TO "postgres";
+
+
+-- 插入預設營區（不遠露營度假山莊）
+INSERT INTO "public"."nf_campgrounds" ("name", "slug", "description")
+VALUES ('不遠露營度假山莊', 'not-far', '南投國姓鄉的露營度假山莊')
+ON CONFLICT ("slug") DO NOTHING;
+
+
+-- ============================================================
+-- 為既有表新增 camp_id
+-- ============================================================
+
+-- nf_items
+ALTER TABLE "public"."nf_items"
+  ADD COLUMN IF NOT EXISTS "camp_id" "uuid" REFERENCES "public"."nf_campgrounds"("id");
+
+-- 將既有資料的 camp_id 填入預設營區
+UPDATE "public"."nf_items"
+SET "camp_id" = (SELECT "id" FROM "public"."nf_campgrounds" WHERE "slug" = 'not-far')
+WHERE "camp_id" IS NULL;
+
+-- 之後新資料強制必填
+ALTER TABLE "public"."nf_items"
+  ALTER COLUMN "camp_id" SET NOT NULL;
+
+
+-- nf_orders
+ALTER TABLE "public"."nf_orders"
+  ADD COLUMN IF NOT EXISTS "camp_id" "uuid" REFERENCES "public"."nf_campgrounds"("id");
+
+UPDATE "public"."nf_orders"
+SET "camp_id" = (SELECT "id" FROM "public"."nf_campgrounds" WHERE "slug" = 'not-far')
+WHERE "camp_id" IS NULL;
+
+ALTER TABLE "public"."nf_orders"
+  ALTER COLUMN "camp_id" SET NOT NULL;
+
+
+-- nf_admins（可選，管理員可跨營區）
+ALTER TABLE "public"."nf_admins"
+  ADD COLUMN IF NOT EXISTS "camp_id" "uuid" REFERENCES "public"."nf_campgrounds"("id");
+
+
+-- nf_discount_codes（可選，折扣碼可跨營區）
+ALTER TABLE "public"."nf_discount_codes"
+  ADD COLUMN IF NOT EXISTS "camp_id" "uuid" REFERENCES "public"."nf_campgrounds"("id");

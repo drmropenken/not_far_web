@@ -39,7 +39,7 @@ const { title, description } = Astro.props;
     <div class="p-6 hidden md:block border-b border-emerald-800">
       <div class="flex items-center gap-2 mb-1">
         <span class="text-xl drop-shadow-sm">⛺️</span>
-        <h1 class="text-2xl font-black tracking-widest text-white drop-shadow-sm font-sans">不遠山莊</h1>
+        <h1 id="camp-name-display" class="text-2xl font-black tracking-widest text-white drop-shadow-sm font-sans">載入中...</h1>
       </div>
       <p class="text-xs text-emerald-100/80 tracking-wider font-medium ml-8 mt-1">營主管理系統</p>
     </div>
@@ -79,6 +79,9 @@ const { title, description } = Astro.props;
           <p id="user-email-display" class="text-xs text-emerald-100/70 truncate">...</p>
         </div>
       </div>
+      <button id="switch-camp-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2 text-emerald-100/70 bg-emerald-950/30 hover:bg-emerald-800/50 hover:text-white rounded-xl transition-all font-medium tracking-wide border border-transparent hover:border-emerald-700/30 text-xs mb-2">
+        <span>🔄</span> <span>切換營區</span>
+      </button>
       <button id="logout-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-emerald-100/80 bg-emerald-950/30 hover:bg-rose-500/10 hover:text-rose-300 rounded-xl transition-all font-medium tracking-wide border border-transparent hover:border-rose-500/20 text-sm">
         <span>🚪</span> <span>登出系統</span>
       </button>
@@ -150,7 +153,7 @@ const { title, description } = Astro.props;
 
       const { data: adminRecord, error: adminError } = await supabase
         .from('nf_admins')
-        .select('role')
+        .select('role, camp_id')
         .eq('email', userEmail.toLowerCase())
         .single();
 
@@ -161,9 +164,41 @@ const { title, description } = Astro.props;
         return;
       }
 
-      // 將角色與 Email 存入 localStorage 供其他前端元件判斷
+      // 將角色、Email、Camp ID 存入 localStorage
       localStorage.setItem('admin_role', adminRecord.role);
       localStorage.setItem('admin_email', userEmail);
+
+      const existingCampId = localStorage.getItem('camp_id');
+      const currentPath = window.location.pathname;
+
+      // 如果管理員有綁定特定營區，直接存入
+      if (adminRecord.camp_id) {
+        localStorage.setItem('camp_id', adminRecord.camp_id);
+        // 同時預載營區名稱
+        const { data: camp } = await supabase
+          .from('nf_campgrounds')
+          .select('name')
+          .eq('id', adminRecord.camp_id)
+          .single();
+        if (camp) localStorage.setItem('camp_name', camp.name);
+      } else {
+        // camp_id = NULL → 可管所有營區
+        // 如果還沒選營區、且目前不在選單頁 → 導去選
+        if (!existingCampId && !currentPath.includes('/admin/campgrounds')) {
+          window.location.href = '/admin/campgrounds';
+          return;
+        }
+        // 如果有選過，確保 camp_name 在 localStorage
+        const storedName = localStorage.getItem('camp_name');
+        if (!storedName && existingCampId) {
+          const { data: camp } = await supabase
+            .from('nf_campgrounds')
+            .select('name')
+            .eq('id', existingCampId)
+            .single();
+          if (camp) localStorage.setItem('camp_name', camp.name);
+        }
+      }
 
       // 渲染使用者資訊
       const userNameDisplay = document.getElementById("user-name-display");
@@ -179,6 +214,13 @@ const { title, description } = Astro.props;
       if (userAvatar && session.user.user_metadata?.avatar_url) {
         userAvatar.innerHTML = `<img src="${session.user.user_metadata.avatar_url}" alt="Avatar" class="w-full h-full rounded-full object-cover" />`;
       }
+
+      // 顯示營區名稱
+      const campNameDisplay = document.getElementById('camp-name-display');
+      if (campNameDisplay) {
+        const campName = localStorage.getItem('camp_name');
+        campNameDisplay.textContent = campName || '選擇營區';
+      }
     }
     
     // 初始化檢查
@@ -190,6 +232,20 @@ const { title, description } = Astro.props;
       logoutBtn.addEventListener("click", async () => {
         await supabase.auth.signOut();
         window.location.href = "/admin/login";
+      });
+    }
+
+    // 綁定切換營區按鈕
+    const switchCampBtn = document.getElementById("switch-camp-btn");
+    if (switchCampBtn) {
+      const adminRole = localStorage.getItem('admin_role');
+      if (adminRole !== 'viewer') {
+        switchCampBtn.classList.remove('hidden');
+      }
+      switchCampBtn.addEventListener("click", () => {
+        localStorage.removeItem('camp_id');
+        localStorage.removeItem('camp_name');
+        window.location.href = "/admin/campgrounds";
       });
     }
 
