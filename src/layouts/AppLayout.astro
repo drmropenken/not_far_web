@@ -4,15 +4,16 @@ import SEO from "../components/public/SEO.astro";
 
 interface Props {
   title: string;
+  description?: string;
 }
-const { title } = Astro.props;
+const { title, description } = Astro.props;
 ---
 
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <SEO title={title} description="不遠露營度假山莊線上預訂系統" />
+  <SEO title={title} description={description || 'SunnyCampTW 線上預訂系統'} />
   <!-- LINE LIFF SDK -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js" is:inline></script>
 </head>

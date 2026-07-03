@@ -4,7 +4,7 @@ import AppLayout from "../../layouts/AppLayout.astro";
 import BookingFlow from "../../components/public/BookingFlow";
 import { supabase } from "../../lib/supabase";
 
-// 從 URL 讀取 camp_id，若無則重新導向到帶有不遠山莊 camp_id 的網址
+// 從 URL 讀取 camp_id，若無則重新導向
 let campId = Astro.url.searchParams.get('camp_id') || '';
 
 if (!campId) {
@@ -17,8 +17,25 @@ if (!campId) {
     return Astro.redirect(`/app?camp_id=${defaultCamp.id}`);
   }
 }
+
+// 取得營區資料
+let campName = 'SunnyCampTW';
+let campDescription = '';
+let campOfficialUrl = '';
+if (campId) {
+  const { data: camp } = await supabase
+    .from('nf_campgrounds')
+    .select('name, description, official_url')
+    .eq('id', campId)
+    .single();
+  if (camp) {
+    campName = camp.name;
+    campDescription = camp.description || `${campName} 線上預訂系統`;
+    campOfficialUrl = camp.official_url || '';
+  }
+}
 ---
 
-<AppLayout title="線上預訂 - SunnyCampTW">
-  <BookingFlow client:only="react" campId={campId} />
+<AppLayout title={`線上預訂 - ${campName}`} description={campDescription}>
+  <BookingFlow client:only="react" campId={campId} campName={campName} officialUrl={campOfficialUrl} />
 </AppLayout>

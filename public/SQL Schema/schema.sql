@@ -1238,6 +1238,9 @@ CREATE TABLE IF NOT EXISTS "public"."nf_campgrounds" (
     "name"            "text" NOT NULL,
     "slug"            "text" NOT NULL UNIQUE,
     "description"     "text",
+    "facilities"      "text"[],
+    "tags"            "text"[],
+    "official_url"    "text",
     "created_at"      timestamp with time zone DEFAULT "now"() NOT NULL
 );
 

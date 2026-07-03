@@ -29,13 +29,14 @@ const getCategoryStyle = (category: string) => {
   }
 };
 
-export default function BookingFlow({ campId: propCampId }: { campId?: string }) {
-  // 如果沒傳 prop，試著從 URL 參數讀取
+export default function BookingFlow({ campId: propCampId, campName: propCampName, officialUrl: propOfficialUrl }: { campId?: string; campName?: string; officialUrl?: string }) {
   const getCampId = () => {
     if (propCampId) return propCampId;
     const params = new URLSearchParams(window.location.search);
     return params.get('camp_id') || '';
   };
+  const getCampName = () => propCampName || 'SunnyCampTW';
+  const getOfficialUrl = () => propOfficialUrl || '';
   const [step, setStep] = useState(0); // 0: Login, 1: Date, 2: Campsite, 3: Addons, 4: Info, 5: Confirm, 6: Success
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -577,12 +578,20 @@ export default function BookingFlow({ campId: propCampId }: { campId?: string })
     <div className="flex flex-col h-full bg-slate-50 relative">
       {/* Header */}
       <div className="bg-white px-5 py-4 shadow-sm z-10 flex items-center justify-between sticky top-0">
-        <a href="/" className="font-black text-slate-800 tracking-wide flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <span className="text-emerald-600 text-xl">🏕️</span> 不遠山莊預訂
-        </a>
+        {getOfficialUrl() ? (
+          <a href={getOfficialUrl()} className="font-black text-slate-800 tracking-wide flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <span className="text-emerald-600 text-xl">🏕️</span> {getCampName()}預訂
+          </a>
+        ) : (
+          <span className="font-black text-slate-800 tracking-wide flex items-center gap-2">
+            <span className="text-emerald-600 text-xl">🏕️</span> {getCampName()}預訂
+          </span>
+        )}
         {session && (
           <div className="flex items-center gap-4">
-            <a href="/" className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors">回首頁</a>
+            {getOfficialUrl() && (
+              <a href={getOfficialUrl()} className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors">回首頁</a>
+            )}
             <button onClick={() => {
               supabase.auth.signOut().then(() => setStep(0));
               if (liff.isLoggedIn()) liff.logout();
