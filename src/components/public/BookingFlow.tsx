@@ -427,9 +427,9 @@ export default function BookingFlow() {
     setLoading(true);
     try {
       // 1. Generate Order Number (Max 20 chars for ECPay)
-      const dateStr = new Date().toISOString().replace(/[-:T.]/g, '').slice(2, 14); // YYMMDDHHMMSS (12 chars)
-      const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase(); // 4 chars
-      const orderNo = `N${dateStr}${randomStr}`; // 17 chars total
+      const dateStr = new Date().toISOString().replace(/[-:T.]/g, '').slice(2, 14); // YYMMDDHHMMSS (12 digits)
+      const randomDigits = Math.floor(1000 + Math.random() * 9000).toString(); // 4 random digits
+      const orderNo = `N${dateStr}${randomDigits}`; // N + 16 digits = 17 chars
 
       const totalAmount = calculateTotal();
       const discountAmount = calculateDiscountAmount();
@@ -491,11 +491,11 @@ export default function BookingFlow() {
 
       const orderId = rpcData.order_id;
 
-      // 網頁下單：使用 88 + 客戶手機後五碼
+      // 虛擬帳號：9629481 + 訂單編號後 7 碼（訂單編號去 N 後取後 7 碼純數字）
       let finalVirtualAccount = null;
       if (method === 'bank_transfer') {
-        const phoneLast5 = customerInfo.phone.slice(-5).padStart(5, '0');
-        finalVirtualAccount = `962948188${phoneLast5}`;
+        const orderDigits = dateStr + randomDigits; // 12 + 4 = 16 digits
+        finalVirtualAccount = `9629481${orderDigits.slice(-7)}`;
         await supabase.from('nf_orders').update({ 
           payment_method: method,
           virtual_account: finalVirtualAccount 

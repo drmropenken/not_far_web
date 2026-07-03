@@ -228,8 +228,8 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     
     // 1. 建立訂單
     const dateStr = new Date().toISOString().replace(/[-:T.]/g, '').slice(2, 14);
-    const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const orderNo = `N${dateStr}${randomStr}`;
+    const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
+    const orderNo = `N${dateStr}${randomDigits}`;
     
     // Prepare inventory updates payload for RPC
     const inventory_updates = [];
@@ -289,9 +289,9 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     }
 
     const orderId = rpcData.order_id;
-    // 手動接單：因為資料庫 ID 是 UUID 字串無法做數學運算，改採隨機 5 碼
-    const seq5 = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
-    const finalVirtualAccount = `962948189${seq5}`;
+    // 手動建單：用 962948189 前綴（89 代表手動單），取訂單編號末 5 碼
+    const orderDigits = dateStr + randomDigits; // 12 + 4 = 16 digits
+    const finalVirtualAccount = `962948189${orderDigits.slice(-5)}`;
     // 強制把 payment_method 寫入，避免 RPC 沒有支援該欄位
     await supabase.from('nf_orders').update({ 
       payment_method: 'bank_transfer',
