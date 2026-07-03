@@ -351,7 +351,7 @@ export default function OrdersManager() {
 
     const order = orders.find(o => o.id === onsitePaymentOrderId);
     if (order) {
-      const totalPaid = getOrderBankAmount(order.id) + getOrderOnsiteAmount(order.id) + (order.deposit_amount || 0);
+      const totalPaid = getOrderOnlineAmount(order.id) + getOrderOnsiteAmount(order.id) + (order.deposit_amount || 0);
       const newTotalPaid = totalPaid + amount;
 
       // 多收（正數）時檢查是否超過剩餘待收
@@ -385,14 +385,13 @@ export default function OrdersManager() {
       return;
     }
 
-    // 更新訂單狀態（不再更新 deposit_amount，以免重複計算）
+    // 更新 deposit_amount = payment_logs 總和 + 更新狀態
     if (order) {
-      const totalBank = getOrderBankAmount(order.id);
-      const totalOnsite = getOrderOnsiteAmount(order.id) + amount;
-      const totalPaid = totalBank + totalOnsite + (order.deposit_amount || 0);
-      const newStatus = totalPaid >= order.total_amount ? 'paid' : 'deposit_paid';
+      const totalFromLogs = getOrderOnlineAmount(order.id) + getOrderOnsiteAmount(order.id);
+      const newStatus = totalFromLogs >= order.total_amount ? 'paid' : 'deposit_paid';
 
       await supabase.from('nf_orders').update({
+        deposit_amount: totalFromLogs,
         status: newStatus
       }).eq('id', onsitePaymentOrderId);
     }
@@ -407,12 +406,14 @@ export default function OrdersManager() {
     return paymentLogs[orderId] || [];
   };
 
-  const getOrderBankAmount = (orderId: string): number => {
+  // 所有線上付款（信用卡 + 匯款）
+  const getOrderOnlineAmount = (orderId: string): number => {
     return getPaymentLogs(orderId)
-      .filter(l => l.payment_type === 'bank_transfer')
+      .filter(l => l.payment_type === 'bank_transfer' || l.payment_type === 'credit_card')
       .reduce((sum, l) => sum + l.amount, 0);
   };
 
+  // 現場收款
   const getOrderOnsiteAmount = (orderId: string): number => {
     return getPaymentLogs(orderId)
       .filter(l => l.payment_type === 'onsite')
@@ -431,20 +432,21 @@ export default function OrdersManager() {
     const order = orders.find(o => o.id === onlinePaymentOrderId);
     if (!order) return;
 
-    const totalBank = getOrderBankAmount(order.id);
-    const totalOnsite = getOrderOnsiteAmount(order.id);
-    const totalPaid = totalBank + totalOnsite + (order.deposit_amount || 0);
-    const newTotalPaid = totalPaid + amount;
+    let totalFromLogs = getOrderOnlineAmount(order.id) + getOrderOnsiteAmount(order.id);
+    const deposit = order.deposit_amount || 0;
+    // deposit_amount 應等於 totalFromLogs，但以防手動微調過，取最大值
+    const effectiveTotal = Math.max(deposit, totalFromLogs);
+    const newTotalPaid = effectiveTotal + amount;
 
     // 多收時檢查
     if (amount > 0 && newTotalPaid > order.total_amount) {
-      alert(`⚠️ 溢收！最多只能再收 NT$ ${Math.max(0, order.total_amount - totalPaid).toLocaleString()}`);
+      alert(`⚠️ 溢收！最多只能再收 NT$ ${Math.max(0, order.total_amount - effectiveTotal).toLocaleString()}`);
       return;
     }
 
     // 退款時檢查
     if (amount < 0 && newTotalPaid < 0) {
-      alert(`⚠️ 退款不能超過已收總額 NT$ ${totalPaid.toLocaleString()}`);
+      alert(`⚠️ 退款不能超過已收總額 NT$ ${effectiveTotal.toLocaleString()}`);
       return;
     }
 
@@ -464,9 +466,12 @@ export default function OrdersManager() {
       return;
     }
 
-    const newStatus = newTotalPaid >= order.total_amount ? 'paid' : 'deposit_paid';
+    // 重新計算 deposit_amount = payment_logs 總和
+    totalFromLogs = getOrderOnlineAmount(order.id) + getOrderOnsiteAmount(order.id);
+    const newStatus = totalFromLogs >= order.total_amount ? 'paid' : 'deposit_paid';
 
     await supabase.from('nf_orders').update({
+      deposit_amount: totalFromLogs,
       status: newStatus
     }).eq('id', onlinePaymentOrderId);
 
@@ -797,11 +802,11 @@ export default function OrdersManager() {
                             )}
                           </div>
                           {/* 線上付款（信用卡 + 匯款，從 payment_logs 算） */}
-                          {getOrderBankAmount(order.id) > 0 && (
+                          {getOrderOnlineAmount(order.id) > 0 && (
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-indigo-600">💳 線上付款</span>
                                 <span className="text-sm font-bold text-indigo-600 tracking-tight">
-                                  - NT$ {getOrderBankAmount(order.id).toLocaleString()}
+                                  - NT$ {getOrderOnlineAmount(order.id).toLocaleString()}
                                 </span>
                               </div>
                           )}
@@ -814,38 +819,28 @@ export default function OrdersManager() {
                                 </span>
                               </div>
                             )}
-                          {/* 手動輸入的定金（從 deposit_amount） */}
-                          {(order.deposit_amount || 0) > 0 && order.status !== 'cancelled' && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-teal-600">🪙 手動定金</span>
-                                <span className="text-sm font-bold text-teal-600 tracking-tight">
-                                  - NT$ {order.deposit_amount?.toLocaleString()}
-                                </span>
-                              </div>
-                          )}
+
 
                             {(() => {
-                              const bankAmount = getOrderBankAmount(order.id);
-                              const onsiteAmount = getOrderOnsiteAmount(order.id);
-                              const totalPaid = bankAmount + onsiteAmount + (order.deposit_amount || 0);
+                              const deposit = order.deposit_amount || 0;
 
-                              if (order.deposit_amount && order.deposit_amount > order.total_amount) {
+                              if (deposit > order.total_amount) {
                                 return (
                                   <div className="flex justify-end items-end gap-2 mt-1 pt-1 border-t border-stone-200 border-dashed">
                                     <span className="text-xs text-rose-500 font-bold mb-1">🚨 需退款</span>
                                     <span className="text-2xl font-black tracking-tight text-rose-600">
-                                      NT$ {(order.deposit_amount - order.total_amount).toLocaleString()}
+                                      NT$ {(deposit - order.total_amount).toLocaleString()}
                                     </span>
                                   </div>
                                 );
                               }
 
-                              if (totalPaid >= order.total_amount) {
+                              if (deposit >= order.total_amount) {
                                 return (
                                   <div className="flex justify-end items-end gap-2 mt-1 pt-1 border-t border-stone-200 border-dashed">
                                     <span className="text-xs text-emerald-600 font-bold mb-1">✅ 已結清</span>
                                     <span className="text-2xl font-black tracking-tight text-emerald-600">
-                                      NT$ {totalPaid.toLocaleString()}
+                                      NT$ {deposit.toLocaleString()}
                                     </span>
                                   </div>
                                 );
@@ -855,12 +850,12 @@ export default function OrdersManager() {
                                 <div className="flex justify-end items-end gap-2 mt-1 pt-1 border-t border-stone-200 border-dashed">
                                   <span className="text-xs text-rose-500 font-bold mb-1">待收</span>
                                   <span className="text-2xl font-black tracking-tight text-rose-600">
-                                    NT$ {Math.max(0, order.total_amount - totalPaid).toLocaleString()}
+                                    NT$ {Math.max(0, order.total_amount - deposit).toLocaleString()}
                                   </span>
                                 </div>
                               );
                             })()}
-                          {(!order.deposit_amount || order.deposit_amount === 0) && getOrderBankAmount(order.id) === 0 && getOrderOnsiteAmount(order.id) === 0 && order.status !== 'cancelled' && (
+                          {(!order.deposit_amount || order.deposit_amount === 0) && order.status !== 'cancelled' && (
                             <div className="text-2xl font-bold tracking-tight mt-1 text-emerald-600">
                               NT$ {order.total_amount?.toLocaleString()}
                             </div>
