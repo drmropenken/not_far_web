@@ -83,6 +83,15 @@ export default function OrdersManager() {
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [paymentLogs, setPaymentLogs] = useState<Record<string, PaymentLog[]>>({});
   const [onsitePaymentOrderId, setOnsitePaymentOrderId] = useState<string | null>(null);
+  const [editingCustomerOrderId, setEditingCustomerOrderId] = useState<string | null>(null);
+  const [customerEditForm, setCustomerEditForm] = useState({
+    customer_name: '',
+    customer_phone: '',
+    email: '',
+    adults: '2',
+    children: '0',
+    notes: ''
+  });
   const [onsiteAmount, setOnsiteAmount] = useState('');
   const [onsiteNotes, setOnsiteNotes] = useState('');
   const [isSubmittingOnsite, setIsSubmittingOnsite] = useState(false);
@@ -624,7 +633,24 @@ export default function OrdersManager() {
                         {order.customer_name.charAt(0)}
                       </div>
                       <div>
-                        <h3 className={`font-bold text-lg ${order.status === 'cancelled' ? 'text-stone-500 line-through' : 'text-stone-800'}`}>{order.customer_name}</h3>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <h3 className={`font-bold text-lg truncate ${order.status === 'cancelled' ? 'text-stone-500 line-through' : 'text-stone-800'}`}>{order.customer_name}</h3>
+                        {adminRole !== 'viewer' && (
+                          <button onClick={() => {
+                            setCustomerEditForm({
+                              customer_name: order.customer_name,
+                              customer_phone: order.customer_phone,
+                              email: parsed.email,
+                              adults: parsed.people?.match(/(\d+)大/)?.[1] || '2',
+                              children: parsed.people?.match(/(\d+)小/)?.[1] || '0',
+                              notes: parsed.notes
+                            });
+                            setEditingCustomerOrderId(order.id);
+                          }} className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-amber-600 transition-all p-1 shrink-0" title="編輯客戶資訊">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                          </button>
+                        )}
+                      </div>
                         <div className="text-sm text-stone-500 font-mono mt-1 flex flex-col gap-1">
                           <div className="flex items-center gap-4">
                             <a href={`tel:${order.customer_phone}`} className="flex items-center gap-1.5 hover:text-emerald-600 transition-colors" title="撥打電話">
@@ -1087,6 +1113,79 @@ export default function OrdersManager() {
         }}
         order={editingOrderItemsOrder}
       />
+
+      {/* 編輯客戶資訊 Modal */}
+      {editingCustomerOrderId && (() => {
+        const order = orders.find(o => o.id === editingCustomerOrderId);
+        if (!order) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm" onClick={() => setEditingCustomerOrderId(null)}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg border border-stone-200 overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="p-5 border-b border-stone-100 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">✏️</span>
+                  <h3 className="text-xl font-bold text-stone-800">編輯客戶資訊</h3>
+                </div>
+                <button onClick={() => setEditingCustomerOrderId(null)} className="text-stone-400 hover:text-rose-500 transition-colors p-2 rounded-full hover:bg-rose-50">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-bold text-stone-700 mb-1">姓名 *</label>
+                    <input type="text" value={customerEditForm.customer_name} onChange={e => setCustomerEditForm({...customerEditForm, customer_name: e.target.value})} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" placeholder="客戶姓名" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-stone-700 mb-1">電話 *</label>
+                    <input type="tel" inputMode="tel" pattern="[0-9+]*" value={customerEditForm.customer_phone} onChange={e => {
+                      const val = e.target.value.replace(/[^0-9+]/g, '');
+                      setCustomerEditForm({...customerEditForm, customer_phone: val});
+                    }} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" placeholder="0912345678" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-stone-700 mb-1">Email</label>
+                    <input type="email" value={customerEditForm.email} onChange={e => setCustomerEditForm({...customerEditForm, email: e.target.value})} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" placeholder="test@example.com" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-stone-700 mb-1">大人</label>
+                    <input type="number" min="1" max="20" value={customerEditForm.adults} onChange={e => setCustomerEditForm({...customerEditForm, adults: e.target.value})} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-stone-700 mb-1">小孩</label>
+                    <input type="number" min="0" max="20" value={customerEditForm.children} onChange={e => setCustomerEditForm({...customerEditForm, children: e.target.value})} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-bold text-stone-700 mb-1">備註</label>
+                    <textarea value={customerEditForm.notes} onChange={e => setCustomerEditForm({...customerEditForm, notes: e.target.value})} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-y min-h-[60px]" placeholder="其他備註..." />
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border-t border-stone-100 flex justify-end gap-2 bg-stone-50">
+                <button onClick={() => setEditingCustomerOrderId(null)} className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-200 rounded-lg font-bold transition-colors">取消</button>
+                <button onClick={async () => {
+                  if (!customerEditForm.customer_name.trim() || !customerEditForm.customer_phone.trim()) {
+                    alert('姓名與電話為必填');
+                    return;
+                  }
+                  const newNotes = `[Email: ${customerEditForm.email}] [人數: ${customerEditForm.adults}大 ${customerEditForm.children}小] ${customerEditForm.notes}`.trim();
+                  const { error } = await supabase.from('nf_orders').update({
+                    customer_name: customerEditForm.customer_name.trim(),
+                    customer_phone: customerEditForm.customer_phone.trim(),
+                    notes: newNotes
+                  }).eq('id', editingCustomerOrderId);
+                  if (error) {
+                    alert('更新失敗: ' + error.message);
+                  } else {
+                    setEditingCustomerOrderId(null);
+                    fetchOrders();
+                  }
+                }} className="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold shadow-sm transition-colors">儲存變更</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
