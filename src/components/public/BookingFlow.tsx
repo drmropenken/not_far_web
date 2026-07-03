@@ -897,7 +897,7 @@ export default function BookingFlow() {
         )}
 
         {step === 6 && finalOrderInfo && (
-          <div className="flex-1 p-6 flex flex-col items-center justify-center text-center">
+          <div className="flex-1 p-6 flex flex-col items-center overflow-y-auto">
             <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100 p-8 space-y-6">
               <div className="text-6xl mb-4 text-emerald-500">✅</div>
               <h1 className="text-2xl font-black text-slate-800 tracking-wider">訂單已成立！</h1>
