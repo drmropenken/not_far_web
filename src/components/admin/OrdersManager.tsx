@@ -1191,6 +1191,7 @@ export default function OrdersManager() {
           </div>
         )}
       </div>
+      </div>
 
       {/* 線上付款 Modal */}
       {onlinePaymentOrderId && (
