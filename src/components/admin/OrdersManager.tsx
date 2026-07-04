@@ -68,7 +68,7 @@ const parseOrderNotes = (notesStr: string | null) => {
 export default function OrdersManager() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'overdue' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFinancialsId, setEditingFinancialsId] = useState<string | null>(null);
@@ -480,7 +480,22 @@ export default function OrdersManager() {
   };
 
   const filteredOrders = orders.filter(order => {
-    const matchesStatus = activeTab === 'all' || order.status === activeTab;
+    // 取得台灣時間 YYYY-MM-DD
+    const todayStr = new Date(new Date().getTime() + 8 * 3600000).toISOString().split('T')[0];
+    
+    let matchesStatus = false;
+    if (activeTab === 'all') {
+      matchesStatus = true;
+    } else if (activeTab === 'pending') {
+      // 待付款：入住日期在今天或未來
+      matchesStatus = order.status === 'pending' && order.check_in_date >= todayStr;
+    } else if (activeTab === 'overdue') {
+      // 已逾期：入住日期在今天之前
+      matchesStatus = order.status === 'pending' && order.check_in_date < todayStr;
+    } else {
+      matchesStatus = order.status === activeTab;
+    }
+
     const matchesSearch = searchTerm === '' || 
       order.order_no.toLowerCase().includes(searchTerm.toLowerCase()) || 
       order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -490,12 +505,20 @@ export default function OrdersManager() {
     return matchesStatus && matchesSearch;
   });
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, checkInDate: string) => {
+    const todayStr = new Date(new Date().getTime() + 8 * 3600000).toISOString().split('T')[0];
     switch (status) {
       case 'paid': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold border border-emerald-200">已付款</span>;
       case 'deposit_paid': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-bold border border-teal-200 shadow-sm">🪙 已付定金</span>;
       case 'checked_in': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">✅ 已報到</span>;
-      case 'pending': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-200">待付款</span>;
+      case 'pending': {
+        const isOverdue = checkInDate < todayStr;
+        return isOverdue ? (
+          <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold border border-rose-200">已逾期</span>
+        ) : (
+          <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-200">待付款</span>
+        );
+      }
       case 'cancelled': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold border border-rose-200">已取消</span>;
       default: return null;
     }
@@ -511,7 +534,7 @@ export default function OrdersManager() {
       order.license_plate || '',
       order.check_in_date,
       order.check_out_date,
-      order.status === 'paid' ? '已付款' : order.status === 'deposit_paid' ? '已付定金' : order.status === 'pending' ? '待付款' : order.status === 'checked_in' ? '已報到' : '已取消',
+      order.status === 'paid' ? '已付款' : order.status === 'deposit_paid' ? '已付定金' : order.status === 'pending' ? (order.check_in_date < new Date(new Date().getTime() + 8 * 3600000).toISOString().split('T')[0] ? '已逾期' : '待付款') : order.status === 'checked_in' ? '已報到' : '已取消',
       order.total_amount,
       order.virtual_account ? `"${order.virtual_account}"` : '',
       `"${(order.notes || '').replace(/"/g, '""')}"`,
@@ -543,6 +566,7 @@ export default function OrdersManager() {
           {[
             { id: 'all', label: '全部訂單' },
             { id: 'pending', label: '待付款' },
+            { id: 'overdue', label: '已逾期' },
             { id: 'deposit_paid', label: '已付定金' },
             { id: 'paid', label: '已付款' },
             { id: 'checked_in', label: '已報到' },
@@ -613,7 +637,7 @@ export default function OrdersManager() {
                     <span className="font-mono text-xs text-stone-500 bg-stone-200/70 px-2 py-1 rounded">
                       {order.order_no}
                     </span>
-                    {getStatusBadge(order.status)}
+                    {getStatusBadge(order.status, order.check_in_date)}
                   </div>
                   <div className="text-xs text-stone-400">
                     下單時間: {new Date(order.created_at.endsWith('Z') || order.created_at.includes('+') ? order.created_at : order.created_at + 'Z').toLocaleString('zh-TW', {
