@@ -712,39 +712,35 @@ export default function OrdersManager() {
       <div className="flex-1 overflow-auto bg-stone-50 rounded-2xl flex flex-col">
         
         {/* Row 1: 搜尋、時間篩選、手動接單與匯出 */}
-        <div className="p-4 md:p-6 pb-3.5 bg-white md:rounded-t-2xl border-b border-stone-100 flex flex-wrap items-center justify-between gap-4 shrink-0">
+        <div className="p-4 md:p-6 pb-3.5 bg-white md:rounded-t-2xl border-b border-stone-100 flex flex-wrap items-center justify-between gap-3 shrink-0">
           {/* 左側：搜尋 + 時間篩選 */}
-          <div className="flex flex-wrap items-center gap-4 flex-1 min-w-[300px]">
+          <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
             {/* 搜尋框 */}
-            <div className="relative w-full sm:w-60">
+            <div className="relative w-full sm:w-44 lg:w-48">
               <input 
                 type="text" 
-                placeholder="搜尋姓名、電話、訂單、日期..." 
+                placeholder="搜尋姓名、電話..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
+                className="w-full pl-8 pr-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all h-[34px]"
               />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50">🔍</span>
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-50 text-xs">🔍</span>
             </div>
 
             {/* 快速選月 */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-stone-500 whitespace-nowrap">快速選月:</span>
-              <select
-                value={selectedMonth}
-                onChange={(e) => handleMonthChange(e.target.value)}
-                className="bg-stone-50 border border-stone-200 rounded-lg text-sm px-2.5 py-1.5 font-medium text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-              >
-                <option value="all">所有時間</option>
-                {getMonthsList().map(m => (
-                  <option key={m} value={m}>{m.replace('-', '年')}月</option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={selectedMonth}
+              onChange={(e) => handleMonthChange(e.target.value)}
+              className="bg-stone-50 border border-stone-200 rounded-lg text-xs px-2.5 py-1.5 font-medium text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-500/50 h-[34px]"
+            >
+              <option value="all">所有月份</option>
+              {getMonthsList().map(m => (
+                <option key={m} value={m}>{m.replace('-', '年')}月</option>
+              ))}
+            </select>
 
-            {/* 自訂日期 */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-stone-500 whitespace-nowrap">自訂日期:</span>
+            {/* 自訂日期範圍 (使用單一框與 border-none 設計以節省空間) */}
+            <div className="flex items-center gap-1 bg-stone-50 border border-stone-200 rounded-lg px-2 h-[34px] focus-within:ring-2 focus-within:ring-amber-500/50 focus-within:border-amber-500 transition-all">
               <input
                 type="date"
                 value={startDate}
@@ -752,9 +748,9 @@ export default function OrdersManager() {
                   setStartDate(e.target.value);
                   setSelectedMonth('custom');
                 }}
-                className="bg-stone-50 border border-stone-200 rounded-lg text-sm px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-amber-500/50 h-[34px]"
+                className="bg-transparent border-none text-xs p-0 focus:ring-0 outline-none w-[112px] text-stone-700"
               />
-              <span className="text-stone-400 text-xs">至</span>
+              <span className="text-stone-400 text-xs px-1">~</span>
               <input
                 type="date"
                 value={endDate}
@@ -762,7 +758,7 @@ export default function OrdersManager() {
                   setEndDate(e.target.value);
                   setSelectedMonth('custom');
                 }}
-                className="bg-stone-50 border border-stone-200 rounded-lg text-sm px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-amber-500/50 h-[34px]"
+                className="bg-transparent border-none text-xs p-0 focus:ring-0 outline-none w-[112px] text-stone-700"
               />
             </div>
           </div>
