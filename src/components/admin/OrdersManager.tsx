@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import OrderModal from './OrderModal';
 import EditOrderItemsModal from './EditOrderItemsModal';
@@ -99,6 +99,39 @@ export default function OrdersManager() {
   const [onlinePaymentType, setOnlinePaymentType] = useState<'credit_card' | 'bank_transfer'>('bank_transfer');
   const [onlinePaymentAmount, setOnlinePaymentAmount] = useState('');
   const [isSubmittingOnline, setIsSubmittingOnline] = useState(false);
+
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+
+  const getMonthsList = () => {
+    const list = [];
+    const date = new Date();
+    for (let i = 0; i < 12; i++) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      list.push(`${year}-${month}`);
+      date.setMonth(date.getMonth() - 1);
+    }
+    return list;
+  };
+
+  const handleMonthChange = (monthVal: string) => {
+    setSelectedMonth(monthVal);
+    if (monthVal === 'all') {
+      setStartDate('');
+      setEndDate('');
+    } else {
+      const [yearStr, monthStr] = monthVal.split('-');
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10);
+      const firstDay = `${year}-${String(month).padStart(2, '0')}-01`;
+      const lastDayNum = new Date(year, month, 0).getDate();
+      const lastDay = `${year}-${String(month).padStart(2, '0')}-${String(lastDayNum).padStart(2, '0')}`;
+      setStartDate(firstDay);
+      setEndDate(lastDay);
+    }
+  };
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -480,7 +513,11 @@ export default function OrdersManager() {
   };
 
   const filteredOrders = orders.filter(order => {
-    // 取得台灣時間 YYYY-MM-DD
+    // 1. 日期範圍篩選
+    if (startDate && order.check_in_date < startDate) return false;
+    if (endDate && order.check_in_date > endDate) return false;
+
+    // 2. 狀態篩選
     const todayStr = new Date(new Date().getTime() + 8 * 3600000).toISOString().split('T')[0];
     
     let matchesStatus = false;
@@ -496,14 +533,75 @@ export default function OrdersManager() {
       matchesStatus = order.status === activeTab;
     }
 
+    // 3. 關鍵字搜尋
     const matchesSearch = searchTerm === '' || 
       order.order_no.toLowerCase().includes(searchTerm.toLowerCase()) || 
       order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer_phone.includes(searchTerm) ||
       order.check_in_date.includes(searchTerm) ||
       order.check_out_date.includes(searchTerm);
+      
     return matchesStatus && matchesSearch;
   });
+
+  const stats = useMemo(() => {
+    let creditCardTotal = 0;
+    let bankTransferTotal = 0;
+    let onsiteTotal = 0;
+    let receivableTotal = 0;
+    let totalAmountSum = 0;
+
+    filteredOrders.forEach(order => {
+      // 只有非取消的訂單計算總金額與應收
+      if (order.status !== 'cancelled') {
+        totalAmountSum += order.total_amount;
+        receivableTotal += Math.max(0, order.total_amount - (order.deposit_amount || 0));
+      }
+
+      // 金流加總
+      const logs = paymentLogs[order.id] || [];
+      logs.forEach(log => {
+        if (log.payment_type === 'credit_card') {
+          creditCardTotal += log.amount;
+        } else if (log.payment_type === 'bank_transfer') {
+          bankTransferTotal += log.amount;
+        } else if (log.payment_type === 'onsite') {
+          onsiteTotal += log.amount;
+        } else {
+          onsiteTotal += log.amount;
+        }
+      });
+    });
+
+    const receivedTotal = creditCardTotal + bankTransferTotal + onsiteTotal;
+
+    return {
+      totalAmountSum,
+      creditCardTotal,
+      bankTransferTotal,
+      onsiteTotal,
+      receivedTotal,
+      receivableTotal
+    };
+  }, [filteredOrders, paymentLogs]);
+
+  const sortedOrders = useMemo(() => {
+    const todayStr = new Date(new Date().getTime() + 8 * 3600000).toISOString().split('T')[0];
+    return [...filteredOrders].sort((a, b) => {
+      const aIsOverdue = a.status === 'pending' && a.check_in_date < todayStr;
+      const bIsOverdue = b.status === 'pending' && b.check_in_date < todayStr;
+      const aIsCancelled = a.status === 'cancelled';
+      const bIsCancelled = b.status === 'cancelled';
+
+      const aIsEnd = aIsOverdue || aIsCancelled;
+      const bIsEnd = bIsOverdue || bIsCancelled;
+
+      if (aIsEnd && !bIsEnd) return 1;
+      if (!aIsEnd && bIsEnd) return -1;
+      
+      return a.check_in_date.localeCompare(b.check_in_date);
+    });
+  }, [filteredOrders]);
 
   const getStatusBadge = (status: string, checkInDate: string) => {
     const todayStr = new Date(new Date().getTime() + 8 * 3600000).toISOString().split('T')[0];
@@ -566,10 +664,10 @@ export default function OrdersManager() {
           {[
             { id: 'all', label: '全部訂單' },
             { id: 'pending', label: '待付款' },
-            { id: 'overdue', label: '已逾期' },
             { id: 'deposit_paid', label: '已付定金' },
             { id: 'paid', label: '已付款' },
             { id: 'checked_in', label: '已報到' },
+            { id: 'overdue', label: '已逾期' },
             { id: 'cancelled', label: '已取消' }
           ].map(tab => (
             <button
@@ -613,6 +711,84 @@ export default function OrdersManager() {
         </div>
       </div>
 
+      {/* 時間篩選與財務看板 */}
+      <div className="bg-stone-50 border-b border-stone-200 px-4 md:px-6 py-3.5 space-y-3 shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* 左側：時間選擇 */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-stone-500">快速選月:</span>
+              <select
+                value={selectedMonth}
+                onChange={(e) => handleMonthChange(e.target.value)}
+                className="bg-white border border-stone-200 rounded-lg text-sm px-2.5 py-1.5 font-medium text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+              >
+                <option value="all">所有時間</option>
+                {getMonthsList().map(m => (
+                  <option key={m} value={m}>{m.replace('-', '年')}月</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-stone-500">自訂日期:</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setSelectedMonth('custom');
+                }}
+                className="bg-white border border-stone-200 rounded-lg text-sm px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-amber-500/50 h-[34px]"
+              />
+              <span className="text-stone-400 text-xs">至</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setSelectedMonth('custom');
+                }}
+                className="bg-white border border-stone-200 rounded-lg text-sm px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-amber-500/50 h-[34px]"
+              />
+            </div>
+          </div>
+
+          {/* 右側：篩選結果標示 */}
+          <div className="text-xs font-medium text-stone-500 bg-stone-200/50 px-3 py-1.5 rounded-lg border border-stone-200/50">
+            篩選區間內共有 <span className="font-bold text-amber-600">{filteredOrders.length}</span> 筆訂單
+          </div>
+        </div>
+
+        {/* 財務看板指標卡片 */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
+            <span className="text-[11px] font-bold text-stone-400">總營業額 (訂單總額)</span>
+            <span className="text-lg font-black text-stone-700 mt-1">NT$ {stats.totalAmountSum.toLocaleString()}</span>
+          </div>
+          <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between border-l-4 border-l-emerald-500">
+            <span className="text-[11px] font-bold text-stone-400">已收總額 (實收月營收)</span>
+            <span className="text-lg font-black text-emerald-600 mt-1">NT$ {stats.receivedTotal.toLocaleString()}</span>
+          </div>
+          <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between border-l-4 border-l-rose-500">
+            <span className="text-[11px] font-bold text-stone-400">未付尾款 (應收帳款)</span>
+            <span className="text-lg font-black text-rose-600 mt-1">NT$ {stats.receivableTotal.toLocaleString()}</span>
+          </div>
+          <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
+            <span className="text-[11px] font-bold text-stone-400">實收：信用卡 (綠界)</span>
+            <span className="text-lg font-bold text-blue-600 mt-1">NT$ {stats.creditCardTotal.toLocaleString()}</span>
+          </div>
+          <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
+            <span className="text-[11px] font-bold text-stone-400">實收：虛擬匯款</span>
+            <span className="text-lg font-bold text-stone-600 mt-1">NT$ {stats.bankTransferTotal.toLocaleString()}</span>
+          </div>
+          <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
+            <span className="text-[11px] font-bold text-stone-400">實收：現場/現金</span>
+            <span className="text-lg font-bold text-teal-600 mt-1">NT$ {stats.onsiteTotal.toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+
       {/* 訂單列表區域 */}
       <div className="flex-1 overflow-auto bg-stone-50 p-4 md:p-6 pb-32 md:pb-32">
         {loading ? (
@@ -620,14 +796,14 @@ export default function OrdersManager() {
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500"></div>
             <p className="font-medium tracking-widest text-sm">載入訂單資料中...</p>
           </div>
-        ) : filteredOrders.length === 0 ? (
+        ) : sortedOrders.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-stone-400 space-y-4 bg-white rounded-xl border border-stone-200/50 border-dashed min-h-[300px]">
             <span className="text-5xl opacity-50">🏕️</span>
             <p className="font-medium tracking-wider">目前沒有符合條件的訂單</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 items-stretch">
-            {filteredOrders.map(order => {
+            {sortedOrders.map(order => {
               const parsed = parseOrderNotes(order.notes);
               return (
               <div key={order.id} className={`bg-white rounded-xl border ${order.status === 'cancelled' ? 'border-rose-100 opacity-75' : 'border-stone-200'} shadow-sm overflow-hidden flex flex-col group transition-all hover:shadow-md`}>
