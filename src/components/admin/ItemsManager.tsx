@@ -34,6 +34,85 @@ export default function ItemsManager() {
     sort_order: 1,
     is_active: true,
   });
+  const [uploading, setUploading] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const campId = localStorage.getItem('camp_id');
+    const itemId = formData.id;
+    if (!campId || !itemId) {
+      alert('無法取得營區編號或商品編號！');
+      return;
+    }
+
+    setUploading(true);
+
+    const currentUrls = formData.image_url
+      ? formData.image_url.split(',').map(u => u.trim()).filter(Boolean)
+      : [];
+
+    let updatedUrls = [...currentUrls];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      
+      const nextIndex = updatedUrls.length + 1;
+      const fileName = `${nextIndex}.${fileExt}`;
+      const filePath = `${campId}/${itemId}/${fileName}`;
+
+      try {
+        const { data, error } = await supabase.storage
+          .from('room-images')
+          .upload(filePath, file, { 
+            upsert: true,
+            cacheControl: '31536000' // 快取 1 年 (CDN Caching)
+          });
+
+        if (error) {
+          console.error('Upload error:', error);
+          alert(`圖片 ${file.name} 上傳失敗：${error.message}`);
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('room-images')
+          .getPublicUrl(filePath);
+
+        updatedUrls.push(publicUrl);
+      } catch (err) {
+        console.error('Upload exception:', err);
+      }
+    }
+
+    setFormData(prev => ({ ...prev, image_url: updatedUrls.join(', ') }));
+    setUploading(false);
+  };
+
+  const handleImageDelete = async (indexToDelete: number) => {
+    const currentUrls = formData.image_url
+      ? formData.image_url.split(',').map(u => u.trim()).filter(Boolean)
+      : [];
+
+    const urlToDelete = currentUrls[indexToDelete];
+    
+    try {
+      const bucketName = 'room-images';
+      const marker = `/public/${bucketName}/`;
+      const idx = urlToDelete.indexOf(marker);
+      if (idx !== -1) {
+        const filePath = decodeURIComponent(urlToDelete.substring(idx + marker.length));
+        await supabase.storage.from(bucketName).remove([filePath]);
+      }
+    } catch (err) {
+      console.error('Failed to delete file from storage:', err);
+    }
+
+    const updatedUrls = currentUrls.filter((_, i) => i !== indexToDelete);
+    setFormData(prev => ({ ...prev, image_url: updatedUrls.join(', ') }));
+  };
 
   useEffect(() => {
     fetchItems();
@@ -65,6 +144,7 @@ export default function ItemsManager() {
     } else {
       setEditingItem(null);
       setFormData({
+        id: crypto.randomUUID(),
         category: 'campsite',
         name: '',
         description: '',
@@ -394,13 +474,58 @@ export default function ItemsManager() {
               </div>
 
               <div className="pt-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">圖片網址 (多張請用半形逗號分隔)</label>
-                <textarea 
-                  value={formData.image_url || ''}
-                  onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg p-2 outline-none min-h-[80px]"
-                  placeholder="https://example.com/img1.jpg, https://example.com/img2.jpg"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">商品圖片管理</label>
+                
+                {/* 圖片預覽區 */}
+                <div className="flex flex-wrap gap-3 mb-3">
+                  {(formData.image_url || '').split(',').map(u => u.trim()).filter(Boolean).map((url, idx) => (
+                    <div key={idx} className="relative w-20 h-20 rounded-lg border border-stone-200 overflow-hidden group">
+                      <img src={url} alt="product" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleImageDelete(idx)}
+                        className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {/* 上傳按鈕卡片 */}
+                  <label className={`w-20 h-20 border-2 border-dashed border-stone-300 hover:border-stone-400 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors bg-stone-50 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={uploading}
+                    />
+                    {uploading ? (
+                      <div className="w-5 h-5 border-2 border-stone-500 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <svg className="w-6 h-6 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span className="text-[10px] text-stone-500 mt-1">上傳</span>
+                      </>
+                    )}
+                  </label>
+                </div>
+
+                {/* 備用的純文字編輯器，方便手動微調 */}
+                <details className="mt-2">
+                  <summary className="text-xs text-stone-400 cursor-pointer hover:text-stone-600 select-none">手動編輯圖片網址</summary>
+                  <textarea 
+                    value={formData.image_url || ''}
+                    onChange={(e) => setFormData({...formData, image_url: e.target.value})}
+                    className="w-full border border-gray-300 rounded-lg p-2 outline-none min-h-[60px] text-xs mt-1"
+                    placeholder="https://example.com/img1.jpg, https://example.com/img2.jpg"
+                  />
+                </details>
               </div>
 
               <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100">

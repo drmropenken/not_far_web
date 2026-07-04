@@ -323,9 +323,9 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
         </div>
 
         {(() => {
-          const mappedImages = roomImagesMap[item.name as keyof typeof roomImagesMap] || [];
           const dbImages = item.image_url ? item.image_url.split(',').map(u => u.trim()).filter(Boolean) : [];
-          const itemImages = mappedImages.length > 0 ? mappedImages : dbImages;
+          const mappedImages = roomImagesMap[item.name as keyof typeof roomImagesMap] || [];
+          const itemImages = dbImages.length > 0 ? dbImages : mappedImages;
           
           if (itemImages.length === 0) return null;
           

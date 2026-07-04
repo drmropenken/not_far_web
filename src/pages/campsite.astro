@@ -9,12 +9,16 @@ import roomImagesMap from '../lib/roomImagesMap.json';
 const { data: items } = await supabase.from('nf_items').select('name, description, image_url, category').eq('is_active', true);
 
 const getImageUrls = (searchName: string) => {
+  const item = items?.find(i => i.name.includes(searchName));
+  const dbImages = item?.image_url ? item.image_url.split(',').map((u: string) => u.trim()).filter(Boolean) : [];
+  if (dbImages.length > 0) {
+    return dbImages;
+  }
   const key = Object.keys(roomImagesMap).find(k => k.includes(searchName));
   if (key && (roomImagesMap as any)[key].length > 0) {
     return (roomImagesMap as any)[key];
   }
-  const item = items?.find(i => i.name.includes(searchName));
-  return item?.image_url ? item.image_url.split(',').map((u: string) => u.trim()).filter(Boolean) : [];
+  return [];
 };
 
 // Filter out campsites that are already hardcoded
@@ -273,9 +277,9 @@ const missingCampsites = items?.filter(item => {
         )}
 
         {missingCampsites.map((item: any) => {
-          const mappedImages = (roomImagesMap as any)[item.name] || [];
           const dbImages = item.image_url ? item.image_url.split(',').map((u: string) => u.trim()).filter(Boolean) : [];
-          const images = mappedImages.length > 0 ? mappedImages : dbImages;
+          const mappedImages = (roomImagesMap as any)[item.name] || [];
+          const images = dbImages.length > 0 ? dbImages : mappedImages;
 
           if (images.length === 0) return null;
 
