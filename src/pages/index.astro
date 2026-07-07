@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import roomImagesMap from '../lib/roomImagesMap.json';
 
 // Fetch items for dynamic images
-const { data: items } = await supabase.from('nf_items').select('name, image_url').eq('is_active', true);
+const { data: items } = await supabase.from('nf_items').select('name, description, image_url').eq('is_active', true);
 
 // 讀取營區資料（描述）
 const { data: campData } = await supabase
@@ -18,6 +18,12 @@ const { data: campData } = await supabase
 const campDescription = campData?.description || '前身為退役礦場，歷經生態再造，如今成為占地 3.5 公頃的綠色天堂。<br>在這裡，我們提供多元住宿、豐富活動，讓每一刻都成為難忘回憶。';
 
 const seoDescription = `${campData?.name || '不遠山莊'} - ${(campDescription || '').replace(/<br\/?>/g, '。')} 提供完善的露營、住宿預訂與豐富的自然生態體驗。`;
+
+// 從 items 陣列中找出指定名稱的項目描述
+const getItemDesc = (nameKeyword: string, fallback: string): string => {
+  const item = items?.find(i => i.name.includes(nameKeyword));
+  return item?.description || fallback;
+};
 
 const getImageUrls = (searchName: string) => {
   const item = items?.find(i => i.name.includes(searchName));
@@ -147,7 +153,7 @@ const getImageUrls = (searchName: string) => {
             </div>
             <div class="card-body flex-1">
               <h3>⛺ 豪華野奢帳篷組</h3>
-              <p>極致奢華的免裝備露營！含雙人床、電扇與專屬客廳帳，提供一泊三食（含燒烤或火鍋晚餐），享受尊榮服務。</p>
+              <p>{getItemDesc('豪華野奢帳篷', '極致奢華的免裝備露營！含雙人床、電扇與專屬客廳帳，提供一泊三食（含燒烤或火鍋晚餐），享受尊榮服務。')}</p>
               <div class="tags">
                 <span class="tag">可住 4-6 人</span>
                 <span class="tag">一泊三食</span>
@@ -168,7 +174,7 @@ const getImageUrls = (searchName: string) => {
             </div>
             <div class="card-body flex-1">
               <h3>🛖 四人石茅屋</h3>
-              <p>一秒踏進日本合掌村！外型超可愛的三角茅屋，內部空間寬敞，適合家庭同住，並設有獨立衛浴與冷氣。</p>
+              <p>{getItemDesc('四人石茅屋', '一秒踏進日本合掌村！外型超可愛的三角茅屋，內部空間寬敞，適合家庭同住，並設有獨立衛浴與冷氣。')}</p>
               <div class="tags">
                 <span class="tag">可住 4 人</span>
                 <span class="tag">獨立衛浴</span>
@@ -189,7 +195,7 @@ const getImageUrls = (searchName: string) => {
             </div>
             <div class="card-body flex-1">
               <h3>🛖 四人水管屋雅房</h3>
-              <p>造型獨特的水管屋，像極了可愛的汽水罐！備有冷氣與雙人床，車子可直接停在一旁，方便又特別。</p>
+              <p>{getItemDesc('四人水管屋雅房', '造型獨特的水管屋，像極了可愛的汽水罐！備有冷氣與雙人床，車子可直接停在一旁，方便又特別。')}</p>
               <div class="tags">
                 <span class="tag">可住 4 人</span>
                 <span class="tag">冷氣</span>
@@ -212,7 +218,7 @@ const getImageUrls = (searchName: string) => {
             </div>
             <div class="card-body flex-1">
               <h3>🏕️ 木屋棧板</h3>
-              <p>設有專屬的木棧板與遮頂設施，不怕日曬雨淋，提供平整舒適的搭帳空間，給您最安心的露營體驗。</p>
+              <p>{getItemDesc('木屋棧板', '設有專屬的木棧板與遮頂設施，不怕日曬雨淋，提供平整舒適的搭帳空間，給您最安心的露營體驗。')}</p>
               <div class="tags">
                 <span class="tag">木棧板營位</span>
                 <span class="tag">平整舒適</span>
@@ -233,7 +239,7 @@ const getImageUrls = (searchName: string) => {
             </div>
             <div class="card-body flex-1">
               <h3>🌳 欖仁樹區 (一至二帳包區)</h3>
-              <p>樹蔭環繞的舒適營位，適合三五好友小包區。提供獨立的搭帳空間，鄰近公共衛浴，享受靜謐的露營時光。</p>
+              <p>{getItemDesc('欖仁樹區', '樹蔭環繞的舒適營位，適合三五好友小包區。提供獨立的搭帳空間，鄰近公共衛浴，享受靜謐的露營時光。')}</p>
               <div class="tags">
                 <span class="tag">包區營位</span>
                 <span class="tag">可住 4-8 人</span>
@@ -254,7 +260,7 @@ const getImageUrls = (searchName: string) => {
             </div>
             <div class="card-body flex-1">
               <h3>🏕️ 草原區 (四至五帳包區)</h3>
-              <p>遼闊的大草皮，適合多個家庭聯合包區！孩子們可以盡情奔跑玩耍，享受無拘無束的大自然。</p>
+              <p>{getItemDesc('草原一區', '遼闊的大草皮，適合多個家庭聯合包區！孩子們可以盡情奔跑玩耍，享受無拘無束的大自然。')}</p>
               <div class="tags">
                 <span class="tag">大草皮包區</span>
                 <span class="tag">可住 16-20 人</span>
@@ -275,7 +281,7 @@ const getImageUrls = (searchName: string) => {
             </div>
             <div class="card-body flex-1">
               <h3>🏞️ 湖岸一區 (六帳包區)</h3>
-              <p>絕佳的湖畔景觀，適合大型團體包區。面積廣達 50M*9M，給您最寬敞、最舒適的水岸露營體驗。</p>
+              <p>{getItemDesc('湖岸一區', '絕佳的湖畔景觀，適合大型團體包區。面積廣達 50M*9M，給您最寬敞、最舒適的水岸露營體驗。')}</p>
               <div class="tags">
                 <span class="tag">湖畔包區</span>
                 <span class="tag">可住 24 人</span>
@@ -296,7 +302,7 @@ const getImageUrls = (searchName: string) => {
             </div>
             <div class="card-body flex-1">
               <h3>🚌 六人大巴露營車</h3>
-              <p>免裝備豪華露營體驗！車內配有雙人床與沙發床，並設有獨立衛浴、冷氣等設施，讓您輕鬆享受大自然。</p>
+              <p>{getItemDesc('大巴', '免裝備豪華露營體驗！車內配有雙人床與沙發床，並設有獨立衛浴、冷氣等設施，讓您輕鬆享受大自然。')}</p>
               <div class="tags">
                 <span class="tag">可住 6 人</span>
                 <span class="tag">獨立衛浴</span>
@@ -307,17 +313,18 @@ const getImageUrls = (searchName: string) => {
           </div>
         )}
 
+        {items?.find(i => i.name.includes('包棟')) && (
         <div class="accommodation-card fade-in flex flex-col h-full">
           <div class="w-full h-48 md:h-[250px] overflow-hidden rounded-t-xl">
             {getImageUrls('十人包棟').length > 0 ? (
               <ImageCarousel client:visible images={getImageUrls('十人包棟')} alt="十人包棟" className="w-full h-full" />
             ) : (
-              <img src="/images/rooms/house.jpeg" alt="十人包棟" style="width: 100%; height: 100%; object-fit: cover;">
+              <img src="/images/rooms/house.jpeg" alt="十人包棟" style="width: 100%; height: 100%; object-fit: cover;" />
             )}
           </div>
           <div class="card-body flex-1">
             <h3>🏠 十人包棟</h3>
-            <p>大家族或三五好友出遊首選！專屬的包棟空間，內有5張雙人床，並提供冷氣與完善的衛浴設備。</p>
+            <p>{getItemDesc('包棟', '大家族或三五好友出遊首選！專屬的包棟空間，內有5張雙人床，並提供冷氣與完善的衛浴設備。')}</p>
             <div class="tags">
               <span class="tag">可住 10 人</span>
               <span class="tag">冷氣</span>
@@ -325,6 +332,7 @@ const getImageUrls = (searchName: string) => {
             </div>
           </div>
         </div>
+        )}
       </div>
       
       <div class="text-center mt-3">

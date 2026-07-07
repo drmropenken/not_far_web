@@ -1,6 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
+function SyncDescriptions() {
+  const [syncing, setSyncing] = useState(false);
+  const [result, setResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setResult(null);
+
+    try {
+      const res = await fetch('/api/admin/sync-descriptions', { method: 'POST' });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setResult({ type: 'success', text: data.message });
+      } else {
+        setResult({ type: 'error', text: data.error || '同步失敗' });
+      }
+    } catch (err) {
+      setResult({ type: 'error', text: '網路錯誤，請確認是否已登入' });
+    }
+
+    setSyncing(false);
+  };
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={handleSync}
+        disabled={syncing}
+        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-stone-400 text-white rounded-lg font-bold text-sm transition-colors shadow-sm flex items-center gap-2"
+      >
+        {syncing ? (
+          <>
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            同步中...
+          </>
+        ) : (
+          '📝 將網頁描述寫入資料庫'
+        )}
+      </button>
+      {result && (
+        <p className={`mt-2 text-xs font-medium ${
+          result.type === 'success' ? 'text-emerald-600' : 'text-red-500'
+        }`}>
+          {result.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function CampSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -199,6 +251,15 @@ export default function CampSettings() {
             {message.text}
           </div>
         )}
+
+        {/* 同步商品描述 */}
+        <div className="border-t border-stone-200 pt-6">
+          <h4 className="text-sm font-bold text-stone-700 mb-1">🔄 同步商品描述</h4>
+          <p className="text-xs text-stone-500 mb-3">
+            如果商品名稱與描述不一致，可以點擊下方按鈕，將網頁上完整的描述寫入資料庫。
+          </p>
+          <SyncDescriptions />
+        </div>
 
         {/* 送出按鈕 */}
         <div className="flex justify-end gap-3 pt-2">
