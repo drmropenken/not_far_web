@@ -1,0 +1,11 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import CampSettings from "../../components/admin/CampSettings";
+---
+
+<AdminLayout 
+  title="營區設定" 
+  description="管理營區的基本資訊，包含名稱、描述與官方網站網址。修改後會同步更新到前台首頁與營區介紹頁。"
+>
+  <CampSettings client:load />
+</AdminLayout>

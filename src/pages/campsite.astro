@@ -7,7 +7,14 @@ import roomImagesMap from '../lib/roomImagesMap.json';
 
 // Fetch items for dynamic images and to append missing campsites
 const { data: items } = await supabase.from('nf_items').select('name, description, image_url, category').eq('is_active', true);
+// 讀取營區資料（描述）
+const { data: campData } = await supabase
+  .from('nf_campgrounds')
+  .select('name, description')
+  .eq('slug', 'not-far')
+  .single();
 
+const campDescription = campData?.description || '占地 3.5 公頃的綠色天堂，探索不遠山莊的每一個角落';
 const getImageUrls = (searchName: string) => {
   const item = items?.find(i => i.name.includes(searchName));
   const dbImages = item?.image_url ? item.image_url.split(',').map((u: string) => u.trim()).filter(Boolean) : [];
@@ -34,8 +41,8 @@ const missingCampsites = items?.filter(item => {
 <html lang="zh-TW">
 <head>
   <SEO 
-    title="營區介紹與住宿選擇｜不遠露營度假山莊｜苗栗露營推薦" 
-    description="不遠山莊營區佔地約3.5公頃，提供草地營位、小木屋、水管屋、哈比屋、合掌村石茅屋等多元住宿，設施完善。" 
+    title={`營區介紹與住宿選擇｜${campData?.name || '不遠山莊'}｜苗栗露營推薦`} 
+    description={`${campData?.name || '不遠山莊'}營區 - ${campDescription}。提供草地營位、小木屋、水管屋、哈比屋、合掌村石茅屋等多元住宿，設施完善。`} 
   />
 </head>
 <body>
@@ -67,8 +74,8 @@ const missingCampsites = items?.filter(item => {
   <!-- Page Header -->
   <section class="page-header">
     <div class="container">
-      <h1>營區介紹</h1>
-      <p>占地 3.5 公頃的綠色天堂，探索不遠山莊的每一個角落</p>
+      <h1>{campData?.name || '不遠山莊'} 營區介紹</h1>
+      <p>{campDescription}</p>
     </div>
   </section>
 

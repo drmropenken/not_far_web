@@ -8,6 +8,17 @@ import roomImagesMap from '../lib/roomImagesMap.json';
 // Fetch items for dynamic images
 const { data: items } = await supabase.from('nf_items').select('name, image_url').eq('is_active', true);
 
+// 讀取營區資料（描述）
+const { data: campData } = await supabase
+  .from('nf_campgrounds')
+  .select('name, description')
+  .eq('slug', 'not-far')
+  .single();
+
+const campDescription = campData?.description || '前身為退役礦場，歷經生態再造，如今成為占地 3.5 公頃的綠色天堂。<br>在這裡，我們提供多元住宿、豐富活動，讓每一刻都成為難忘回憶。';
+
+const seoDescription = `${campData?.name || '不遠山莊'} - ${(campDescription || '').replace(/<br\/?>/g, '。')} 提供完善的露營、住宿預訂與豐富的自然生態體驗。`;
+
 const getImageUrls = (searchName: string) => {
   const item = items?.find(i => i.name.includes(searchName));
   const dbImages = item?.image_url ? item.image_url.split(',').map((u: string) => u.trim()).filter(Boolean) : [];
@@ -25,8 +36,8 @@ const getImageUrls = (searchName: string) => {
 <html lang="zh-TW">
 <head>
   <SEO 
-    title="不遠山莊露營區｜官方網站 - 苗栗三義露營、民宿首選" 
-    description="歡迎來到苗栗三義不遠山莊露營區官方網站，提供完善的露營、民宿預訂與豐富的自然生態體驗。前身為退役礦場，經生態再造後成為親子友善的度假勝地，讓您輕鬆享受度假時光。" 
+    title={`${campData?.name || '不遠山莊'}｜官方網站 - 苗栗三義露營、民宿首選`} 
+    description={seoDescription} 
     isHome={true}
   />
 </head>
@@ -65,7 +76,7 @@ const getImageUrls = (searchName: string) => {
         <span style="color: var(--secondary-light); font-size: 4rem; text-shadow: 0 4px 20px rgba(0,0,0,0.4); display: inline-block; margin: 8px 0;">不遠露營度假山莊</span><br>
         <span style="font-size: 1.6rem; font-weight: 500; opacity: 0.8; letter-spacing: 1px;">遠離城市喧囂 擁抱自然之美</span>
       </h1>
-      <p>前身為退役礦場，歷經生態再造，如今成為占地 3.5 公頃的綠色天堂。<br>在這裡，我們提供多元住宿、豐富活動，讓每一刻都成為難忘回憶。</p>
+      <p set:html={campDescription}></p>
       <div class="hero-buttons">
         <a href="/app" class="btn btn-primary">
           📅 立即預訂
