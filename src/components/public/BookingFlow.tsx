@@ -115,9 +115,8 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
             setLoading(true);
           }
           const profile = await liff.getProfile();
-          const idToken = liff.getDecodedIDToken();
-          const realEmail = idToken?.email;
-          const fakeEmail = realEmail || `${profile.userId}@dummy-line.com`;
+          // LINE 登入一律使用虛擬信箱以維持與「我的訂單」一致，並避免與已存在的 Google/信箱帳號衝突
+          const fakeEmail = `${profile.userId}@dummy-line.com`;
           const fakePassword = `${profile.userId}_notfar_secret_2024!`;
 
           // 嘗試暗影登入
