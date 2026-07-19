@@ -19,6 +19,16 @@ if (fs.existsSync(roomsDir)) {
     });
   });
 }
+
+// Fetch local environment images dynamically
+const envDir = path.join(process.cwd(), 'public', 'images', 'environment');
+let localEnvImages: string[] = [];
+if (fs.existsSync(envDir)) {
+  localEnvImages = fs.readdirSync(envDir)
+    .filter(f => f.match(/\.(jpg|jpeg|png|webp)$/i))
+    .map(f => `/images/environment/${f}`)
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+}
 ---
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -66,27 +76,17 @@ if (fs.existsSync(roomsDir)) {
   <section class="section">
     <div class="container">
       <div class="gallery-grid" id="galleryGrid">
-        <!-- 環境 -->
-        {[5, 6].map((num) => (
-          <div class="gallery-item fade-in">
-            <img src={`/images/environment/${num}.jpeg`} alt={`營區環境 ${num}`} loading="lazy" />
-          </div>
-        ))}
+        <!-- 環境 (動態讀取) -->
+        {localEnvImages.map((imgUrl) => {
+          const fileName = imgUrl.split('/').pop() || '';
+          return (
+            <div class="gallery-item fade-in">
+              <img src={imgUrl} alt={`營區環境 ${fileName}`} loading="lazy" />
+            </div>
+          );
+        })}
 
-        <!-- 營區與活動 (去重複) -->
-        {[
-          { src: 'https://static.wixstatic.com/media/2dfe85_895753b110d146808b7088c22a82b710~mv2.jpg', title: '🌙 營區夜景', desc: '夜晚燈火點綴的夢幻森林與營火' },
-          { src: 'https://static.wixstatic.com/media/7abe18_1c06bd5c1e1f46699a71c2aed060aae0~mv2.jpg', title: '🌺 蓮花池', desc: '靜謐的湖畔風光與櫻花美景' },
-          { src: 'https://static.wixstatic.com/media/7abe18_49ca372653b2465d8690c88299cce670~mv2.jpg', title: '🥾 健行步道', desc: '探索自然之美' },
-          { src: 'https://static.wixstatic.com/media/2dfe85_275286058a214928b4073c0f327dcf92~mv2.jpg', title: '🍖 豪華烤肉', desc: '生食級干貝、精選肉品' },
-          { src: 'https://static.wixstatic.com/media/7abe18_415a7be96fe3459f858ee4babfc6b6c6~mv2.jpg', title: '🍲 暖心火鍋', desc: '濃白雞湯與麻辣湯底' },
-          { src: 'https://static.wixstatic.com/media/7abe18_dd36d61242444e0c8eb5e2fa8c64d0a8~mv2.jpg', title: '☕ 鹿角咖啡', desc: '森林系巴士咖啡廳' },
-        ].map((img) => (
-          <div class="gallery-item fade-in">
-            <img src={img.src} alt={img.title.replace(/^[^\s]+\s/, '')} loading="lazy" />
-          </div>
-        ))}
-        
+
         <!-- 住宿 (本地圖片資料夾動態讀取) -->
         {localRoomImages.map((img) => (
           <div class="gallery-item fade-in">
