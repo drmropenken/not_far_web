@@ -1213,7 +1213,7 @@ export default function OrdersManager() {
                         </button>
                       )}
                       {/* 線上付款（信用卡／匯款） */}
-                      {order.status !== 'paid' && order.status !== 'checked_in' && (
+                      {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
                         <button
                           onClick={() => { setOnlinePaymentOrderId(order.id); setOnlinePaymentAmount(''); setOnlinePaymentType('bank_transfer'); setOnlinePaymentCollectedAt(getLocalDateTimeString()); }}
                           className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors"
@@ -1222,7 +1222,7 @@ export default function OrdersManager() {
                         </button>
                       )}
                       {/* 現場收款 */}
-                      {order.status !== 'paid' && order.status !== 'checked_in' && (
+                      {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
                         <button onClick={() => { setOnsitePaymentOrderId(order.id); setOnsiteAmount(''); setOnsiteNotes(''); setOnsiteCollectedAt(getLocalDateTimeString()); }} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
                           💵 現場收款
                         </button>
