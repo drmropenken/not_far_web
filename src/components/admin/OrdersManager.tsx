@@ -92,12 +92,20 @@ export default function OrdersManager() {
     children: '0',
     notes: ''
   });
+  const getLocalDateTimeString = () => {
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
+  };
+
   const [onsiteAmount, setOnsiteAmount] = useState('');
   const [onsiteNotes, setOnsiteNotes] = useState('');
+  const [onsiteCollectedAt, setOnsiteCollectedAt] = useState('');
   const [isSubmittingOnsite, setIsSubmittingOnsite] = useState(false);
   const [onlinePaymentOrderId, setOnlinePaymentOrderId] = useState<string | null>(null);
   const [onlinePaymentType, setOnlinePaymentType] = useState<'credit_card' | 'bank_transfer'>('bank_transfer');
   const [onlinePaymentAmount, setOnlinePaymentAmount] = useState('');
+  const [onlinePaymentCollectedAt, setOnlinePaymentCollectedAt] = useState('');
   const [isSubmittingOnline, setIsSubmittingOnline] = useState(false);
 
   const [startDate, setStartDate] = useState<string>('');
@@ -186,18 +194,19 @@ export default function OrdersManager() {
   const updateOrderStatus = async (orderId: string, newStatus: 'pending' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled') => {
     if (!confirm(`確定要將此訂單標記為「${newStatus === 'paid' ? '已付款' : newStatus === 'cancelled' ? '已取消' : newStatus === 'checked_in' ? '已報到' : '狀態變更'}」嗎？`)) return;
 
+    const orderToUpdate = orders.find(o => o.id === orderId);
+
     // 如果是取消訂單，退還庫存
     if (newStatus === 'cancelled') {
-      const order = orders.find(o => o.id === orderId);
-      if (order && order.status !== 'cancelled') {
-        const start = new Date(order.check_in_date);
-        const end = new Date(order.check_out_date);
+      if (orderToUpdate && orderToUpdate.status !== 'cancelled') {
+        const start = new Date(orderToUpdate.check_in_date);
+        const end = new Date(orderToUpdate.check_out_date);
         
         for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
           const dateStr = d.toISOString().split('T')[0];
           const isFirstNight = d.getTime() === start.getTime();
           
-          for (const oi of order.nf_order_items) {
+          for (const oi of orderToUpdate.nf_order_items) {
             const isSingleTime = oi.nf_items?.category === 'service' && (oi.nf_items?.name.includes('單次') || oi.nf_items?.name.includes('次計費'));
             if (isSingleTime && !isFirstNight) continue;
 
@@ -217,9 +226,35 @@ export default function OrdersManager() {
           }
         }
       }
+    } else if (orderToUpdate && orderToUpdate.status === 'cancelled') {
+      // 從「已取消」恢復成有效訂單，重新扣回庫存 (加上 booked_quantity)
+      const start = new Date(orderToUpdate.check_in_date);
+      const end = new Date(orderToUpdate.check_out_date);
+      
+      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        const isFirstNight = d.getTime() === start.getTime();
+        
+        for (const oi of orderToUpdate.nf_order_items) {
+          const isSingleTime = oi.nf_items?.category === 'service' && (oi.nf_items?.name.includes('單次') || oi.nf_items?.name.includes('次計費'));
+          if (isSingleTime && !isFirstNight) continue;
+
+          const { data: inv } = await supabase
+            .from('nf_inventory')
+            .select('id, booked_quantity')
+            .eq('date', dateStr)
+            .eq('item_id', oi.item_id)
+            .single();
+            
+          if (inv) {
+            await supabase
+              .from('nf_inventory')
+              .update({ booked_quantity: inv.booked_quantity + oi.quantity })
+              .eq('id', inv.id);
+          }
+        }
+      }
     }
-    
-    const orderToUpdate = orders.find(o => o.id === orderId);
     let updateData: any = { status: newStatus };
     // 如果手動標記為「已付款」，我們順便把「已收定金」直接填滿為「總金額」，確保資料的一致性
     if (newStatus === 'paid' && orderToUpdate) {
@@ -403,12 +438,6 @@ export default function OrdersManager() {
       const totalPaid = getOrderOnlineAmount(order.id) + getOrderOnsiteAmount(order.id) + (order.deposit_amount || 0);
       const newTotalPaid = totalPaid + amount;
 
-      // 多收（正數）時檢查是否超過剩餘待收
-      if (amount > 0 && newTotalPaid > order.total_amount) {
-        alert(`⚠️ 溢收！最多只能再收 NT$ ${Math.max(0, order.total_amount - totalPaid).toLocaleString()}`);
-        return;
-      }
-
       // 退款（負數）時檢查會不會退超過已收總額
       if (amount < 0 && newTotalPaid < 0) {
         alert(`⚠️ 退款不能超過已收總額 NT$ ${totalPaid.toLocaleString()}`);
@@ -418,15 +447,20 @@ export default function OrdersManager() {
 
     setIsSubmittingOnsite(true);
 
+    const insertPayload: any = {
+      order_id: onsitePaymentOrderId,
+      amount,
+      payment_type: 'onsite',
+      collected_by: adminEmail,
+      notes: onsiteNotes.trim() || null
+    };
+    if (onsiteCollectedAt) {
+      insertPayload.collected_at = new Date(onsiteCollectedAt).toISOString();
+    }
+
     const { error } = await supabase
       .from('nf_payment_logs')
-      .insert({
-        order_id: onsitePaymentOrderId,
-        amount,
-        payment_type: 'onsite',
-        collected_by: adminEmail,
-        notes: onsiteNotes.trim() || null
-      });
+      .insert(insertPayload);
 
     setIsSubmittingOnsite(false);
     if (error) {
@@ -438,6 +472,7 @@ export default function OrdersManager() {
     setOnsitePaymentOrderId(null);
     setOnsiteAmount('');
     setOnsiteNotes('');
+    setOnsiteCollectedAt('');
     fetchOrders();
   };
 
@@ -473,15 +508,8 @@ export default function OrdersManager() {
 
     let totalFromLogs = getOrderOnlineAmount(order.id) + getOrderOnsiteAmount(order.id);
     const deposit = order.deposit_amount || 0;
-    // deposit_amount 應等於 totalFromLogs，但以防手動微調過，取最大值
     const effectiveTotal = Math.max(deposit, totalFromLogs);
     const newTotalPaid = effectiveTotal + amount;
-
-    // 多收時檢查
-    if (amount > 0 && newTotalPaid > order.total_amount) {
-      alert(`⚠️ 溢收！最多只能再收 NT$ ${Math.max(0, order.total_amount - effectiveTotal).toLocaleString()}`);
-      return;
-    }
 
     // 退款時檢查
     if (amount < 0 && newTotalPaid < 0) {
@@ -491,13 +519,18 @@ export default function OrdersManager() {
 
     setIsSubmittingOnline(true);
 
-    const { error: logError } = await supabase.from('nf_payment_logs').insert({
+    const insertPayload: any = {
       order_id: onlinePaymentOrderId,
       amount,
       payment_type: onlinePaymentType,
       collected_by: adminEmail,
       notes: null
-    });
+    };
+    if (onlinePaymentCollectedAt) {
+      insertPayload.collected_at = new Date(onlinePaymentCollectedAt).toISOString();
+    }
+
+    const { error: logError } = await supabase.from('nf_payment_logs').insert(insertPayload);
 
     if (logError) {
       alert('線上付款紀錄失敗：' + logError.message);
@@ -509,6 +542,7 @@ export default function OrdersManager() {
     setIsSubmittingOnline(false);
     setOnlinePaymentOrderId(null);
     setOnlinePaymentAmount('');
+    setOnlinePaymentCollectedAt('');
     fetchOrders();
   };
 
@@ -622,6 +656,12 @@ export default function OrdersManager() {
     }
   };
 
+  const escapeCsvCell = (val: any): string => {
+    if (val === null || val === undefined) return '""';
+    const str = String(val).replace(/"/g, '""');
+    return `"${str}"`;
+  };
+
   const handleExportCSV = () => {
     const headers = [
       '訂單編號', '訂購人姓名', '聯絡電話', '車牌號碼', '入住日期', '退房日期', '訂單狀態', 
@@ -667,9 +707,9 @@ export default function OrdersManager() {
         creditCard,
         bankTransfer,
         onsite,
-        order.virtual_account ? `"${order.virtual_account}"` : '',
-        `"${(order.notes || '').replace(/"/g, '""')}"`,
-        `"${(order.admin_notes || '').replace(/"/g, '""')}"`,
+        order.virtual_account || '',
+        order.notes || '',
+        order.admin_notes || '',
         order.discount_code || '',
         order.discount_amount || 0,
         new Date(order.created_at).toLocaleString('zh-TW')
@@ -678,7 +718,6 @@ export default function OrdersManager() {
 
     // 加上財務匯總報表資訊於底部
     const summaryRows = [
-      [],
       ['【篩選區間財務加總報表】'],
       ['總營業額 (訂單總額)', `${stats.totalAmountSum} 元`],
       ['已收總額 (實收營收)', `${stats.receivedTotal} 元`],
@@ -688,13 +727,14 @@ export default function OrdersManager() {
       ['實收：現場/現金', `${stats.onsiteTotal} 元`]
     ];
 
-    const allCsvRows = [
-      headers.join(','), 
-      ...rows.map(e => e.join(',')),
-      ...summaryRows.map(e => e.join(','))
+    const allCsvLines = [
+      headers.map(escapeCsvCell).join(','),
+      ...rows.map(row => row.map(escapeCsvCell).join(',')),
+      '',
+      ...summaryRows.map(row => row.map(escapeCsvCell).join(','))
     ];
 
-    const csvContent = '\uFEFF' + allCsvRows.join('\n');
+    const csvContent = '\uFEFF' + allCsvLines.join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -1150,11 +1190,20 @@ export default function OrdersManager() {
                         刪除
                       </button>
                     )}
-                    {/* 左邊：取消訂單 */}
-                    {order.status !== 'cancelled' && (
+                    {/* 左邊：取消訂單 / 恢復訂單 */}
+                    {order.status !== 'cancelled' ? (
                       <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="px-3 py-1.5 text-xs font-bold text-stone-600 bg-white hover:bg-stone-100 border border-stone-200 rounded-md transition-colors">
                         取消訂單
                       </button>
+                    ) : (
+                      <div className="flex gap-1.5">
+                        <button onClick={() => updateOrderStatus(order.id, 'paid')} className="px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors shadow-sm">
+                          🔄 恢復訂單 (轉已付款)
+                        </button>
+                        <button onClick={() => updateOrderStatus(order.id, 'pending')} className="px-3 py-1.5 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-md transition-colors">
+                          ↩️ 轉待付款
+                        </button>
+                      </div>
                     )}
                     {/* 右邊區塊（ml-auto 推到底） */}
                     <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -1164,17 +1213,17 @@ export default function OrdersManager() {
                         </button>
                       )}
                       {/* 線上付款（信用卡／匯款） */}
-                      {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
+                      {order.status !== 'paid' && order.status !== 'checked_in' && (
                         <button
-                          onClick={() => { setOnlinePaymentOrderId(order.id); setOnlinePaymentAmount(''); setOnlinePaymentType('bank_transfer'); }}
+                          onClick={() => { setOnlinePaymentOrderId(order.id); setOnlinePaymentAmount(''); setOnlinePaymentType('bank_transfer'); setOnlinePaymentCollectedAt(getLocalDateTimeString()); }}
                           className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors"
                         >
                           💳 線上付款
                         </button>
                       )}
                       {/* 現場收款 */}
-                      {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
-                        <button onClick={() => { setOnsitePaymentOrderId(order.id); setOnsiteAmount(''); setOnsiteNotes(''); }} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
+                      {order.status !== 'paid' && order.status !== 'checked_in' && (
+                        <button onClick={() => { setOnsitePaymentOrderId(order.id); setOnsiteAmount(''); setOnsiteNotes(''); setOnsiteCollectedAt(getLocalDateTimeString()); }} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
                           💵 現場收款
                         </button>
                       )}
@@ -1195,7 +1244,7 @@ export default function OrdersManager() {
           <div className="bg-white rounded-2xl shadow-xl border border-stone-200 max-w-sm w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2">
               <span className="text-xl">💳</span>
-              <h3 className="font-black text-stone-800">線上付款</h3>
+              <h3 className="font-black text-stone-800">線上付款 / 匯款紀錄</h3>
             </div>
 
             <div>
@@ -1222,15 +1271,25 @@ export default function OrdersManager() {
                 type="number"
                 value={onlinePaymentAmount}
                 onChange={e => setOnlinePaymentAmount(e.target.value)}
-                placeholder="正數收款、負數沖正"
+                placeholder="正數收款、負數沖正（可輸入真實金額）"
                 className="w-full border border-stone-200 rounded-xl p-3 text-lg font-black text-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none"
               />
-              <p className="text-[11px] text-stone-400 mt-1">💡 正數＝收款，負數＝沖正退款</p>
+              <p className="text-[11px] text-stone-400 mt-1">💡 正數＝收款（允許超過訂單金額），負數＝沖正退款</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-stone-500 mb-1.5">實際金流時間（匯款/入帳時間）</label>
+              <input
+                type="datetime-local"
+                value={onlinePaymentCollectedAt}
+                onChange={e => setOnlinePaymentCollectedAt(e.target.value)}
+                className="w-full border border-stone-200 rounded-xl p-2.5 text-xs font-bold text-stone-700 focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+              <p className="text-[11px] text-stone-400 mt-1">💡 可調整為顧客實際轉帳或網銀入帳時間</p>
             </div>
 
             <div className="bg-stone-50 rounded-xl p-3 text-xs text-stone-500 space-y-1">
               <p>👤 經手人：<span className="font-bold text-stone-700">{adminEmail || '—'}</span></p>
-              <p>🕐 時間：<span className="font-bold text-stone-700">{new Date().toLocaleString('zh-TW')}</span></p>
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -1260,7 +1319,7 @@ export default function OrdersManager() {
                 type="number"
                 value={onsiteAmount}
                 onChange={e => setOnsiteAmount(e.target.value)}
-                placeholder="正數收款、負數沖正"
+                placeholder="正數收款、負數沖正（可輸入真實金額）"
                 className="w-full border border-stone-200 rounded-xl p-3 text-lg font-black text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none"
               />
               <p className="text-[11px] text-stone-400 mt-1">💡 正數＝收款，負數＝沖正退款</p>
@@ -1277,16 +1336,26 @@ export default function OrdersManager() {
               />
             </div>
 
+            <div>
+              <label className="block text-xs font-bold text-stone-500 mb-1.5">實際金流時間（收款時間）</label>
+              <input
+                type="datetime-local"
+                value={onsiteCollectedAt}
+                onChange={e => setOnsiteCollectedAt(e.target.value)}
+                className="w-full border border-stone-200 rounded-xl p-2.5 text-xs font-bold text-stone-700 focus:ring-2 focus:ring-emerald-500 outline-none"
+              />
+              <p className="text-[11px] text-stone-400 mt-1">💡 可調整為實際收款時間</p>
+            </div>
+
             <div className="bg-stone-50 rounded-xl p-3 text-xs text-stone-500 space-y-1">
               <p>👤 經手人：<span className="font-bold text-stone-700">{adminEmail || '—'}</span></p>
-              <p>🕐 時間：<span className="font-bold text-stone-700">{new Date().toLocaleString('zh-TW')}</span></p>
             </div>
 
             <div className="flex gap-2 pt-2">
               <button onClick={() => setOnsitePaymentOrderId(null)} disabled={isSubmittingOnsite} className="flex-1 py-3 text-sm font-bold text-stone-500 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors">
                 取消
               </button>
-              <button onClick={submitOnsitePayment} disabled={isSubmittingOnsite || !onsiteAmount || parseInt(onsiteAmount) <= 0} className="flex-1 py-3 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors">
+              <button onClick={submitOnsitePayment} disabled={isSubmittingOnsite || !onsiteAmount || parseInt(onsiteAmount) === 0} className="flex-1 py-3 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors">
                 {isSubmittingOnsite ? '送出中...' : '確認收款'}
               </button>
             </div>
