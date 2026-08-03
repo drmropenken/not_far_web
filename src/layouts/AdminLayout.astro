@@ -17,6 +17,15 @@ const { title, description } = Astro.props;
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style is:global>
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
 </head>
 <body class="bg-stone-50 min-h-screen text-stone-800 flex overflow-hidden font-sans">
   
@@ -36,58 +45,57 @@ const { title, description } = Astro.props;
 
   <!-- Sidebar -->
   <aside id="sidebar" class="w-56 shrink-0 bg-emerald-900 text-emerald-100/70 h-screen max-h-screen flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full md:translate-x-0 md:sticky md:top-0 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none font-sans border-r border-emerald-800">
-    <div class="p-5 hidden md:block border-b border-emerald-800 shrink-0">
-      <div class="flex items-center gap-2 mb-1">
-        <span class="text-xl drop-shadow-sm">⛺️</span>
-        <h1 id="camp-name-display" class="text-xl font-black tracking-widest text-white drop-shadow-sm font-sans text-balance">載入中...</h1>
+    <div class="p-4 hidden md:block border-b border-emerald-800 shrink-0">
+      <div class="flex items-center gap-2 mb-0.5">
+        <span class="text-lg drop-shadow-sm">⛺️</span>
+        <h1 id="camp-name-display" class="text-lg font-black tracking-widest text-white drop-shadow-sm font-sans text-balance">載入中...</h1>
       </div>
-      <p class="text-xs text-emerald-100/80 tracking-wider font-medium ml-7 mt-0.5">營主管理系統</p>
+      <p class="text-[11px] text-emerald-100/70 tracking-wider font-medium ml-6">營主管理系統</p>
     </div>
-    <div class="p-4 md:hidden flex justify-between items-center border-b border-emerald-800 bg-emerald-900 h-16 shrink-0">
-      <h1 class="text-lg font-bold text-white tracking-widest">系統選單</h1>
-      <button id="close-sidebar-btn" class="p-2 text-emerald-400 hover:text-white transition-colors">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <div class="p-3.5 md:hidden flex justify-between items-center border-b border-emerald-800 bg-emerald-900 h-14 shrink-0">
+      <h1 class="text-base font-bold text-white tracking-widest">系統選單</h1>
+      <button id="close-sidebar-btn" class="p-1.5 text-emerald-400 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
     </div>
-    <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto min-h-0">
-      <a href="/admin" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-dashboard">
-        <span class="text-lg group-hover:scale-110 transition-transform">📊</span> <span class="font-medium tracking-wide text-sm">儀表板</span>
+    <nav class="flex-1 px-2.5 py-3 space-y-1 overflow-y-auto min-h-0 hide-scrollbar">
+      <a href="/admin" class="flex items-center gap-3 px-3.5 py-2 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-dashboard">
+        <span class="text-base group-hover:scale-110 transition-transform">📊</span> <span class="font-medium tracking-wide text-sm">儀表板</span>
       </a>
-      <a href="/admin/orders" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-orders">
-        <span class="text-lg group-hover:scale-110 transition-transform">📝</span> <span class="font-medium tracking-wide text-sm">訂單管理</span>
+      <a href="/admin/orders" class="flex items-center gap-3 px-3.5 py-2 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-orders">
+        <span class="text-base group-hover:scale-110 transition-transform">📝</span> <span class="font-medium tracking-wide text-sm">訂單管理</span>
       </a>
-      <a href="/admin/items" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-items">
-        <span class="text-lg group-hover:scale-110 transition-transform">⛺️</span> <span class="font-medium tracking-wide text-sm">商品與營位</span>
+      <a href="/admin/items" class="flex items-center gap-3 px-3.5 py-2 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-items">
+        <span class="text-base group-hover:scale-110 transition-transform">⛺️</span> <span class="font-medium tracking-wide text-sm">商品與營位</span>
       </a>
-      <a href="/admin/discounts" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-discounts">
-        <span class="text-lg group-hover:scale-110 transition-transform">🏷️</span> <span class="font-medium tracking-wide text-sm">折扣碼管理</span>
+      <a href="/admin/discounts" class="flex items-center gap-3 px-3.5 py-2 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-discounts">
+        <span class="text-base group-hover:scale-110 transition-transform">🏷️</span> <span class="font-medium tracking-wide text-sm">折扣碼管理</span>
       </a>
-      <a href="/admin/inventory" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-inventory">
-        <span class="text-lg group-hover:scale-110 transition-transform">📅</span> <span class="font-medium tracking-wide text-sm">庫存行事曆</span>
+      <a href="/admin/inventory" class="flex items-center gap-3 px-3.5 py-2 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-inventory">
+        <span class="text-base group-hover:scale-110 transition-transform">📅</span> <span class="font-medium tracking-wide text-sm">庫存行事曆</span>
       </a>
-      <a href="/admin/admins" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-admins">
-        <span class="text-lg group-hover:scale-110 transition-transform">🛡️</span> <span class="font-medium tracking-wide text-sm">權限與管理員</span>
+      <a href="/admin/admins" class="flex items-center gap-3 px-3.5 py-2 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-admins">
+        <span class="text-base group-hover:scale-110 transition-transform">🛡️</span> <span class="font-medium tracking-wide text-sm">權限與管理員</span>
       </a>
-      <a href="/admin/camp-settings" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-camp-settings">
-        <span class="text-lg group-hover:scale-110 transition-transform">⚙️</span> <span class="font-medium tracking-wide text-sm">營區設定</span>
+      <a href="/admin/camp-settings" class="flex items-center gap-3 px-3.5 py-2 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-camp-settings">
+        <span class="text-base group-hover:scale-110 transition-transform">⚙️</span> <span class="font-medium tracking-wide text-sm">營區設定</span>
       </a>
     </nav>
-    <div class="p-3 border-t border-emerald-800 flex flex-col gap-1 shrink-0 bg-emerald-900">
-      <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-emerald-950/50 border border-emerald-800/50">
-        <div class="w-8 h-8 rounded-full bg-emerald-700 flex items-center justify-center text-emerald-100 font-bold border border-emerald-600 shrink-0" id="user-avatar">
+    <div class="p-3 border-t border-emerald-800 flex flex-col gap-1.5 shrink-0 bg-emerald-900">
+      <div class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-emerald-950/50 border border-emerald-800/50">
+        <div class="w-7 h-7 rounded-full bg-emerald-700 flex items-center justify-center text-emerald-100 font-bold border border-emerald-600 shrink-0 text-xs" id="user-avatar">
           👤
         </div>
         <div class="overflow-hidden flex-1">
-          <p id="user-name-display" class="text-sm font-bold text-white truncate">載入中...</p>
-          <p id="user-email-display" class="text-xs text-emerald-100/70 truncate">...</p>
+          <p id="user-name-display" class="text-xs font-bold text-white truncate">載入中...</p>
+          <p id="user-email-display" class="text-[10px] text-emerald-100/70 truncate">...</p>
         </div>
       </div>
-      <button id="switch-camp-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2 text-emerald-100/70 bg-emerald-950/30 hover:bg-emerald-800/50 hover:text-white rounded-xl transition-all font-medium tracking-wide border border-transparent hover:border-emerald-700/30 text-xs mb-2">
+      <button id="switch-camp-btn" class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-emerald-100/80 bg-emerald-950/30 hover:bg-emerald-800/50 hover:text-white rounded-xl transition-all font-medium border border-transparent hover:border-emerald-700/30 text-xs">
         <span>🔄</span> <span>切換營區</span>
       </button>
-      <button id="logout-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-emerald-100/80 bg-emerald-950/30 hover:bg-rose-500/10 hover:text-rose-300 rounded-xl transition-all font-medium tracking-wide border border-transparent hover:border-rose-500/20 text-sm">
+      <button id="logout-btn" class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-emerald-100/80 bg-emerald-950/30 hover:bg-rose-500/10 hover:text-rose-300 rounded-xl transition-all font-medium border border-transparent hover:border-rose-500/20 text-xs">
         <span>🚪</span> <span>登出系統</span>
-      </button>
     </div>
   </aside>
 
