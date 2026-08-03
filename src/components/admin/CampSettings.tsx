@@ -61,6 +61,8 @@ export default function CampSettings() {
     name: string;
     description: string | null;
     official_url: string | null;
+    address: string | null;
+    phone: string | null;
     slug: string;
   } | null>(null);
 
@@ -68,6 +70,8 @@ export default function CampSettings() {
     name: '',
     description: '',
     official_url: '',
+    address: '',
+    phone: '',
   });
 
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -87,7 +91,7 @@ export default function CampSettings() {
 
     const { data, error } = await supabase
       .from('nf_campgrounds')
-      .select('id, name, description, official_url, slug')
+      .select('id, name, description, official_url, address, phone, slug')
       .eq('id', campId)
       .single();
 
@@ -100,6 +104,8 @@ export default function CampSettings() {
         name: data.name || '',
         description: data.description || '',
         official_url: data.official_url || '',
+        address: data.address || '',
+        phone: data.phone || '',
       });
     }
     setLoading(false);
@@ -123,6 +129,8 @@ export default function CampSettings() {
         name: form.name,
         description: form.description,
         official_url: form.official_url || null,
+        address: form.address || null,
+        phone: form.phone || null,
       })
       .eq('id', campId)
       .select()
@@ -202,6 +210,35 @@ export default function CampSettings() {
               這段文字會顯示在首頁主視覺區與營區介紹頁的標題下方，也是 SEO 描述。
               建議 50-200 字以內。
             </p>
+          </div>
+
+          {/* 營區地址 */}
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1.5">
+              營區地址
+            </label>
+            <input
+              type="text"
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none text-stone-800"
+              placeholder="例如：苗栗縣三義鄉雙連潭153號"
+            />
+            <p className="text-xs text-stone-400 mt-1">會顯示在營主專區卡片與地圖詳細頁面中</p>
+          </div>
+
+          {/* 聯絡電話 */}
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1.5">
+              聯絡電話
+            </label>
+            <input
+              type="text"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none text-stone-800"
+              placeholder="例如：0909599344"
+            />
           </div>
 
           {/* 官方網站 */}
