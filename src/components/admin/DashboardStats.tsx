@@ -98,8 +98,8 @@ export default function DashboardStats() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+    <div className="space-y-6 flex flex-col min-h-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 shrink-0">
         {/* Stat Cards */}
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-all">
           <div className="absolute -right-4 -bottom-4 text-emerald-500/10 text-8xl transition-transform group-hover:scale-110">⛺️</div>
@@ -128,7 +128,7 @@ export default function DashboardStats() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Check-ins List */}
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden flex flex-col h-[400px]">
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden flex flex-col h-[540px] xl:h-[calc(100vh-270px)] min-h-[460px] flex-1">
           <div className="px-6 py-4 border-b border-stone-100 flex justify-between items-center bg-stone-50 shrink-0">
             <h3 className="font-bold text-stone-800 tracking-wide flex items-center gap-2">
               <span className="text-emerald-500">📥</span> 近期進場名單 <span className="text-xs text-stone-400 font-normal ml-1">(含未來 14 天)</span>
@@ -226,7 +226,7 @@ export default function DashboardStats() {
         </div>
 
         {/* Check-outs List */}
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden flex flex-col h-[400px]">
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden flex flex-col h-[540px] xl:h-[calc(100vh-270px)] min-h-[460px] flex-1">
           <div className="px-6 py-4 border-b border-stone-100 flex justify-between items-center bg-stone-50 shrink-0">
             <h3 className="font-bold text-stone-800 tracking-wide flex items-center gap-2">
               <span className="text-blue-500">📤</span> 近期離場名單 <span className="text-xs text-stone-400 font-normal ml-1">(含未來 14 天)</span>

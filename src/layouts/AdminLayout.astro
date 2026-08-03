@@ -35,44 +35,44 @@ const { title, description } = Astro.props;
   <div id="sidebar-overlay" class="fixed inset-0 bg-emerald-950/60 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
   <!-- Sidebar -->
-  <aside id="sidebar" class="w-56 shrink-0 bg-emerald-900 text-emerald-100/70 min-h-screen flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full md:translate-x-0 md:static md:ml-0 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none font-sans border-r border-emerald-800">
-    <div class="p-6 hidden md:block border-b border-emerald-800">
+  <aside id="sidebar" class="w-56 shrink-0 bg-emerald-900 text-emerald-100/70 h-screen max-h-screen flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full md:translate-x-0 md:sticky md:top-0 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none font-sans border-r border-emerald-800">
+    <div class="p-5 hidden md:block border-b border-emerald-800 shrink-0">
       <div class="flex items-center gap-2 mb-1">
         <span class="text-xl drop-shadow-sm">⛺️</span>
-        <h1 id="camp-name-display" class="text-2xl font-black tracking-widest text-white drop-shadow-sm font-sans text-balance">載入中...</h1>
+        <h1 id="camp-name-display" class="text-xl font-black tracking-widest text-white drop-shadow-sm font-sans text-balance">載入中...</h1>
       </div>
-      <p class="text-xs text-emerald-100/80 tracking-wider font-medium ml-8 mt-1">營主管理系統</p>
+      <p class="text-xs text-emerald-100/80 tracking-wider font-medium ml-7 mt-0.5">營主管理系統</p>
     </div>
-    <div class="p-4 md:hidden flex justify-between items-center border-b border-emerald-800 bg-emerald-900 h-16">
+    <div class="p-4 md:hidden flex justify-between items-center border-b border-emerald-800 bg-emerald-900 h-16 shrink-0">
       <h1 class="text-lg font-bold text-white tracking-widest">系統選單</h1>
       <button id="close-sidebar-btn" class="p-2 text-emerald-400 hover:text-white transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
     </div>
-    <nav class="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
-      <a href="/admin" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-dashboard">
+    <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto min-h-0">
+      <a href="/admin" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-dashboard">
         <span class="text-lg group-hover:scale-110 transition-transform">📊</span> <span class="font-medium tracking-wide text-sm">儀表板</span>
       </a>
-      <a href="/admin/orders" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-orders">
+      <a href="/admin/orders" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-orders">
         <span class="text-lg group-hover:scale-110 transition-transform">📝</span> <span class="font-medium tracking-wide text-sm">訂單管理</span>
       </a>
-      <a href="/admin/items" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-items">
+      <a href="/admin/items" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-items">
         <span class="text-lg group-hover:scale-110 transition-transform">⛺️</span> <span class="font-medium tracking-wide text-sm">商品與營位</span>
       </a>
-      <a href="/admin/discounts" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-discounts">
+      <a href="/admin/discounts" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-discounts">
         <span class="text-lg group-hover:scale-110 transition-transform">🏷️</span> <span class="font-medium tracking-wide text-sm">折扣碼管理</span>
       </a>
-      <a href="/admin/inventory" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-inventory">
+      <a href="/admin/inventory" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-inventory">
         <span class="text-lg group-hover:scale-110 transition-transform">📅</span> <span class="font-medium tracking-wide text-sm">庫存行事曆</span>
       </a>
-      <a href="/admin/admins" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-admins">
+      <a href="/admin/admins" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-admins">
         <span class="text-lg group-hover:scale-110 transition-transform">🛡️</span> <span class="font-medium tracking-wide text-sm">權限與管理員</span>
       </a>
-      <a href="/admin/camp-settings" class="flex items-center gap-3 px-4 py-3 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-camp-settings">
+      <a href="/admin/camp-settings" class="flex items-center gap-3 px-4 py-2.5 rounded-r-xl rounded-l-sm text-emerald-100/80 hover:bg-emerald-800 hover:text-white transition-all group" id="nav-camp-settings">
         <span class="text-lg group-hover:scale-110 transition-transform">⚙️</span> <span class="font-medium tracking-wide text-sm">營區設定</span>
       </a>
     </nav>
-    <div class="p-4 border-t border-emerald-800 flex flex-col gap-1">
+    <div class="p-3 border-t border-emerald-800 flex flex-col gap-1 shrink-0 bg-emerald-900">
       <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-emerald-950/50 border border-emerald-800/50">
         <div class="w-8 h-8 rounded-full bg-emerald-700 flex items-center justify-center text-emerald-100 font-bold border border-emerald-600 shrink-0" id="user-avatar">
           👤
@@ -177,8 +177,28 @@ const { title, description } = Astro.props;
       localStorage.setItem('admin_camp_ids', JSON.stringify(campIds));
       localStorage.setItem('admin_has_null_access', hasNullAccess ? 'true' : 'false');
 
-      const existingCampId = localStorage.getItem('camp_id');
       const currentPath = window.location.pathname;
+
+      // 檢查 URL 是否帶有 camp_id 參數（例如從車泊地圖 SSO 跳轉過來）
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlCampId = urlParams.get('camp_id');
+
+      if (urlCampId && (hasNullAccess || campIds.includes(urlCampId))) {
+        localStorage.setItem('camp_id', urlCampId);
+        const { data: camp } = await supabase
+          .from('nf_campgrounds')
+          .select('name')
+          .eq('id', urlCampId)
+          .single();
+        if (camp) localStorage.setItem('camp_name', camp.name);
+
+        if (currentPath === '/admin/campgrounds' || currentPath === '/admin' || currentPath === '/admin/') {
+          window.location.href = '/admin/orders';
+          return;
+        }
+      }
+
+      const existingCampId = localStorage.getItem('camp_id');
 
       // 如果還沒選營區且不在選單頁 → 導去選
       if (!existingCampId && !currentPath.includes('/admin/campgrounds')) {
