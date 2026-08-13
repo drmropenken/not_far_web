@@ -82,7 +82,7 @@ export default function OrdersManager() {
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [paymentLogs, setPaymentLogs] = useState<Record<string, PaymentLog[]>>({});
-  const [expandedLogsOrderId, setExpandedLogsOrderId] = useState<string | null>(null);
+  const [viewingLogsOrder, setViewingLogsOrder] = useState<Order | null>(null);
   const [onsitePaymentOrderId, setOnsitePaymentOrderId] = useState<string | null>(null);
   const [editingCustomerOrderId, setEditingCustomerOrderId] = useState<string | null>(null);
   const [customerEditForm, setCustomerEditForm] = useState({
@@ -1191,54 +1191,19 @@ export default function OrdersManager() {
                               );
                             })()}
 
-                            {/* 展開金流交易明細與經手人按鈕 */}
+                            {/* 查看金流交易明細按鈕（開啟 Modal） */}
                             {(() => {
                               const logs = paymentLogs[order.id] || [];
                               if (logs.length === 0) return null;
-                              const isExpanded = expandedLogsOrderId === order.id;
 
                               return (
-                                <div className="mt-2 text-right w-full flex flex-col items-end">
+                                <div className="mt-1.5 text-right w-full flex justify-end">
                                   <button
-                                    onClick={() => setExpandedLogsOrderId(isExpanded ? null : order.id)}
+                                    onClick={() => setViewingLogsOrder(order)}
                                     className="text-[11px] font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200/80 transition-all flex items-center gap-1 shadow-2xs"
                                   >
                                     <span>📜 查看金流明細 ({logs.length} 筆)</span>
-                                    <span className="text-[9px]">{isExpanded ? '▲ 收合' : '▼ 展開'}</span>
                                   </button>
-
-                                  {isExpanded && (
-                                    <div className="mt-2 w-full max-w-sm text-left bg-stone-50/90 p-3 rounded-xl border border-stone-200 space-y-2 animate-in fade-in duration-150 shadow-inner">
-                                      <div className="flex justify-between items-center pb-1.5 border-b border-stone-200/80 text-xs font-bold text-stone-700">
-                                        <span>💵 收款/退款交易明細</span>
-                                        <span className="text-[10px] text-stone-400 font-mono">共 {logs.length} 筆經手紀錄</span>
-                                      </div>
-                                      <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-0.5">
-                                        {logs.map((log, idx) => (
-                                          <div key={log.id || idx} className="bg-white p-2.5 rounded-lg border border-stone-200 text-xs space-y-1 shadow-2xs">
-                                            <div className="flex justify-between items-center font-bold">
-                                              <span className="text-stone-800 flex items-center gap-1.5">
-                                                <span className="text-stone-400 font-mono text-[10px]">#{idx + 1}</span>
-                                                {log.payment_type === 'onsite' ? '💵 現場現金' : log.payment_type === 'credit_card' ? '💳 信用卡' : '🏦 銀行轉帳'}
-                                              </span>
-                                              <span className={`font-mono text-sm ${log.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                                {log.amount < 0 ? `- NT$ ${Math.abs(log.amount).toLocaleString()}` : `+ NT$ ${log.amount.toLocaleString()}`}
-                                              </span>
-                                            </div>
-                                            <div className="flex flex-wrap items-center justify-between text-[11px] text-stone-500 pt-0.5 font-mono border-t border-stone-100">
-                                              <span>👤 經手人: <strong className="text-stone-700">{log.collected_by || '系統自動'}</strong></span>
-                                              <span>🕒 {log.collected_at ? new Date(log.collected_at).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</span>
-                                            </div>
-                                            {log.notes && (
-                                              <div className="text-[10px] text-stone-600 bg-amber-50/70 p-1.5 rounded border border-amber-200/60 mt-1">
-                                                💬 備註: {log.notes}
-                                              </div>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
                               );
                             })()}
@@ -1584,6 +1549,115 @@ export default function OrdersManager() {
                   }
                 }} className="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold shadow-sm transition-colors">儲存變更</button>
               </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 檢視金流交易歷史 Modal */}
+      {viewingLogsOrder && (() => {
+        const logs = paymentLogs[viewingLogsOrder.id] || [];
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setViewingLogsOrder(null)}>
+            <div className="bg-white rounded-2xl shadow-xl border border-stone-200 max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+              {/* Header */}
+              <div className="p-5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+                <div>
+                  <h3 className="font-black text-stone-800 text-lg flex items-center gap-2">
+                    <span>📜 金流交易歷史紀錄</span>
+                    <span className="text-xs font-mono text-stone-500 bg-stone-200/70 px-2 py-0.5 rounded-md">
+                      {viewingLogsOrder.order_no}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-1 font-medium">
+                    訂購人：<strong className="text-stone-700">{viewingLogsOrder.customer_name}</strong> ({viewingLogsOrder.customer_phone})
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setViewingLogsOrder(null)} 
+                  className="w-8 h-8 rounded-full bg-stone-200/70 hover:bg-stone-200 text-stone-600 font-bold text-sm flex items-center justify-center transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Financial Summary */}
+              <div className="p-4 bg-stone-100/60 border-b border-stone-200/80 grid grid-cols-3 gap-3 text-center text-xs">
+                <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                  <span className="text-stone-500 text-[11px] block">訂單總金額</span>
+                  <span className="font-black text-stone-800 text-sm font-mono">NT$ {(viewingLogsOrder.total_amount || 0).toLocaleString()}</span>
+                </div>
+                <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                  <span className="text-stone-500 text-[11px] block">累計已收金額</span>
+                  <span className="font-black text-emerald-600 text-sm font-mono">NT$ {(viewingLogsOrder.deposit_amount || 0).toLocaleString()}</span>
+                </div>
+                <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                  <span className="text-stone-500 text-[11px] block">目前狀態</span>
+                  <span className="font-bold text-sm">
+                    {viewingLogsOrder.deposit_amount > viewingLogsOrder.total_amount ? (
+                      <span className="text-rose-600">🚨 溢繳 {(viewingLogsOrder.deposit_amount - viewingLogsOrder.total_amount).toLocaleString()}</span>
+                    ) : viewingLogsOrder.deposit_amount >= viewingLogsOrder.total_amount ? (
+                      <span className="text-emerald-600">✅ 已結清</span>
+                    ) : (
+                      <span className="text-amber-600">待收 {(viewingLogsOrder.total_amount - viewingLogsOrder.deposit_amount).toLocaleString()}</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {/* Logs List */}
+              <div className="p-5 space-y-3 max-h-[60vh] overflow-y-auto">
+                <div className="flex justify-between items-center text-xs font-bold text-stone-700 pb-1">
+                  <span>分次交易紀錄明細</span>
+                  <span className="text-stone-400 font-mono">共 {logs.length} 筆</span>
+                </div>
+
+                {logs.length === 0 ? (
+                  <div className="text-center py-8 text-stone-400 text-xs bg-stone-50 rounded-xl border border-dashed border-stone-200">
+                    尚無交易紀錄
+                  </div>
+                ) : (
+                  logs.map((log, idx) => (
+                    <div key={log.id || idx} className="p-3.5 bg-stone-50 border border-stone-200 rounded-xl space-y-2 hover:border-emerald-300 transition-all shadow-2xs">
+                      <div className="flex justify-between items-center font-bold">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-xs font-mono text-stone-400 bg-white px-1.5 py-0.5 rounded border border-stone-200">
+                            #{idx + 1}
+                          </span>
+                          <span className="text-stone-800">
+                            {log.payment_type === 'onsite' ? '💵 現場現金' : log.payment_type === 'credit_card' ? '💳 信用卡' : '🏦 銀行轉帳'}
+                          </span>
+                        </div>
+                        <span className={`font-mono text-base font-black ${log.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                          {log.amount < 0 ? `- NT$ ${Math.abs(log.amount).toLocaleString()}` : `+ NT$ ${log.amount.toLocaleString()}`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-stone-500 pt-1.5 border-t border-stone-200/60 font-mono">
+                        <span>👤 經手人：<strong className="text-stone-700 font-bold">{log.collected_by || '系統自動'}</strong></span>
+                        <span>🕒 {log.collected_at ? new Date(log.collected_at).toLocaleString('zh-TW') : '-'}</span>
+                      </div>
+
+                      {log.notes && (
+                        <div className="text-xs text-stone-600 bg-amber-50/80 p-2 rounded-lg border border-amber-200/60 mt-1">
+                          💬 備註：{log.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-stone-100 flex justify-end bg-stone-50/50">
+                <button
+                  onClick={() => setViewingLogsOrder(null)}
+                  className="px-6 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold rounded-xl transition-colors text-sm"
+                >
+                  關閉
+                </button>
+              </div>
+
             </div>
           </div>
         );
