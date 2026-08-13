@@ -189,6 +189,19 @@ export default function OrdersManager() {
     fetchOrders();
     setAdminRole(localStorage.getItem('admin_role') || 'viewer');
     setAdminEmail(localStorage.getItem('admin_email') || '');
+
+    // 解析 URL search 參數（方便從庫存行事曆一鍵跳轉過來）
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    const dateParam = urlParams.get('date');
+
+    if (searchParam) {
+      setSearchTerm(searchParam);
+    }
+    if (dateParam) {
+      setStartDate(dateParam);
+      setEndDate(dateParam);
+    }
   }, []);
 
   const updateOrderStatus = async (orderId: string, newStatus: 'pending' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled') => {

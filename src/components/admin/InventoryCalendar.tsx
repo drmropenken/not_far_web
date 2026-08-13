@@ -45,7 +45,9 @@ export default function InventoryCalendar() {
     currentOverride: number;
     booked: number;
     existingRecordId?: string;
+    orders?: MonthOrder[];
   } | null>(null);
+  const [activeCellTab, setActiveCellTab] = useState<'orders' | 'quota'>('orders');
   const [newQuota, setNewQuota] = useState<string>('');
   
   // 批次修改某日的全部庫存
@@ -162,7 +164,7 @@ export default function InventoryCalendar() {
   };
 
   // 點擊格子開啟編輯 Modal
-  const handleCellClick = (item: Item, day: number) => {
+  const handleCellClick = (item: Item, day: number, cellOrders: MonthOrder[] = []) => {
     if (adminRole === 'viewer') return;
     const year = currentDate.getFullYear();
     const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
@@ -177,9 +179,11 @@ export default function InventoryCalendar() {
       dateStr,
       currentOverride,
       booked: existingRecord?.booked_quantity || 0,
-      existingRecordId: existingRecord?.id
+      existingRecordId: existingRecord?.id,
+      orders: cellOrders
     });
     setNewQuota(currentOverride.toString());
+    setActiveCellTab(cellOrders && cellOrders.length > 0 ? 'orders' : 'quota');
   };
 
   // 儲存修改的庫存
@@ -352,19 +356,27 @@ export default function InventoryCalendar() {
                     
                     let cellContent = (
                       <div className={`w-full h-full min-h-[32px] md:min-h-[40px] flex items-center justify-center rounded-lg mx-auto text-xs md:text-sm font-bold shadow-sm transition-all duration-200 transform group-hover/cell:scale-110 active:scale-95
-                        ${isFull ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-rose-100/30' :
+                        ${isFull ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-rose-100/30 font-black' :
                           isOverridden ? 'bg-amber-50 text-amber-600 border border-amber-300 shadow-amber-100/30' :
                           booked > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-emerald-100/30' :
                           'bg-white text-stone-700 border border-stone-200 hover:border-emerald-400 hover:text-emerald-600 hover:shadow-emerald-100/40'
                         }
                       `}>
-                        {remaining > 0 ? (
+                        {totalAvailable === 0 ? (
+                          <span className="text-stone-300 font-normal">-</span>
+                        ) : isFull ? (
+                          <div className="flex items-baseline gap-0.5" title={`滿帳 (${booked}/${totalAvailable})`}>
+                            <span className="text-xs md:text-sm font-black text-rose-600">{booked}</span>
+                            <span className="text-[10px] text-rose-400 opacity-60">/</span>
+                            <span className="text-xs md:text-sm font-black text-rose-600">{totalAvailable}</span>
+                          </div>
+                        ) : (
                           <div className="flex items-baseline gap-0.5">
                             <span className={`text-[10px] ${booked > 0 ? 'text-emerald-600 font-black text-xs' : 'opacity-60'}`}>{booked}</span>
                             <span className="text-[10px] opacity-40">/</span>
-                            <span>{remaining}</span>
+                            <span>{totalAvailable}</span>
                           </div>
-                        ) : (totalAvailable === 0 ? <span className="text-stone-300 font-normal">-</span> : '滿')}
+                        )}
                       </div>
                     );
 
@@ -389,7 +401,7 @@ export default function InventoryCalendar() {
                       <td 
                         key={day} 
                         className={`relative p-1 md:p-1.5 border-b border-r cursor-pointer group/cell ${isToday ? 'bg-amber-50/40 border-amber-200 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.3)]' : 'border-stone-100/60'}`} 
-                        onClick={() => handleCellClick(item, day)}
+                        onClick={() => handleCellClick(item, day, cellOrders)}
                         onMouseEnter={(e) => {
                           if (cellOrders.length > 0) {
                             setHoveredCell({
@@ -413,66 +425,156 @@ export default function InventoryCalendar() {
         </div>
       )}
       
-      {/* 編輯庫存 Modal */}
+      {/* 編輯庫存 / 檢視訂單 Modal */}
       {editingCell && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-stone-100 bg-stone-50/50">
-              <h3 className="text-lg font-bold text-stone-800">修改單日庫存總量</h3>
-              <p className="text-sm text-stone-500 mt-1">強制覆蓋系統預設的營位/裝備數量</p>
-            </div>
-            <div className="p-5 space-y-4">
-              <div className="bg-stone-50 p-4 rounded-xl space-y-2 border border-stone-100 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-stone-500">項目名稱</span>
-                  <span className="font-bold text-stone-700">{editingCell.item.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-500">指定日期</span>
-                  <span className="font-bold text-stone-700 font-mono">{editingCell.dateStr}</span>
-                </div>
-                <div className="flex justify-between border-t border-stone-200/60 pt-2 mt-2">
-                  <span className="text-stone-500">系統預設總量</span>
-                  <span className="font-bold text-stone-700">{editingCell.item.total_quantity}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-500">目前已被訂走</span>
-                  <span className="font-bold text-rose-500">{editingCell.booked}</span>
-                </div>
-              </div>
-              
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setEditingCell(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
               <div>
-                <label className="block text-sm font-bold text-stone-700 mb-2">
-                  實際可開放總數 <span className="text-stone-400 font-normal">(留空代表恢復預設)</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={newQuota}
-                  onChange={(e) => setNewQuota(e.target.value)}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors text-lg font-mono outline-none"
-                  placeholder={editingCell.item.total_quantity.toString()}
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveQuota();
-                    if (e.key === 'Escape') setEditingCell(null);
-                  }}
-                />
+                <h3 className="text-lg font-bold text-stone-800">{editingCell.item.name}</h3>
+                <p className="text-xs text-stone-500 mt-0.5 font-mono">{editingCell.dateStr} 日庫存與訂單資訊</p>
               </div>
+              <button 
+                onClick={() => setEditingCell(null)} 
+                className="w-8 h-8 rounded-full bg-stone-200/70 hover:bg-stone-200 text-stone-600 font-bold text-sm flex items-center justify-center transition-colors"
+              >
+                ✕
+              </button>
             </div>
-            <div className="p-5 border-t border-stone-100 flex justify-end gap-3 bg-stone-50/50">
+
+            {/* 分頁按鈕 */}
+            <div className="flex border-b border-stone-200 bg-stone-100/60 px-4 pt-2 gap-2 text-sm font-bold">
+              {editingCell.orders && editingCell.orders.length > 0 && (
+                <button
+                  onClick={() => setActiveCellTab('orders')}
+                  className={`px-4 py-2 rounded-t-lg transition-all border-t border-x ${
+                    activeCellTab === 'orders'
+                      ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px'
+                      : 'text-stone-500 hover:text-stone-800 border-transparent'
+                  }`}
+                >
+                  📝 當日訂單 ({editingCell.orders.length} 筆)
+                </button>
+              )}
+              <button
+                onClick={() => setActiveCellTab('quota')}
+                className={`px-4 py-2 rounded-t-lg transition-all border-t border-x ${
+                  activeCellTab === 'quota'
+                    ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px'
+                    : 'text-stone-500 hover:text-stone-800 border-transparent'
+                }`}
+              >
+                ⚙️ 修改庫存容量
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+              {activeCellTab === 'orders' && editingCell.orders && editingCell.orders.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="text-xs text-stone-500 font-medium flex justify-between items-center bg-emerald-50/60 p-2.5 rounded-lg border border-emerald-100">
+                    <span>💡 點擊下方按鈕可直接跳轉至「訂單管理」查看完整細節與編輯對帳：</span>
+                  </div>
+                  {editingCell.orders.map(order => {
+                    const qty = order.nf_order_items?.find(oi => oi.item_id === editingCell.item.id)?.quantity || 0;
+                    const orderSearchUrl = `/admin/orders?search=${encodeURIComponent(order.order_no)}`;
+                    
+                    return (
+                      <div key={order.id} className="p-4 bg-stone-50 border border-stone-200 rounded-xl space-y-3 hover:border-emerald-300 transition-all shadow-sm">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-bold text-stone-800 text-base flex items-center gap-2">
+                              <span>{order.customer_name}</span>
+                              <span className="text-xs font-mono text-stone-400 bg-white px-2 py-0.5 rounded border border-stone-200">{order.order_no}</span>
+                            </div>
+                            <div className="text-xs text-stone-500 mt-1 flex items-center gap-3">
+                              <span>📅 {order.check_in_date.slice(5)} ～ {order.check_out_date.slice(5)}</span>
+                              <span>
+                                {order.status === 'paid' ? <span className="text-emerald-600 font-bold">💰 已付款</span> :
+                                 order.status === 'deposit_paid' ? <span className="text-teal-600 font-bold">🪙 已付定金</span> :
+                                 order.status === 'checked_in' ? <span className="text-blue-600 font-bold">✅ 已報到</span> :
+                                 <span className="text-rose-500 font-bold">⏳ 待付款</span>}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="bg-amber-100 text-amber-800 font-bold text-sm px-2.5 py-1 rounded-lg border border-amber-200 shrink-0 font-mono">
+                            x {qty} 個
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-stone-200/80">
+                          <span className="text-xs text-stone-400 font-mono">入住人資訊備註已整合</span>
+                          <a
+                            href={orderSearchUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                          >
+                            <span>🔍 開啟訂單管理對帳</span>
+                            <span className="text-[10px]">↗</span>
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-stone-50 p-4 rounded-xl space-y-2 border border-stone-100 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">項目名稱</span>
+                      <span className="font-bold text-stone-700">{editingCell.item.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">指定日期</span>
+                      <span className="font-bold text-stone-700 font-mono">{editingCell.dateStr}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-stone-200/60 pt-2 mt-2">
+                      <span className="text-stone-500">系統預設總量</span>
+                      <span className="font-bold text-stone-700">{editingCell.item.total_quantity}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">目前已被訂走</span>
+                      <span className="font-bold text-rose-500">{editingCell.booked}</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-bold text-stone-700 mb-2">
+                      實際可開放總數 <span className="text-stone-400 font-normal">(留空代表恢復預設)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newQuota}
+                      onChange={(e) => setNewQuota(e.target.value)}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors text-lg font-mono outline-none"
+                      placeholder={editingCell.item.total_quantity.toString()}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveQuota();
+                        if (e.key === 'Escape') setEditingCell(null);
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-stone-100 flex justify-end gap-3 bg-stone-50/50">
               <button 
                 onClick={() => setEditingCell(null)}
-                className="px-5 py-2 text-stone-600 font-bold hover:bg-stone-200 rounded-lg transition-colors"
+                className="px-5 py-2 text-stone-600 font-bold hover:bg-stone-200 rounded-lg transition-colors text-sm"
               >
-                取消
+                關閉
               </button>
-              <button 
-                onClick={handleSaveQuota}
-                className="px-5 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex items-center gap-2"
-              >
-                儲存設定
-              </button>
+              {activeCellTab === 'quota' && (
+                <button 
+                  onClick={handleSaveQuota}
+                  className="px-5 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex items-center gap-2 text-sm"
+                >
+                  儲存容量變更
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -514,10 +616,10 @@ export default function InventoryCalendar() {
         </div>
       )}
 
-      {/* 浮動的 Hover Tooltip (固定在視窗上，避免被 overflow 裁切) */}
+      {/* 浮動的 Hover Tooltip (可滑入互動與點擊跳轉) */}
       {hoveredCell && (
         <div 
-          className="fixed z-[99999] pointer-events-none w-[280px] bg-stone-800 text-white text-xs rounded-xl shadow-2xl p-4 border border-stone-600 animate-in fade-in zoom-in-95 duration-150"
+          className="fixed z-[99999] pointer-events-auto w-[300px] bg-stone-800 text-white text-xs rounded-xl shadow-2xl p-4 border border-stone-600 animate-in fade-in zoom-in-95 duration-150"
           style={{
             left: hoveredCell.rect.left + hoveredCell.rect.width / 2,
             transform: 'translateX(-50%)',
@@ -526,30 +628,46 @@ export default function InventoryCalendar() {
               : hoveredCell.rect.bottom + 8,
             translate: hoveredCell.rect.top > 280 ? '0 -100%' : '0 0',
           }}
+          onMouseEnter={() => {
+            // 滑鼠移入 tooltip 保持顯示
+          }}
+          onMouseLeave={() => setHoveredCell(null)}
         >
-          <div className="font-bold border-b border-stone-600/80 pb-2 mb-3 flex justify-between items-center">
-            <span className="text-stone-200 tracking-wider">📝 訂單明細</span>
-            <span className="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded text-[10px]">總計 {hoveredCell.booked} 個</span>
+          <div className="font-bold border-b border-stone-600/80 pb-2 mb-2 flex justify-between items-center">
+            <span className="text-stone-200 tracking-wider flex items-center gap-1">
+              <span>📝 訂單明細</span>
+              <span className="text-[10px] text-stone-400 font-normal">(點擊可查看對帳)</span>
+            </span>
+            <span className="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded text-[10px] font-mono">總計 {hoveredCell.booked} 個</span>
           </div>
-          <div className="space-y-3 max-h-[200px] overflow-y-auto hide-scrollbar">
+          <div className="space-y-2.5 max-h-[220px] overflow-y-auto hide-scrollbar pt-1">
             {hoveredCell.orders.map(order => {
               const qty = order.nf_order_items?.find(oi => oi.item_id === hoveredCell.item.id)?.quantity || 0;
+              const orderSearchUrl = `/admin/orders?search=${encodeURIComponent(order.order_no)}`;
               return (
-                <div key={order.id} className="flex justify-between items-start gap-3 bg-stone-700/30 p-2 rounded-lg border border-stone-600/30">
+                <a 
+                  key={order.id} 
+                  href={orderSearchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex justify-between items-start gap-3 bg-stone-700/40 hover:bg-stone-700 hover:border-emerald-400/80 p-2.5 rounded-lg border border-stone-600/40 transition-all cursor-pointer group/item block"
+                  title="點擊在新分頁開啟此筆訂單明細"
+                >
                   <div className="min-w-0 flex-1">
-                    <div className="text-emerald-300 font-bold truncate text-sm flex items-center">
+                    <div className="text-emerald-300 font-bold truncate text-sm flex items-center group-hover/item:text-emerald-200">
                       {order.customer_name} 
                       <span className="text-stone-400 font-mono text-xs ml-1.5">({order.order_no.slice(-4)})</span>
                       {(order.notes || order.admin_notes) && (
                         <span className="ml-1.5 text-[10px]" title="有備註訊息">💬</span>
                       )}
                     </div>
-                    <div className="text-[10px] text-stone-300 mt-1 font-medium">
-                      {order.status === 'paid' ? '💰 已付款' : order.status === 'deposit_paid' ? '🪙 已付定金' : order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}
+                    <div className="text-[10px] text-stone-300 mt-1 font-medium flex items-center justify-between">
+                      <span>{order.status === 'paid' ? '💰 已付款' : order.status === 'deposit_paid' ? '🪙 已付定金' : order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}</span>
+                      <span className="text-amber-300/80 opacity-0 group-hover/item:opacity-100 transition-opacity font-bold">🔍 對帳 ↗</span>
                     </div>
                   </div>
-                  <div className="font-mono bg-stone-900/50 px-2 py-1 rounded text-amber-300 shrink-0 font-bold text-sm shadow-inner border border-stone-700/50">x {qty}</div>
-                </div>
+                  <div className="font-mono bg-stone-900/60 px-2 py-1 rounded text-amber-300 shrink-0 font-bold text-sm shadow-inner border border-stone-700/50">x {qty}</div>
+                </a>
               )
             })}
           </div>
