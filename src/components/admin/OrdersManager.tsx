@@ -82,6 +82,7 @@ export default function OrdersManager() {
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [paymentLogs, setPaymentLogs] = useState<Record<string, PaymentLog[]>>({});
+  const [expandedLogsOrderId, setExpandedLogsOrderId] = useState<string | null>(null);
   const [onsitePaymentOrderId, setOnsitePaymentOrderId] = useState<string | null>(null);
   const [editingCustomerOrderId, setEditingCustomerOrderId] = useState<string | null>(null);
   const [customerEditForm, setCustomerEditForm] = useState({
@@ -680,6 +681,7 @@ export default function OrdersManager() {
       '訂單編號', '訂購人姓名', '聯絡電話', '車牌號碼', '入住日期', '退房日期', '訂單狀態', 
       '總金額(元)', '已收金額(元)', '未付尾款(元)', 
       '實收-信用卡(元)', '實收-匯款(元)', '實收-現場(元)',
+      '金流筆數', '金流交易明細與經手人',
       '虛擬匯款帳號', '客人備註', '營主內部備註', '折扣碼', '折扣金額', '下單時間'
     ];
     
@@ -706,6 +708,15 @@ export default function OrdersManager() {
       
       const statusText = order.status === 'paid' ? '已付款' : order.status === 'deposit_paid' ? '已付定金' : order.status === 'pending' ? (order.check_in_date < new Date(new Date().getTime() + 8 * 3600000).toISOString().split('T')[0] ? '已逾期' : '待付款') : order.status === 'checked_in' ? '已報到' : '已取消';
 
+      const logsCountStr = `${logs.length} 筆`;
+      const logsDetailStr = logs.length === 0 ? '無收款紀錄' : logs.map((log, idx) => {
+        const typeStr = log.payment_type === 'onsite' ? '現場' : log.payment_type === 'credit_card' ? '信用卡' : '轉帳';
+        const timeStr = log.collected_at ? new Date(log.collected_at).toLocaleString('zh-TW') : '';
+        const collector = log.collected_by || '系統';
+        const noteStr = log.notes ? ` (備註:${log.notes})` : '';
+        return `[#${idx + 1}] ${timeStr} ${typeStr} NT$${log.amount} (經手:${collector})${noteStr}`;
+      }).join(' | ');
+
       return [
         order.order_no,
         order.customer_name,
@@ -720,6 +731,8 @@ export default function OrdersManager() {
         creditCard,
         bankTransfer,
         onsite,
+        logsCountStr,
+        logsDetailStr,
         order.virtual_account || '',
         order.notes || '',
         order.admin_notes || '',
@@ -1177,6 +1190,58 @@ export default function OrdersManager() {
                                 </div>
                               );
                             })()}
+
+                            {/* 展開金流交易明細與經手人按鈕 */}
+                            {(() => {
+                              const logs = paymentLogs[order.id] || [];
+                              if (logs.length === 0) return null;
+                              const isExpanded = expandedLogsOrderId === order.id;
+
+                              return (
+                                <div className="mt-2 text-right w-full flex flex-col items-end">
+                                  <button
+                                    onClick={() => setExpandedLogsOrderId(isExpanded ? null : order.id)}
+                                    className="text-[11px] font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200/80 transition-all flex items-center gap-1 shadow-2xs"
+                                  >
+                                    <span>📜 查看金流明細 ({logs.length} 筆)</span>
+                                    <span className="text-[9px]">{isExpanded ? '▲ 收合' : '▼ 展開'}</span>
+                                  </button>
+
+                                  {isExpanded && (
+                                    <div className="mt-2 w-full max-w-sm text-left bg-stone-50/90 p-3 rounded-xl border border-stone-200 space-y-2 animate-in fade-in duration-150 shadow-inner">
+                                      <div className="flex justify-between items-center pb-1.5 border-b border-stone-200/80 text-xs font-bold text-stone-700">
+                                        <span>💵 收款/退款交易明細</span>
+                                        <span className="text-[10px] text-stone-400 font-mono">共 {logs.length} 筆經手紀錄</span>
+                                      </div>
+                                      <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-0.5">
+                                        {logs.map((log, idx) => (
+                                          <div key={log.id || idx} className="bg-white p-2.5 rounded-lg border border-stone-200 text-xs space-y-1 shadow-2xs">
+                                            <div className="flex justify-between items-center font-bold">
+                                              <span className="text-stone-800 flex items-center gap-1.5">
+                                                <span className="text-stone-400 font-mono text-[10px]">#{idx + 1}</span>
+                                                {log.payment_type === 'onsite' ? '💵 現場現金' : log.payment_type === 'credit_card' ? '💳 信用卡' : '🏦 銀行轉帳'}
+                                              </span>
+                                              <span className={`font-mono text-sm ${log.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                {log.amount < 0 ? `- NT$ ${Math.abs(log.amount).toLocaleString()}` : `+ NT$ ${log.amount.toLocaleString()}`}
+                                              </span>
+                                            </div>
+                                            <div className="flex flex-wrap items-center justify-between text-[11px] text-stone-500 pt-0.5 font-mono border-t border-stone-100">
+                                              <span>👤 經手人: <strong className="text-stone-700">{log.collected_by || '系統自動'}</strong></span>
+                                              <span>🕒 {log.collected_at ? new Date(log.collected_at).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                                            </div>
+                                            {log.notes && (
+                                              <div className="text-[10px] text-stone-600 bg-amber-50/70 p-1.5 rounded border border-amber-200/60 mt-1">
+                                                💬 備註: {log.notes}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           {(!order.deposit_amount || order.deposit_amount === 0) && order.status !== 'cancelled' && (
                             <div className="text-2xl font-bold tracking-tight mt-1 text-emerald-600">
                               NT$ {order.total_amount?.toLocaleString()}
@@ -1226,7 +1291,7 @@ export default function OrdersManager() {
                         </button>
                       )}
                       {/* 線上付款（信用卡／匯款） */}
-                      {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
+                      {order.status !== 'cancelled' && (
                         <button
                           onClick={() => { setOnlinePaymentOrderId(order.id); setOnlinePaymentAmount(''); setOnlinePaymentType('bank_transfer'); setOnlinePaymentCollectedAt(getLocalDateTimeString()); }}
                           className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors"
@@ -1235,7 +1300,7 @@ export default function OrdersManager() {
                         </button>
                       )}
                       {/* 現場收款 */}
-                      {order.status !== 'cancelled' && order.status !== 'paid' && order.status !== 'checked_in' && (
+                      {order.status !== 'cancelled' && (
                         <button onClick={() => { setOnsitePaymentOrderId(order.id); setOnsiteAmount(''); setOnsiteNotes(''); setOnsiteCollectedAt(getLocalDateTimeString()); }} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
                           💵 現場收款
                         </button>
