@@ -17,13 +17,27 @@ type InventoryRecord = {
   booked_quantity: number;
 };
 
+type PaymentLog = {
+  id: string;
+  order_id: string;
+  amount: number;
+  payment_type: string;
+  collected_by?: string;
+  collected_at?: string;
+  notes?: string | null;
+};
+
 type MonthOrder = {
   id: string;
   order_no: string;
   customer_name: string;
+  customer_phone?: string | null;
   check_in_date: string;
   check_out_date: string;
   status: string;
+  total_amount?: number;
+  deposit_amount?: number;
+  payment_method?: string | null;
   notes: string | null;
   admin_notes: string | null;
   nf_order_items: {
@@ -37,6 +51,7 @@ export default function InventoryCalendar() {
   const [items, setItems] = useState<Item[]>([]);
   const [inventory, setInventory] = useState<InventoryRecord[]>([]);
   const [monthOrders, setMonthOrders] = useState<MonthOrder[]>([]);
+  const [paymentLogs, setPaymentLogs] = useState<Record<string, PaymentLog[]>>({});
   const [loading, setLoading] = useState(true);
   const [editingCell, setEditingCell] = useState<{
     item: Item;
@@ -50,8 +65,10 @@ export default function InventoryCalendar() {
   const [activeCellTab, setActiveCellTab] = useState<'orders' | 'quota'>('orders');
   const [newQuota, setNewQuota] = useState<string>('');
   
-  // 批次修改某日的全部庫存
+  // 批次修改某日的全部庫存 / 財務數據 Modal 狀態
   const [editingDay, setEditingDay] = useState<number | null>(null);
+  const [activeDayTab, setActiveDayTab] = useState<'financial' | 'quota'>('financial');
+  const [dayOrderFilter, setDayOrderFilter] = useState<'check_in' | 'active'>('check_in');
 
   // Hover Tooltip 狀態
   const [hoveredCell, setHoveredCell] = useState<{
@@ -135,11 +152,11 @@ export default function InventoryCalendar() {
       if (invData) setInventory(invData);
     }
 
-    // 3. 取得此營區的訂單
+    // 3. 取得此營區的訂單（含財務欄位）
     const { data: ordersData } = await supabase
       .from('nf_orders')
       .select(`
-        id, order_no, customer_name, check_in_date, check_out_date, status, notes, admin_notes,
+        id, order_no, customer_name, customer_phone, check_in_date, check_out_date, status, total_amount, deposit_amount, payment_method, notes, admin_notes,
         nf_order_items (
           item_id, quantity,
           nf_items ( category, name )
@@ -150,7 +167,27 @@ export default function InventoryCalendar() {
       .lte('check_in_date', endDate)
       .gte('check_out_date', startDate);
       
-    if (ordersData) setMonthOrders(ordersData as any);
+    if (ordersData) {
+      setMonthOrders(ordersData as any);
+
+      // 4. 撈取訂單金流紀錄 (nf_payment_logs)
+      if (ordersData.length > 0) {
+        const orderIds = ordersData.map(o => o.id);
+        const { data: logsData } = await supabase
+          .from('nf_payment_logs')
+          .select('*')
+          .in('order_id', orderIds);
+
+        if (logsData) {
+          const grouped: Record<string, PaymentLog[]> = {};
+          logsData.forEach((log: PaymentLog) => {
+            if (!grouped[log.order_id]) grouped[log.order_id] = [];
+            grouped[log.order_id].push(log);
+          });
+          setPaymentLogs(grouped);
+        }
+      }
+    }
 
     setLoading(false);
   };
@@ -268,6 +305,67 @@ export default function InventoryCalendar() {
     await fetchData();
   };
 
+  // 當日財務與訂單資料計算
+  const getDayFinancialSummary = (day: number) => {
+    const year = currentDate.getFullYear();
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+    const dateStr = `${year}-${month}-${day.toString().padStart(2, '0')}`;
+
+    // 當日入住訂單
+    const checkInOrders = monthOrders.filter(o => o.check_in_date === dateStr);
+    
+    // 當日在營訂單 (入住日期 <= dateStr 且 退房日期 > dateStr)
+    const activeOrders = monthOrders.filter(o => o.check_in_date <= dateStr && o.check_out_date > dateStr);
+
+    const targetOrders = dayOrderFilter === 'check_in' ? checkInOrders : activeOrders;
+
+    let totalRevenue = 0;
+    let totalPaid = 0;
+    let totalUnpaid = 0;
+    let onsiteTotal = 0;
+    let bankTransferTotal = 0;
+    let creditCardTotal = 0;
+
+    targetOrders.forEach(order => {
+      const total = order.total_amount || 0;
+      const deposit = order.deposit_amount || 0;
+      const unpaid = Math.max(0, total - deposit);
+
+      totalRevenue += total;
+      totalPaid += deposit;
+      totalUnpaid += unpaid;
+
+      const logs = paymentLogs[order.id] || [];
+      if (logs.length > 0) {
+        logs.forEach(log => {
+          if (log.payment_type === 'onsite') onsiteTotal += log.amount;
+          else if (log.payment_type === 'bank_transfer') bankTransferTotal += log.amount;
+          else if (log.payment_type === 'credit_card') creditCardTotal += log.amount;
+          else onsiteTotal += log.amount;
+        });
+      } else if (deposit > 0) {
+        // 若無明確 log，按支付方式拆分
+        if (order.payment_method === 'onsite') onsiteTotal += deposit;
+        else if (order.payment_method === 'bank_transfer') bankTransferTotal += deposit;
+        else if (order.payment_method === 'credit_card' || order.payment_method === 'ecpay') creditCardTotal += deposit;
+        else bankTransferTotal += deposit;
+      }
+    });
+
+    return {
+      dateStr,
+      checkInOrders,
+      activeOrders,
+      targetOrders,
+      totalRevenue,
+      totalPaid,
+      totalUnpaid,
+      onsiteTotal,
+      bankTransferTotal,
+      creditCardTotal
+    };
+  };
+
   return (
     <div className="bg-white md:rounded-2xl shadow-sm border border-stone-200 md:p-5 p-3 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-80px)] w-full relative">
       
@@ -277,7 +375,7 @@ export default function InventoryCalendar() {
         {/* 提示說明 (縮小至一行) */}
         <div className="text-xs text-stone-600 bg-gradient-to-r from-emerald-50 to-teal-50/30 px-4 py-2 rounded-lg border border-emerald-100/60 flex items-center gap-3 shadow-sm flex-1 overflow-x-auto whitespace-nowrap hide-scrollbar">
           <span className="text-emerald-500 text-base leading-none">💡</span>
-          <span className="text-stone-700 font-medium mr-2 hidden md:inline">點擊格子可強制修改當天總量。</span>
+          <span className="text-stone-700 font-medium mr-2 hidden md:inline">點擊日期標題可看當日財務與批次關閉，點擊格子可強制修改當天總量。</span>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-white border border-stone-300 rounded-full"></div> 正常可訂</span>
             <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-amber-50 border border-amber-300 rounded-full"></div> 手動調整</span>
@@ -317,7 +415,16 @@ export default function InventoryCalendar() {
                   const isToday = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth() && day === today.getDate();
                   
                   return (
-                    <th key={day} id={isToday ? 'today-col-header' : undefined} onClick={() => adminRole !== 'viewer' && setEditingDay(day)} title={adminRole !== 'viewer' ? `點擊設定 ${day} 日全天庫存` : ''} className={`relative p-1.5 border-b border-r min-w-[45px] md:min-w-[55px] ${adminRole !== 'viewer' ? 'cursor-pointer hover:bg-stone-200/50' : ''} transition-colors group/day ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-stone-200/80' : 'text-stone-600 border-stone-200/80'}`}>
+                    <th 
+                      key={day} 
+                      id={isToday ? 'today-col-header' : undefined} 
+                      onClick={() => {
+                        setEditingDay(day);
+                        setActiveDayTab('financial');
+                      }} 
+                      title={`點擊查看 ${day} 日財務統計與修改庫存`}
+                      className={`relative p-1.5 border-b border-r min-w-[45px] md:min-w-[55px] cursor-pointer hover:bg-stone-200/60 transition-colors group/day ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-stone-200/80' : 'text-stone-600 border-stone-200/80'}`}
+                    >
                       <div className="flex flex-col items-center justify-center space-y-0.5 group-hover/day:scale-105 transition-transform">
                         <span className={`font-bold text-base md:text-lg ${isToday ? 'text-amber-700' : ''}`}>{day}</span>
                         <span className={`text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-amber-200/80 text-amber-800' : isWeekend ? 'bg-rose-100/50 text-rose-600' : 'bg-stone-200/50 text-stone-500'}`}>
@@ -425,7 +532,7 @@ export default function InventoryCalendar() {
         </div>
       )}
       
-      {/* 編輯庫存 / 檢視訂單 Modal */}
+      {/* 編輯單一格子庫存 / 檢視訂單 Modal */}
       {editingCell && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setEditingCell(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
@@ -580,46 +687,238 @@ export default function InventoryCalendar() {
         </div>
       )}
 
-      {/* 批次編輯整天庫存 Modal */}
-      {editingDay && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-stone-100 bg-stone-50/50">
-              <h3 className="text-lg font-bold text-stone-800">修改全天庫存總量</h3>
-              <p className="text-sm text-stone-500 mt-1">
-                {currentDate.getFullYear()} 年 {currentDate.getMonth() + 1} 月 {editingDay} 日
-              </p>
-            </div>
-            <div className="p-5 space-y-3">
-              <button 
-                onClick={() => handleBatchSaveQuota(0)}
-                className="w-full py-3 px-4 bg-rose-50 text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-100 hover:border-rose-300 transition-colors font-bold flex items-center justify-center gap-2"
-              >
-                🚫 一鍵歸零 (關閉本日)
-              </button>
-              <button 
-                onClick={() => handleBatchSaveQuota(null)}
-                className="w-full py-3 px-4 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl hover:bg-emerald-100 hover:border-emerald-300 transition-colors font-bold flex items-center justify-center gap-2"
-              >
-                ✅ 恢復系統預設
-              </button>
-            </div>
-            <div className="p-4 border-t border-stone-100 flex justify-center bg-stone-50/50">
-              <button 
-                onClick={() => setEditingDay(null)}
-                className="px-6 py-2 text-stone-500 font-bold hover:bg-stone-200 rounded-lg transition-colors w-full"
-              >
-                取消
-              </button>
+      {/* 點擊整天標題開啟 Modal：分頁 1 財務統計、分頁 2 修改全天庫存 */}
+      {editingDay !== null && (() => {
+        const summary = getDayFinancialSummary(editingDay);
+        const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), editingDay);
+        const dayOfWeekStr = ['日', '一', '二', '三', '四', '五', '六'][dateObj.getDay()];
+
+        return (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setEditingDay(null)}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+              
+              {/* Modal Header */}
+              <div className="p-5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-stone-800 flex items-center gap-2">
+                    <span>📅 {currentDate.getFullYear()} 年 {currentDate.getMonth() + 1} 月 {editingDay} 日</span>
+                    <span className="text-xs font-semibold text-stone-500 bg-stone-200/70 px-2 py-0.5 rounded-full">
+                      星期{dayOfWeekStr}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">當日財務與庫存控制面板</p>
+                </div>
+                <button 
+                  onClick={() => setEditingDay(null)} 
+                  className="w-8 h-8 rounded-full bg-stone-200/70 hover:bg-stone-200 text-stone-600 font-bold text-sm flex items-center justify-center transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Modal Tabs */}
+              <div className="flex border-b border-stone-200 bg-stone-100/60 px-4 pt-2 gap-2 text-sm font-bold">
+                <button
+                  onClick={() => setActiveDayTab('financial')}
+                  className={`px-4 py-2 rounded-t-lg transition-all border-t border-x ${
+                    activeDayTab === 'financial'
+                      ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px'
+                      : 'text-stone-500 hover:text-stone-800 border-transparent'
+                  }`}
+                >
+                  💰 當日財務數據
+                </button>
+                <button
+                  onClick={() => setActiveDayTab('quota')}
+                  className={`px-4 py-2 rounded-t-lg transition-all border-t border-x ${
+                    activeDayTab === 'quota'
+                      ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px'
+                      : 'text-stone-500 hover:text-stone-800 border-transparent'
+                  }`}
+                >
+                  ⚙️ 修改全天庫存
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
+                {activeDayTab === 'financial' ? (
+                  <div className="space-y-4">
+                    {/* 訂單篩選切換 */}
+                    <div className="flex items-center justify-between bg-stone-100 p-1 rounded-xl text-xs font-bold border border-stone-200">
+                      <button
+                        onClick={() => setDayOrderFilter('check_in')}
+                        className={`flex-1 py-1.5 rounded-lg transition-all text-center ${
+                          dayOrderFilter === 'check_in' ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-500 hover:text-stone-800'
+                        }`}
+                      >
+                        當日入住訂單 ({summary.checkInOrders.length} 筆)
+                      </button>
+                      <button
+                        onClick={() => setDayOrderFilter('active')}
+                        className={`flex-1 py-1.5 rounded-lg transition-all text-center ${
+                          dayOrderFilter === 'active' ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-500 hover:text-stone-800'
+                        }`}
+                      >
+                        當日在營總數 ({summary.activeOrders.length} 筆)
+                      </button>
+                    </div>
+
+                    {/* 金額統計卡片 */}
+                    <div className="grid grid-cols-3 gap-2.5">
+                      <div className="bg-emerald-50/70 border border-emerald-200/80 p-3 rounded-xl text-center shadow-sm">
+                        <div className="text-[11px] font-semibold text-emerald-700 mb-1">應收總額</div>
+                        <div className="text-base md:text-lg font-black text-emerald-800 font-mono">
+                          NT$ {summary.totalRevenue.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="bg-teal-50/70 border border-teal-200/80 p-3 rounded-xl text-center shadow-sm">
+                        <div className="text-[11px] font-semibold text-teal-700 mb-1">已收金額 / 定金</div>
+                        <div className="text-base md:text-lg font-black text-teal-800 font-mono">
+                          NT$ {summary.totalPaid.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="bg-rose-50/70 border border-rose-200/80 p-3 rounded-xl text-center shadow-sm">
+                        <div className="text-[11px] font-semibold text-rose-700 mb-1">未收尾款</div>
+                        <div className="text-base md:text-lg font-black text-rose-700 font-mono">
+                          NT$ {summary.totalUnpaid.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 付款管道拆解 */}
+                    <div className="bg-stone-50 p-3.5 rounded-xl border border-stone-200/80 space-y-2 text-xs">
+                      <div className="font-bold text-stone-700 flex items-center gap-1.5 pb-1 border-b border-stone-200">
+                        <span>💵 金流明細拆解</span>
+                        <span className="text-[10px] text-stone-400 font-normal">(含線上/現場收款)</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 pt-1">
+                        <div className="bg-white p-2 rounded-lg border border-stone-200 text-center">
+                          <span className="text-stone-500 text-[10px] block">現場 / 現金</span>
+                          <span className="font-bold font-mono text-stone-800 text-xs">NT$ {summary.onsiteTotal.toLocaleString()}</span>
+                        </div>
+                        <div className="bg-white p-2 rounded-lg border border-stone-200 text-center">
+                          <span className="text-stone-500 text-[10px] block">銀行轉帳</span>
+                          <span className="font-bold font-mono text-stone-800 text-xs">NT$ {summary.bankTransferTotal.toLocaleString()}</span>
+                        </div>
+                        <div className="bg-white p-2 rounded-lg border border-stone-200 text-center">
+                          <span className="text-stone-500 text-[10px] block">信用卡 / 線上</span>
+                          <span className="font-bold font-mono text-stone-800 text-xs">NT$ {summary.creditCardTotal.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 當日相關訂單細節列表 */}
+                    <div className="space-y-2.5">
+                      <div className="text-xs font-bold text-stone-700 flex justify-between items-center px-1">
+                        <span>📋 訂單名細 ({summary.targetOrders.length} 筆)</span>
+                        <span className="text-[10px] text-stone-400">點擊右側按鈕可至訂單管理對帳</span>
+                      </div>
+
+                      {summary.targetOrders.length === 0 ? (
+                        <div className="text-center py-6 bg-stone-50 rounded-xl border border-dashed border-stone-200 text-stone-400 text-xs">
+                          本日尚無關聯訂單資料
+                        </div>
+                      ) : (
+                        summary.targetOrders.map(order => {
+                          const total = order.total_amount || 0;
+                          const paid = order.deposit_amount || 0;
+                          const unpaid = Math.max(0, total - paid);
+                          const orderSearchUrl = `/admin/orders?search=${encodeURIComponent(order.order_no)}`;
+
+                          return (
+                            <div key={order.id} className="p-3.5 bg-stone-50 border border-stone-200 rounded-xl space-y-2 hover:border-emerald-300 transition-all shadow-sm">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <div className="font-bold text-stone-800 text-sm flex items-center gap-2">
+                                    <span>{order.customer_name}</span>
+                                    <span className="text-[10px] font-mono text-stone-500 bg-white px-1.5 py-0.5 rounded border border-stone-200">
+                                      {order.order_no}
+                                    </span>
+                                  </div>
+                                  <div className="text-[11px] text-stone-500 mt-1 flex items-center gap-2 font-mono">
+                                    <span>📅 {order.check_in_date.slice(5)} ～ {order.check_out_date.slice(5)}</span>
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                    order.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                                    order.status === 'deposit_paid' ? 'bg-teal-100 text-teal-700' :
+                                    order.status === 'checked_in' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700'
+                                  }`}>
+                                    {order.status === 'paid' ? '💰 已全額付款' :
+                                     order.status === 'deposit_paid' ? '🪙 已付定金' :
+                                     order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between bg-white p-2 rounded-lg border border-stone-200/80 text-xs font-mono">
+                                <div className="flex items-center gap-3 text-stone-600">
+                                  <span>總金額: <strong className="text-stone-800 font-bold">NT$ {total.toLocaleString()}</strong></span>
+                                  <span>已收: <strong className="text-emerald-600 font-bold">NT$ {paid.toLocaleString()}</strong></span>
+                                  <span>尾款: <strong className="text-rose-600 font-bold">NT$ {unpaid.toLocaleString()}</strong></span>
+                                </div>
+                                <a
+                                  href={orderSearchUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold transition-all shadow-sm flex items-center gap-1 shrink-0"
+                                >
+                                  <span>對帳</span>
+                                  <span className="text-[9px]">↗</span>
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-xs text-stone-500 bg-amber-50 p-3 rounded-xl border border-amber-200">
+                      💡 批次修改全天庫存將影響全區商品在 <span className="font-mono font-bold text-stone-800">{summary.dateStr}</span> 的可訂數量。
+                    </p>
+                    <div className="space-y-3 pt-2">
+                      <button 
+                        onClick={() => handleBatchSaveQuota(0)}
+                        disabled={adminRole === 'viewer'}
+                        className="w-full py-3.5 px-4 bg-rose-50 text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-100 hover:border-rose-300 disabled:opacity-50 transition-colors font-bold flex items-center justify-center gap-2 shadow-sm text-sm"
+                      >
+                        🚫 一鍵歸零 (關閉本日)
+                      </button>
+                      <button 
+                        onClick={() => handleBatchSaveQuota(null)}
+                        disabled={adminRole === 'viewer'}
+                        className="w-full py-3.5 px-4 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl hover:bg-emerald-100 hover:border-emerald-300 disabled:opacity-50 transition-colors font-bold flex items-center justify-center gap-2 shadow-sm text-sm"
+                      >
+                        ✅ 恢復系統預設
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 border-t border-stone-100 flex justify-end bg-stone-50/50">
+                <button 
+                  onClick={() => setEditingDay(null)}
+                  className="px-6 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold rounded-xl transition-colors text-sm"
+                >
+                  關閉
+                </button>
+              </div>
+
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
-      {/* 浮動的 Hover Tooltip (可滑入互動與點擊跳轉) */}
+      {/* 浮動的 Hover Tooltip (純預覽，不干擾滑鼠，點擊格子開啟 Modal 對帳) */}
       {hoveredCell && (
         <div 
-          className="fixed z-[99999] pointer-events-auto w-[300px] bg-stone-800 text-white text-xs rounded-xl shadow-2xl p-4 border border-stone-600 animate-in fade-in zoom-in-95 duration-150"
+          className="fixed z-[99999] pointer-events-none w-[280px] bg-stone-800/95 backdrop-blur-md text-white text-xs rounded-xl shadow-2xl p-3.5 border border-stone-700 animate-in fade-in duration-150"
           style={{
             left: hoveredCell.rect.left + hoveredCell.rect.width / 2,
             transform: 'translateX(-50%)',
@@ -628,56 +927,42 @@ export default function InventoryCalendar() {
               : hoveredCell.rect.bottom + 8,
             translate: hoveredCell.rect.top > 280 ? '0 -100%' : '0 0',
           }}
-          onMouseEnter={() => {
-            // 滑鼠移入 tooltip 保持顯示
-          }}
-          onMouseLeave={() => setHoveredCell(null)}
         >
-          <div className="font-bold border-b border-stone-600/80 pb-2 mb-2 flex justify-between items-center">
-            <span className="text-stone-200 tracking-wider flex items-center gap-1">
-              <span>📝 訂單明細</span>
-              <span className="text-[10px] text-stone-400 font-normal">(點擊可查看對帳)</span>
-            </span>
+          <div className="font-bold border-b border-stone-700 pb-2 mb-2 flex justify-between items-center">
+            <span className="text-stone-200 tracking-wider">📝 當日訂單預覽</span>
             <span className="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded text-[10px] font-mono">總計 {hoveredCell.booked} 個</span>
           </div>
-          <div className="space-y-2.5 max-h-[220px] overflow-y-auto hide-scrollbar pt-1">
+          <div className="space-y-2 max-h-[200px] overflow-y-auto hide-scrollbar">
             {hoveredCell.orders.map(order => {
               const qty = order.nf_order_items?.find(oi => oi.item_id === hoveredCell.item.id)?.quantity || 0;
-              const orderSearchUrl = `/admin/orders?search=${encodeURIComponent(order.order_no)}`;
               return (
-                <a 
+                <div 
                   key={order.id} 
-                  href={orderSearchUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex justify-between items-start gap-3 bg-stone-700/40 hover:bg-stone-700 hover:border-emerald-400/80 p-2.5 rounded-lg border border-stone-600/40 transition-all cursor-pointer group/item block"
-                  title="點擊在新分頁開啟此筆訂單明細"
+                  className="flex justify-between items-center gap-2 bg-stone-700/50 p-2 rounded-lg border border-stone-600/50 text-xs"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="text-emerald-300 font-bold truncate text-sm flex items-center group-hover/item:text-emerald-200">
+                    <div className="text-emerald-300 font-bold truncate">
                       {order.customer_name} 
-                      <span className="text-stone-400 font-mono text-xs ml-1.5">({order.order_no.slice(-4)})</span>
-                      {(order.notes || order.admin_notes) && (
-                        <span className="ml-1.5 text-[10px]" title="有備註訊息">💬</span>
-                      )}
+                      <span className="text-stone-400 font-mono text-[10px] ml-1">({order.order_no.slice(-4)})</span>
                     </div>
-                    <div className="text-[10px] text-stone-300 mt-1 font-medium flex items-center justify-between">
-                      <span>{order.status === 'paid' ? '💰 已付款' : order.status === 'deposit_paid' ? '🪙 已付定金' : order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}</span>
-                      <span className="text-amber-300/80 opacity-0 group-hover/item:opacity-100 transition-opacity font-bold">🔍 對帳 ↗</span>
+                    <div className="text-[10px] text-stone-300 mt-0.5 font-medium">
+                      {order.status === 'paid' ? '💰 已付款' : order.status === 'deposit_paid' ? '🪙 已付定金' : order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}
                     </div>
                   </div>
-                  <div className="font-mono bg-stone-900/60 px-2 py-1 rounded text-amber-300 shrink-0 font-bold text-sm shadow-inner border border-stone-700/50">x {qty}</div>
-                </a>
-              )
+                  <div className="font-mono bg-stone-900/60 px-2 py-0.5 rounded text-amber-300 shrink-0 font-bold text-xs">x {qty}</div>
+                </div>
+              );
             })}
           </div>
-          
+          <div className="text-[10px] text-stone-400 text-center mt-2 pt-1 border-t border-stone-700/60">
+            💡 點擊格子可開啟 Modal 查看細節與對帳
+          </div>
           {/* 小三角形指標 */}
           <div 
             className={`absolute left-1/2 -translate-x-1/2 border-[6px] border-transparent ${
               hoveredCell.rect.top > 280 
-                ? 'top-full border-t-stone-800' 
-                : 'bottom-full border-b-stone-800'
+                ? 'top-full border-t-stone-800/95' 
+                : 'bottom-full border-b-stone-800/95'
             }`}
           ></div>
         </div>
