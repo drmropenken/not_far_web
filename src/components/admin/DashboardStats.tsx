@@ -119,11 +119,19 @@ export default function DashboardStats() {
           <p className="text-3xl font-black text-emerald-600 z-10">NT$ {monthlyRevenue.toLocaleString()}</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-rose-200 p-6 flex flex-col justify-center relative overflow-hidden group bg-rose-50/50 hover:shadow-md transition-all">
+        <a 
+          href="/admin/orders" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="bg-white rounded-2xl shadow-sm border border-rose-200 p-6 flex flex-col justify-center relative overflow-hidden group bg-rose-50/50 hover:shadow-md hover:border-rose-300 transition-all cursor-pointer block"
+        >
           <div className="absolute -right-4 -bottom-4 text-rose-500/10 text-8xl transition-transform group-hover:scale-110">⚠️</div>
-          <p className="text-sm text-rose-600 font-bold tracking-wider mb-2 z-10">待收款訂單</p>
+          <div className="flex justify-between items-start z-10">
+            <p className="text-sm text-rose-600 font-bold tracking-wider mb-2">待收款訂單</p>
+            <span className="text-xs text-rose-500 font-bold bg-white px-2 py-0.5 rounded-full border border-rose-200 shadow-2xs group-hover:bg-rose-600 group-hover:text-white transition-colors">對帳 ↗</span>
+          </div>
           <p className="text-3xl font-black text-rose-700 z-10">{pendingOrders.length} <span className="text-base font-medium text-rose-400">筆未結</span></p>
-        </div>
+        </a>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -145,11 +153,13 @@ export default function DashboardStats() {
               <ul className="space-y-3">
                 {checkinsToday.map(order => {
                   const parsed = parseOrderNotes(order.notes);
+                  const orderSearchUrl = `/admin/orders?search=${encodeURIComponent(order.order_no)}`;
+
                   return (
                   <li key={order.id} className="p-4 bg-white border border-stone-200 rounded-xl shadow-sm hover:shadow-md hover:border-emerald-200 transition-all group">
                     <div className="flex justify-between items-start mb-2">
                       <div className="font-bold text-stone-800 text-lg flex items-center gap-2">
-                        {order.customer_name}
+                        <span>{order.customer_name}</span>
                         {order.status === 'pending' && <span className="px-2 py-0.5 bg-rose-100 text-rose-600 text-[10px] rounded border border-rose-200">尚未付款</span>}
                         {order.status === 'deposit_paid' && <span className="px-2 py-0.5 bg-teal-100 text-teal-700 text-[10px] rounded border border-teal-200">🪙 已付定金</span>}
                         {order.status === 'checked_in' && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] rounded border border-blue-200">✅ 已報到</span>}
@@ -217,6 +227,18 @@ export default function DashboardStats() {
                         )}
                       </div>
                     )}
+                    <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between">
+                      <span className="text-[11px] font-mono text-stone-400">訂單單號：{order.order_no}</span>
+                      <a
+                        href={orderSearchUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1 shrink-0"
+                      >
+                        <span>🔍 開啟訂單管理對帳</span>
+                        <span className="text-[10px]">↗</span>
+                      </a>
+                    </div>
                   </li>
                   );
                 })}
@@ -243,11 +265,13 @@ export default function DashboardStats() {
               <ul className="space-y-3">
                 {checkoutsToday.map(order => {
                   const parsed = parseOrderNotes(order.notes);
+                  const orderSearchUrl = `/admin/orders?search=${encodeURIComponent(order.order_no)}`;
+
                   return (
                   <li key={order.id} className="p-4 bg-white border border-stone-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all group">
                     <div className="flex justify-between items-start mb-2">
                       <div className="font-bold text-stone-800 text-lg flex items-center gap-2">
-                        {order.customer_name}
+                        <span>{order.customer_name}</span>
                         {order.status === 'pending' && <span className="px-2 py-0.5 bg-rose-100 text-rose-600 text-[10px] rounded border border-rose-200">尚未付款</span>}
                         {order.status === 'deposit_paid' && <span className="px-2 py-0.5 bg-teal-100 text-teal-700 text-[10px] rounded border border-teal-200">🪙 已付定金</span>}
                       </div>
@@ -304,6 +328,18 @@ export default function DashboardStats() {
                         )}
                       </div>
                     )}
+                    <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between">
+                      <span className="text-[11px] font-mono text-stone-400">訂單單號：{order.order_no}</span>
+                      <a
+                        href={orderSearchUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1 shrink-0"
+                      >
+                        <span>🔍 開啟訂單管理對帳</span>
+                        <span className="text-[10px]">↗</span>
+                      </a>
+                    </div>
                   </li>
                   );
                 })}

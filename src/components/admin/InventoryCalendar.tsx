@@ -583,6 +583,9 @@ export default function InventoryCalendar() {
                   </div>
                   {editingCell.orders.map(order => {
                     const qty = order.nf_order_items?.find(oi => oi.item_id === editingCell.item.id)?.quantity || 0;
+                    const total = order.total_amount || 0;
+                    const paid = order.deposit_amount || 0;
+                    const unpaid = Math.max(0, total - paid);
                     const orderSearchUrl = `/admin/orders?search=${encodeURIComponent(order.order_no)}`;
                     
                     return (
@@ -601,6 +604,11 @@ export default function InventoryCalendar() {
                                  order.status === 'checked_in' ? <span className="text-blue-600 font-bold">✅ 已報到</span> :
                                  <span className="text-rose-500 font-bold">⏳ 待付款</span>}
                               </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-xs mt-2 font-mono text-stone-600 bg-white px-2.5 py-1.5 rounded-lg border border-stone-200/80 shadow-2xs">
+                              <span>總額: <strong className="text-stone-800 font-bold">NT$ {total.toLocaleString()}</strong></span>
+                              <span>已收: <strong className="text-emerald-600 font-bold">NT$ {paid.toLocaleString()}</strong></span>
+                              <span>尾款: <strong className={unpaid > 0 ? "text-rose-600 font-bold" : "text-stone-400 font-normal"}>{unpaid > 0 ? `NT$ ${unpaid.toLocaleString()}` : "已結清"}</strong></span>
                             </div>
                           </div>
                           <div className="bg-amber-100 text-amber-800 font-bold text-sm px-2.5 py-1 rounded-lg border border-amber-200 shrink-0 font-mono">
@@ -935,6 +943,10 @@ export default function InventoryCalendar() {
           <div className="space-y-2 max-h-[200px] overflow-y-auto hide-scrollbar">
             {hoveredCell.orders.map(order => {
               const qty = order.nf_order_items?.find(oi => oi.item_id === hoveredCell.item.id)?.quantity || 0;
+              const total = order.total_amount || 0;
+              const paid = order.deposit_amount || 0;
+              const unpaid = Math.max(0, total - paid);
+
               return (
                 <div 
                   key={order.id} 
@@ -945,8 +957,10 @@ export default function InventoryCalendar() {
                       {order.customer_name} 
                       <span className="text-stone-400 font-mono text-[10px] ml-1">({order.order_no.slice(-4)})</span>
                     </div>
-                    <div className="text-[10px] text-stone-300 mt-0.5 font-medium">
-                      {order.status === 'paid' ? '💰 已付款' : order.status === 'deposit_paid' ? '🪙 已付定金' : order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}
+                    <div className="text-[10px] text-stone-300 mt-0.5 font-mono flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span>{order.status === 'paid' ? '💰 已付款' : order.status === 'deposit_paid' ? '🪙 已付定金' : order.status === 'checked_in' ? '✅ 已報到' : '⏳ 待付款'}</span>
+                      <span className="text-emerald-400">已收 NT$ {paid.toLocaleString()}</span>
+                      {unpaid > 0 && <span className="text-rose-300">尾款 NT$ {unpaid.toLocaleString()}</span>}
                     </div>
                   </div>
                   <div className="font-mono bg-stone-900/60 px-2 py-0.5 rounded text-amber-300 shrink-0 font-bold text-xs">x {qty}</div>
