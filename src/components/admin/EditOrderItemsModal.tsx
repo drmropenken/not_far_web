@@ -52,6 +52,7 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [availabilityMap, setAvailabilityMap] = useState<Record<string, number>>({});
   
   // Array of currently selected items
   const [selectedItems, setSelectedItems] = useState<{item: Item, quantity: number}[]>([]);
@@ -59,6 +60,7 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
   useEffect(() => {
     if (isOpen && order) {
       fetchItems();
+      fetchAvailability(order);
       const initialSelected = order.nf_order_items.map(oi => ({
         item: oi.nf_items,
         quantity: oi.quantity
@@ -87,10 +89,67 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
     setLoading(false);
   };
 
+  const fetchAvailability = async (currentOrder: MonthOrder) => {
+    if (!currentOrder?.check_in_date || !currentOrder?.check_out_date) return;
+    const campId = currentOrder.camp_id || localStorage.getItem('camp_id');
+
+    const { data: campItems } = await supabase
+      .from('nf_items')
+      .select('*')
+      .eq('camp_id', campId);
+    if (!campItems || campItems.length === 0) return;
+    const itemIds = campItems.map(i => i.id);
+
+    const dates: string[] = [];
+    const start = new Date(currentOrder.check_in_date);
+    const end = new Date(currentOrder.check_out_date);
+    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+    if (dates.length === 0) return;
+
+    const { data: inventoryData } = await supabase
+      .from('nf_inventory')
+      .select('*')
+      .in('item_id', itemIds)
+      .in('date', dates);
+
+    const oldItemsMap = new Map(currentOrder.nf_order_items.map(oi => [oi.item_id, oi.quantity]));
+    const minMap: Record<string, number> = {};
+
+    for (const item of campItems) {
+      let minRemaining = item.total_quantity;
+      const orderCurrentQty = oldItemsMap.get(item.id) || 0;
+
+      for (const dateStr of dates) {
+        const isFirstNight = dateStr === dates[0];
+        const isSingleTime = item.name.includes('單次') || item.name.includes('次計費');
+        if (item.category === 'service' && isSingleTime && !isFirstNight) {
+          continue;
+        }
+
+        const record = inventoryData?.find(i => i.item_id === item.id && i.date === dateStr);
+        const override = record?.override_quantity;
+        const total = (override !== null && override !== undefined) ? override : item.total_quantity;
+        const booked = record?.booked_quantity || 0;
+        // 剩餘量加上此訂單目前已佔用的數量，即為此訂單最多可調整到的上限
+        const remainingForThisOrder = Math.max(0, total - booked + orderCurrentQty);
+
+        if (remainingForThisOrder < minRemaining) {
+          minRemaining = remainingForThisOrder;
+        }
+      }
+      minMap[item.id] = minRemaining;
+    }
+
+    setAvailabilityMap(minMap);
+  };
+
   const updateQuantity = (itemId: string, delta: number) => {
     setSelectedItems(prev => prev.map(i => {
       if (i.item.id === itemId) {
-        const newQ = Math.max(0, i.quantity + delta);
+        const available = availabilityMap[itemId] ?? i.item.total_quantity;
+        const newQ = Math.max(0, Math.min(i.quantity + delta, available));
         return { ...i, quantity: newQ };
       }
       return i;
@@ -102,7 +161,10 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
     if (existing) {
       setSelectedItems(selectedItems.filter(i => i.item.id !== item.id));
     } else {
-      setSelectedItems([...selectedItems, { item, quantity: 1 }]);
+      const available = availabilityMap[item.id] ?? item.total_quantity;
+      if (available > 0) {
+        setSelectedItems([...selectedItems, { item, quantity: 1 }]);
+      }
     }
   };
 
@@ -140,6 +202,15 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
     if (!order) return;
     if (selectedItems.length === 0) {
       if (!confirm('警告：您移除了所有項目！確定要儲存嗎？（建議您直接使用「取消訂單」功能）')) return;
+    }
+
+    // 檢查是否有選中超出數量的項目
+    for (const si of selectedItems) {
+      const available = availabilityMap[si.item.id] ?? si.item.total_quantity;
+      if (si.quantity > available) {
+        alert(`項目「${si.item.name}」在所選日期僅剩餘可調整至 ${available}，請調整預訂數量！`);
+        return;
+      }
     }
 
     setSaving(true);
@@ -276,35 +347,100 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
                   const quantity = selectedData?.quantity || 0;
                   const catStyle = getCategoryStyle(item.category);
                   
+                  const available = availabilityMap[item.id] ?? item.total_quantity;
+                  const isSoldOut = available <= 0;
+
+                  let breakdownText = "";
+                  let itemTotalStr = "";
+
+                  if (isSelected && order.check_in_date && order.check_out_date) {
+                    const nights = Math.round((new Date(order.check_out_date).getTime() - new Date(order.check_in_date).getTime()) / (1000 * 60 * 60 * 24));
+                    const isSingleTime = item.category === 'service' && (item.name.includes('單次') || item.name.includes('次計費'));
+                    const unit = item.category === 'campsite' ? '帳' : '份';
+                    
+                    let itemTotal = 0;
+                    let weekdays = 0;
+                    let holidays = 0;
+                    
+                    if (isSingleTime) {
+                      itemTotal = item.price_weekday * quantity;
+                      breakdownText = `NT$ ${item.price_weekday.toLocaleString()} × ${quantity} ${unit}`;
+                    } else if (item.category === 'service') {
+                      itemTotal = item.price_weekday * quantity * nights;
+                      breakdownText = `NT$ ${item.price_weekday.toLocaleString()} × ${quantity} ${unit} × ${nights} 晚`;
+                    } else {
+                      const start = new Date(order.check_in_date);
+                      const end = new Date(order.check_out_date);
+                      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+                        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                        if (isWeekend) {
+                          holidays++;
+                          itemTotal += item.price_holiday * quantity;
+                        } else {
+                          weekdays++;
+                          itemTotal += item.price_weekday * quantity;
+                        }
+                      }
+                      if (holidays > 0 && weekdays > 0) {
+                        breakdownText = `(平日 $${item.price_weekday.toLocaleString()} × ${weekdays}晚 + 假日 $${item.price_holiday.toLocaleString()} × ${holidays}晚) × ${quantity}${unit}`;
+                      } else if (holidays > 0) {
+                        breakdownText = `假日 $${item.price_holiday.toLocaleString()} × ${holidays}晚 × ${quantity}${unit}`;
+                      } else {
+                        breakdownText = `平日 $${item.price_weekday.toLocaleString()} × ${weekdays}晚 × ${quantity}${unit}`;
+                      }
+                    }
+                    itemTotalStr = `NT$ ${itemTotal.toLocaleString()}`;
+                  }
+                  
                   return (
-                    <div key={item.id} className={`p-3 rounded-xl border-2 transition-all ${isSelected ? `${catStyle.border} ${catStyle.activeBg}` : 'border-stone-100 hover:border-stone-300'}`}>
-                      <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleItem(item)}>
-                        <div className="flex items-center gap-3">
-                          <div className={`w-5 h-5 rounded flex items-center justify-center border shrink-0 ${isSelected ? `${catStyle.btnBg} border-transparent` : 'bg-white border-stone-300'}`}>
+                    <div key={item.id} className={`p-3 rounded-xl border-2 transition-all ${isSoldOut && !isSelected ? 'border-stone-100 opacity-50' : isSelected ? `${catStyle.border} ${catStyle.activeBg}` : 'border-stone-100 hover:border-stone-300'}`}>
+                      <div className="flex justify-between items-center cursor-pointer" onClick={() => (!isSoldOut || isSelected) && toggleItem(item)}>
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className={`w-5 h-5 rounded flex items-center justify-center border shrink-0 ${isSelected ? `${catStyle.btnBg} border-transparent` : isSoldOut ? 'bg-stone-100 border-stone-200' : 'bg-white border-stone-300'}`}>
                             {isSelected && <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>}
                           </div>
-                          <div className="flex flex-col gap-1 items-start">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded border flex items-center gap-1 ${catStyle.badge}`}>
-                                <span>{catStyle.icon}</span>{catStyle.label}
+                          <div className="flex flex-col gap-1 items-start flex-1">
+                            <div className="flex items-center gap-2 flex-wrap justify-between w-full">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded border flex items-center gap-1 ${catStyle.badge}`}>
+                                  <span>{catStyle.icon}</span>{catStyle.label}
+                                </span>
+                                <h5 className="font-bold text-stone-800 leading-tight">{item.name}</h5>
+                              </div>
+                              <span className={`px-2 py-0.5 text-xs font-bold rounded-full shrink-0 ${
+                                isSoldOut ? 'bg-red-100 text-red-600' : available <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                              }`}>
+                                {isSoldOut ? '已額滿' : `剩餘 ${available}`}
                               </span>
-                              <h5 className="font-bold text-stone-800 leading-tight">{item.name}</h5>
                             </div>
-                            <p className="text-xs text-stone-500">平日 ${item.price_weekday} / 假日 ${item.price_holiday}</p>
+                            <p className="text-xs text-stone-500">平日 ${item.price_weekday.toLocaleString()} / 假日 ${item.price_holiday.toLocaleString()}</p>
                           </div>
                         </div>
                       </div>
                       
                       {isSelected && (
-                        <div className={`mt-3 pt-3 border-t ${catStyle.border} border-opacity-50`}>
+                        <div className={`mt-3 pt-3 border-t ${catStyle.border} border-opacity-50 space-y-2`}>
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-sm font-semibold text-stone-600">數量</span>
-                            <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-lg p-1 shadow-sm">
-                              <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, -1); }} className={`w-8 h-8 rounded-md flex items-center justify-center ${catStyle.btnHover} text-stone-600 font-bold transition-colors`}>-</button>
-                              <span className={`w-8 text-center font-bold ${catStyle.btnText}`}>{quantity}</span>
-                              <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1); }} className={`w-8 h-8 rounded-md flex items-center justify-center ${catStyle.btnHover} text-stone-600 font-bold transition-colors`}>+</button>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-lg p-1 shadow-sm">
+                                <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, -1); }} className={`w-8 h-8 rounded-md flex items-center justify-center ${catStyle.btnHover} text-stone-600 font-bold transition-colors`}>-</button>
+                                <span className={`w-8 text-center font-bold ${catStyle.btnText}`}>{quantity}</span>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1); }} disabled={quantity >= available} className={`w-8 h-8 rounded-md flex items-center justify-center ${catStyle.btnHover} text-stone-600 font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed`}>+</button>
+                              </div>
+                              <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
+                                isSoldOut ? 'bg-red-100 text-red-600' : available <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                              }`}>
+                                剩餘 {available}
+                              </span>
                             </div>
                           </div>
+                          {order.check_in_date && order.check_out_date && (
+                            <div className={`flex justify-between items-start text-xs bg-white p-2 rounded border ${catStyle.border} border-opacity-30 shadow-sm`}>
+                              <span className="text-stone-500 font-medium leading-relaxed">{breakdownText}</span>
+                              <span className="text-stone-700 font-bold text-right ml-2">{itemTotalStr}</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
