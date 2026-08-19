@@ -92,10 +92,10 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
 
   // Re-fetch availability whenever dates change
   useEffect(() => {
-    if (formData.check_in_date && formData.check_out_date) {
+    if (isOpen && formData.check_in_date && formData.check_out_date) {
       fetchAvailability(formData.check_in_date, formData.check_out_date);
     }
-  }, [formData.check_in_date, formData.check_out_date]);
+  }, [isOpen, formData.check_in_date, formData.check_out_date]);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -123,44 +123,59 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     if (!checkIn || !checkOut) return;
     const campId = localStorage.getItem('camp_id');
     
-    // 先取得此營區的所有商品 ID
+    // 先取得此營區的所有商品
     const { data: campItems } = await supabase
       .from('nf_items')
-      .select('id')
+      .select('*')
       .eq('camp_id', campId);
-    if (!campItems) return;
+    if (!campItems || campItems.length === 0) return;
     const itemIds = campItems.map(i => i.id);
 
     // Collect all dates in the range
     const dates: string[] = [];
-    for (let d = new Date(checkIn); d < new Date(checkOut); d.setDate(d.getDate() + 1)) {
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
       dates.push(d.toISOString().split('T')[0]);
     }
     if (dates.length === 0) return;
 
-    const { data } = await supabase
+    const { data: inventoryData } = await supabase
       .from('nf_inventory')
-      .select('item_id, available_quantity')
+      .select('*')
       .in('item_id', itemIds)
       .in('date', dates);
 
-    if (!data) return;
-
-    // For each item, find the minimum available quantity across all dates (bottleneck)
     const minMap: Record<string, number> = {};
-    for (const row of data) {
-      if (minMap[row.item_id] === undefined) {
-        minMap[row.item_id] = row.available_quantity;
-      } else {
-        minMap[row.item_id] = Math.min(minMap[row.item_id], row.available_quantity);
+
+    for (const item of campItems) {
+      let minRemaining = item.total_quantity;
+      for (const dateStr of dates) {
+        const isFirstNight = dateStr === dates[0];
+        const isSingleTime = item.name.includes('單次') || item.name.includes('次計費');
+        if (item.category === 'service' && isSingleTime && !isFirstNight) {
+          continue;
+        }
+
+        const record = inventoryData?.find(i => i.item_id === item.id && i.date === dateStr);
+        const override = record?.override_quantity;
+        const total = (override !== null && override !== undefined) ? override : item.total_quantity;
+        const booked = record?.booked_quantity || 0;
+        const remaining = Math.max(0, total - booked);
+
+        if (remaining < minRemaining) {
+          minRemaining = remaining;
+        }
       }
+      minMap[item.id] = minRemaining;
     }
+
     setAvailabilityMap(minMap);
 
     // Clamp existing selected quantities
     setSelectedItems(prev => prev.map(si => {
       const available = minMap[si.item.id] ?? si.item.total_quantity;
-      return { ...si, quantity: Math.min(si.quantity, Math.max(1, available)) };
+      return { ...si, quantity: Math.max(1, Math.min(si.quantity, Math.max(1, available))) };
     }));
   };
 
@@ -248,6 +263,19 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
     if (selectedItems.length === 0) {
       alert('請至少選擇一個營位或裝備');
       return;
+    }
+
+    // 檢查是否有選中已無庫存或超出數量的項目
+    for (const si of selectedItems) {
+      const available = availabilityMap[si.item.id] ?? si.item.total_quantity;
+      if (available <= 0) {
+        alert(`項目「${si.item.name}」在所選日期已額滿，無法預訂！`);
+        return;
+      }
+      if (si.quantity > available) {
+        alert(`項目「${si.item.name}」在所選日期僅剩餘 ${available}，請調整預訂數量！`);
+        return;
+      }
     }
 
     setSaving(true);
