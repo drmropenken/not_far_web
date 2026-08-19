@@ -29,6 +29,17 @@ const getCategoryStyle = (category: string) => {
   }
 };
 
+const getNextDayString = (dateStr: string) => {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  d.setDate(d.getDate() + 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dayNum = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dayNum}`;
+};
+
 export default function BookingFlow({ campId: propCampId, campName: propCampName, officialUrl: propOfficialUrl }: { campId?: string; campName?: string; officialUrl?: string }) {
   const getCampId = () => {
     if (propCampId) return propCampId;
@@ -629,7 +640,14 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
                   value={dates.checkIn}
                   min={new Date().toLocaleDateString('en-CA')}
                   max={(() => { const d = new Date(); d.setMonth(d.getMonth() + 6); return d.toLocaleDateString('en-CA'); })()}
-                  onChange={(e) => setDates({ ...dates, checkIn: e.target.value, checkOut: '' })}
+                  onChange={(e) => {
+                    const newCheckIn = e.target.value;
+                    const nextDay = getNextDayString(newCheckIn);
+                    setDates({
+                      checkIn: newCheckIn,
+                      checkOut: nextDay
+                    });
+                  }}
                   className="w-full text-xl font-black text-slate-800 bg-white border-2 border-emerald-200/60 rounded-xl px-4 py-4 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all shadow-inner"
                 />
               </div>
@@ -638,7 +656,7 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
                 <input
                   type="date"
                   value={dates.checkOut}
-                  min={dates.checkIn ? new Date(new Date(dates.checkIn).getTime() + 86400000).toLocaleDateString('en-CA') : new Date().toLocaleDateString('en-CA')}
+                  min={dates.checkIn ? getNextDayString(dates.checkIn) : new Date().toLocaleDateString('en-CA')}
                   onChange={(e) => setDates({ ...dates, checkOut: e.target.value })}
                   disabled={!dates.checkIn}
                   className="w-full text-xl font-black text-slate-800 bg-white border-2 border-emerald-200/60 rounded-xl px-4 py-4 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all disabled:opacity-50 shadow-inner"

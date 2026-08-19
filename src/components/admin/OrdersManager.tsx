@@ -115,8 +115,10 @@ export default function OrdersManager() {
 
   const getMonthsList = () => {
     const list = [];
-    const date = new Date();
-    for (let i = 0; i < 12; i++) {
+    const date = new Date(new Date().getTime() + 8 * 3600000);
+    // 包含未來 6 個月至過去 12 個月
+    date.setMonth(date.getMonth() + 6);
+    for (let i = 0; i < 19; i++) {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       list.push(`${year}-${month}`);
@@ -127,9 +129,23 @@ export default function OrdersManager() {
 
   const handleMonthChange = (monthVal: string) => {
     setSelectedMonth(monthVal);
+    const now = new Date(new Date().getTime() + 8 * 3600000);
+    const todayStr = now.toISOString().split('T')[0];
+    const tomorrow = new Date(new Date().getTime() + 8 * 3600000);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
     if (monthVal === 'all') {
       setStartDate('');
       setEndDate('');
+    } else if (monthVal === 'future') {
+      // 未來：明天之後的所有訂單
+      setStartDate(tomorrowStr);
+      setEndDate('');
+    } else if (monthVal === 'past') {
+      // 過去：今天以前的所有訂單
+      setStartDate('');
+      setEndDate(todayStr);
     } else {
       const [yearStr, monthStr] = monthVal.split('-');
       const year = parseInt(yearStr, 10);
@@ -793,16 +809,21 @@ export default function OrdersManager() {
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-50 text-xs">🔍</span>
             </div>
 
-            {/* 快速選月 */}
+            {/* 快速時間區間 / 選月 */}
             <select
               value={selectedMonth}
               onChange={(e) => handleMonthChange(e.target.value)}
-              className="bg-stone-50 border border-stone-200 rounded-lg text-xs px-2.5 py-1.5 font-medium text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-500/50 h-[34px]"
+              className="bg-stone-50 border border-stone-200 rounded-lg text-xs px-2.5 py-1.5 font-bold text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-500/50 h-[34px] cursor-pointer"
             >
-              <option value="all">所有月份</option>
-              {getMonthsList().map(m => (
-                <option key={m} value={m}>{m.replace('-', '年')}月</option>
-              ))}
+              <option value="all">🌐 全部訂單 (所有月份)</option>
+              <option value="future">🔮 未來訂單 (明天之後)</option>
+              <option value="past">📜 過去訂單 (今天以前)</option>
+              <option value="custom" disabled hidden>自訂區間</option>
+              <optgroup label="── 📅 指定月份 ──">
+                {getMonthsList().map(m => (
+                  <option key={m} value={m}>{m.replace('-', '年 ')}月</option>
+                ))}
+              </optgroup>
             </select>
 
             {/* 自訂日期範圍 (使用單一框與 border-none 設計以節省空間) */}

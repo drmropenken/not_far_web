@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 
 type Item = {
@@ -82,6 +82,16 @@ export default function InventoryCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [adminRole, setAdminRole] = useState<string | null>(null);
+
+  const yearsList = useMemo(() => {
+    const currentY = new Date().getFullYear();
+    const set = new Set<number>();
+    for (let i = -3; i <= 4; i++) {
+      set.add(currentY + i);
+    }
+    set.add(currentDate.getFullYear());
+    return Array.from(set).sort((a, b) => a - b);
+  }, [currentDate]);
 
   // 取得當月的天數陣列
   const getDaysInMonth = (year: number, month: number) => {
@@ -383,16 +393,61 @@ export default function InventoryCalendar() {
           </div>
         </div>
 
-        {/* 月份切換 */}
-        <div className="flex items-center justify-between gap-1 bg-stone-100/80 p-1 rounded-lg border border-stone-200 shadow-inner shrink-0">
-          <button onClick={handlePrevMonth} className="px-3 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-sm rounded transition-all">
+        {/* 月份切換 (支援直接選年、選月、上一月/下一月與回到當月) */}
+        <div className="flex flex-wrap items-center gap-1.5 bg-stone-100/80 p-1 rounded-xl border border-stone-200 shadow-inner shrink-0">
+          <button 
+            onClick={handlePrevMonth} 
+            className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-xs rounded-lg transition-all"
+            title="查看上個月"
+          >
             &lt; 上個月
           </button>
-          <span className="font-bold text-sm min-w-[100px] text-center text-stone-800 tracking-wider">
-            {currentDate.getFullYear()} 年 {currentDate.getMonth() + 1} 月
-          </span>
-          <button onClick={handleNextMonth} className="px-3 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-sm rounded transition-all">
+
+          <div className="flex items-center gap-1">
+            {/* 年份選擇 */}
+            <select
+              value={currentDate.getFullYear()}
+              onChange={(e) => {
+                const newYear = parseInt(e.target.value, 10);
+                setCurrentDate(new Date(newYear, currentDate.getMonth(), 1));
+              }}
+              className="bg-white border border-stone-200/90 text-stone-800 font-bold text-xs rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs"
+            >
+              {yearsList.map(y => (
+                <option key={y} value={y}>{y} 年</option>
+              ))}
+            </select>
+
+            {/* 月份選擇 */}
+            <select
+              value={currentDate.getMonth() + 1}
+              onChange={(e) => {
+                const newMonth = parseInt(e.target.value, 10) - 1;
+                setCurrentDate(new Date(currentDate.getFullYear(), newMonth, 1));
+              }}
+              className="bg-white border border-stone-200/90 text-stone-800 font-bold text-xs rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs"
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                <option key={m} value={m}>{m} 月</option>
+              ))}
+            </select>
+          </div>
+
+          <button 
+            onClick={handleNextMonth} 
+            className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-xs rounded-lg transition-all"
+            title="查看下個月"
+          >
             下個月 &gt;
+          </button>
+
+          {/* 回到當月 */}
+          <button
+            onClick={() => setCurrentDate(new Date())}
+            className="px-2 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors ml-0.5"
+            title="快速跳轉回今天所在的月份"
+          >
+            回到當月
           </button>
         </div>
       </div>

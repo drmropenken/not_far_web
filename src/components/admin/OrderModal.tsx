@@ -26,6 +26,17 @@ const getCategoryStyle = (category: string) => {
   }
 };
 
+const getNextDayString = (dateStr: string) => {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  d.setDate(d.getDate() + 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dayNum = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dayNum}`;
+};
+
 export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalProps) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
@@ -54,6 +65,10 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
   useEffect(() => {
     if (isOpen) {
       fetchItems();
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const tomorrowStr = getNextDayString(todayStr);
+
       // Reset form
       setFormData({
         customer_name: '',
@@ -62,8 +77,8 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
         adults: '2',
         children: '0',
         license_plate: '',
-        check_in_date: new Date().toISOString().split('T')[0],
-        check_out_date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+        check_in_date: todayStr,
+        check_out_date: tomorrowStr,
         notes: '',
         discount_code: '',
       });
@@ -400,11 +415,32 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-stone-600 mb-1.5">入營日期 <span className="text-rose-500">*</span></label>
-                    <input required type="date" value={formData.check_in_date} onChange={e => setFormData({...formData, check_in_date: e.target.value})} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none font-mono text-sm"/>
+                    <input 
+                      required 
+                      type="date" 
+                      value={formData.check_in_date} 
+                      onChange={e => {
+                        const newCheckIn = e.target.value;
+                        const nextDay = getNextDayString(newCheckIn);
+                        setFormData({
+                          ...formData, 
+                          check_in_date: newCheckIn,
+                          check_out_date: nextDay
+                        });
+                      }} 
+                      className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none font-mono text-sm"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-stone-600 mb-1.5">退營日期 <span className="text-rose-500">*</span></label>
-                    <input required type="date" min={formData.check_in_date} value={formData.check_out_date} onChange={e => setFormData({...formData, check_out_date: e.target.value})} className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none font-mono text-sm"/>
+                    <input 
+                      required 
+                      type="date" 
+                      min={formData.check_in_date ? getNextDayString(formData.check_in_date) : formData.check_in_date} 
+                      value={formData.check_out_date} 
+                      onChange={e => setFormData({...formData, check_out_date: e.target.value})} 
+                      className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none font-mono text-sm"
+                    />
                   </div>
                 </div>
               </div>
