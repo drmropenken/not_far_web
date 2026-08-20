@@ -6,6 +6,16 @@ import { supabase } from "../lib/supabase";
 let campId = Astro.url.searchParams.get('camp_id') || '';
 
 if (!campId) {
+  const liffState = Astro.url.searchParams.get('liff.state');
+  if (liffState) {
+    const stateParams = new URLSearchParams(liffState.replace(/^[^?]*\?/, ''));
+    if (stateParams.get('camp_id')) {
+      campId = stateParams.get('camp_id') || '';
+    }
+  }
+}
+
+if (!campId) {
   const { data: defaultCamp } = await supabase
     .from('nf_campgrounds')
     .select('id')
