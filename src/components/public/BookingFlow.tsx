@@ -121,7 +121,6 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
             }
           }
 
-          // Only show loading if we don't already have a session rendering the UI
           if (!existingSession) {
             setLoading(true);
           }
@@ -130,15 +129,27 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
           const fakeEmail = `${profile.userId}@dummy-line.com`;
           const fakePassword = `${profile.userId}_notfar_secret_2024!`;
 
-          // 嘗試暗影登入
-          const { error: signInError } = await supabase.auth.signInWithPassword({
+          // 嘗試暗影登入 (優先使用 @dummy-line.com)
+          let { error: signInError } = await supabase.auth.signInWithPassword({
             email: fakeEmail,
             password: fakePassword
           });
 
+          // 如果失敗，嘗試舊版 @line.notfar.com
           if (signInError) {
-            // 如果失敗，代表是新用戶，自動註冊
-            const { error: signUpError } = await supabase.auth.signUp({
+            const oldFakeEmail = `${profile.userId}@line.notfar.com`;
+            const { error: oldSignInError } = await supabase.auth.signInWithPassword({
+              email: oldFakeEmail,
+              password: fakePassword
+            });
+            if (!oldSignInError) {
+              signInError = null;
+            }
+          }
+
+          if (signInError) {
+            // 如果還是失敗，代表是新用戶，自動註冊
+            await supabase.auth.signUp({
               email: fakeEmail,
               password: fakePassword,
               options: {
@@ -150,19 +161,11 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
               }
             });
 
-            if (signUpError) {
-              alert("自動註冊失敗：" + signUpError.message);
-            }
-
             // 註冊完重新登入一次確保拿到最新 Session
-            const { error: retrySignInError } = await supabase.auth.signInWithPassword({
+            await supabase.auth.signInWithPassword({
               email: fakeEmail,
               password: fakePassword
             });
-
-            if (retrySignInError) {
-              alert("註冊後登入失敗：" + retrySignInError.message + " (請檢查 Supabase 是否開啟了 Email Confirmation)");
-            }
           }
         }
       } catch (err: any) {
@@ -180,6 +183,9 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
             name: session.user.user_metadata?.full_name || ''
           }));
           setStep(prev => prev === 0 ? 1 : prev);
+        } else {
+          setSession(null);
+          setStep(0);
         }
         setLoading(false);
       }
@@ -570,10 +576,63 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
 
   const handleLineLogin = async () => {
     try {
+      setLoading(true);
       if (!liff.isLoggedIn()) {
-        liff.login({ redirectUri: window.location.origin + '/app' });
+        liff.login({ redirectUri: window.location.href });
+      } else {
+        // 如果 LIFF 本身已經是登入狀態，直接執行暗影登入
+        const profile = await liff.getProfile();
+        const fakeEmail = `${profile.userId}@dummy-line.com`;
+        const fakePassword = `${profile.userId}_notfar_secret_2024!`;
+
+        let { error: signInError } = await supabase.auth.signInWithPassword({
+          email: fakeEmail,
+          password: fakePassword
+        });
+
+        if (signInError) {
+          const oldFakeEmail = `${profile.userId}@line.notfar.com`;
+          const { error: oldSignInError } = await supabase.auth.signInWithPassword({
+            email: oldFakeEmail,
+            password: fakePassword
+          });
+          if (!oldSignInError) {
+            signInError = null;
+          }
+        }
+
+        if (signInError) {
+          await supabase.auth.signUp({
+            email: fakeEmail,
+            password: fakePassword,
+            options: {
+              data: {
+                full_name: profile.displayName,
+                avatar_url: profile.pictureUrl,
+                line_id: profile.userId
+              }
+            }
+          });
+          await supabase.auth.signInWithPassword({
+            email: fakeEmail,
+            password: fakePassword
+          });
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setSession(session);
+          setCustomerInfo(prev => ({
+            ...prev,
+            email: (session.user.email?.includes('@line.notfar.com') || session.user.email?.includes('@dummy-line.com')) ? '' : (session.user.email || ''),
+            name: session.user.user_metadata?.full_name || ''
+          }));
+          setStep(1);
+        }
+        setLoading(false);
       }
     } catch (err: any) {
+      setLoading(false);
       alert('LINE登入失敗: ' + err.message);
     }
   };
@@ -602,9 +661,13 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
             {getOfficialUrl() && (
               <a href={getOfficialUrl()} className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors">回首頁</a>
             )}
-            <button onClick={() => {
-              supabase.auth.signOut().then(() => setStep(0));
-              if (liff.isLoggedIn()) liff.logout();
+            <button onClick={async () => {
+              await supabase.auth.signOut();
+              if (liff.isLoggedIn()) {
+                liff.logout();
+              }
+              setSession(null);
+              setStep(0);
             }} className="text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors">
               登出
             </button>

@@ -285,10 +285,55 @@ export default function MyOrdersFlow({ campId: propCampId }: { campId?: string }
 
   const handleLineLogin = async () => {
     try {
+      setLoading(true);
       if (!liff.isLoggedIn()) {
-        liff.login({ redirectUri: window.location.origin + '/my-orders' });
+        liff.login({ redirectUri: window.location.href });
+      } else {
+        const profile = await liff.getProfile();
+        if (profile.userId) {
+          const fakeEmail = profile.userId + '@dummy-line.com';
+          const fakePassword = profile.userId + '_notfar_secret_2024!';
+
+          let { error: signInError } = await supabase.auth.signInWithPassword({
+            email: fakeEmail,
+            password: fakePassword,
+          });
+
+          if (signInError) {
+            const oldFakeEmail = profile.userId + '@line.notfar.com';
+            const { error: oldSignInError } = await supabase.auth.signInWithPassword({
+              email: oldFakeEmail,
+              password: fakePassword,
+            });
+            if (!oldSignInError) {
+              signInError = null;
+            }
+          }
+
+          if (signInError) {
+            await supabase.auth.signUp({
+              email: fakeEmail,
+              password: fakePassword,
+              options: {
+                data: {
+                  full_name: profile.displayName,
+                  line_id: profile.userId,
+                }
+              }
+            });
+            await supabase.auth.signInWithPassword({ email: fakeEmail, password: fakePassword });
+          }
+
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            setSession(session);
+            fetchMyOrders(session);
+          }
+        }
+        setLoading(false);
       }
     } catch (err: any) {
+      setLoading(false);
       alert('LINE登入失敗: ' + err.message);
     }
   };

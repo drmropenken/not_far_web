@@ -12,7 +12,10 @@ if (!campId) {
     .eq('slug', 'not-far')
     .single();
   if (defaultCamp) {
-    return Astro.redirect(`/my-orders?camp_id=${defaultCamp.id}`);
+    campId = defaultCamp.id;
+    const currentParams = new URLSearchParams(Astro.url.searchParams);
+    currentParams.set('camp_id', defaultCamp.id);
+    return Astro.redirect(`${Astro.url.pathname}?${currentParams.toString()}`);
   }
 }
 ---
