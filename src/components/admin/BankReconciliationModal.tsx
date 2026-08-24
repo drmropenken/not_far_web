@@ -470,7 +470,7 @@ export default function BankReconciliationModal({
               分頁 1：輸入/上傳明細
              ══════════════════════════════════════════════════════════════ */}
           {currentStep === 'input' && (
-            <div className="max-w-4xl mx-auto space-y-5 animate-fade-in py-2">
+            <div className="w-full space-y-4 animate-fade-in">
               
               <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-4">
                 <div className="flex flex-wrap justify-between items-center gap-3">
@@ -479,7 +479,7 @@ export default function BankReconciliationModal({
                       <span>📋 貼上網銀交易明細文字 或 選擇檔案</span>
                     </h3>
                     <p className="text-xs text-stone-500 mt-1">
-                      可直接從網路銀行、台新、新光、彰銀、中信等網銀明細整批複製並貼入
+                      可直接從網路銀行、台新、新光、彰銀、中信等網銀明細整批複製並貼入（支援重複匯入，已入帳過款項會自動標記略過）
                     </p>
                   </div>
 
@@ -501,37 +501,17 @@ export default function BankReconciliationModal({
 
                 <div className="relative">
                   <textarea
-                    rows={11}
+                    rows={15}
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     placeholder="請直接從銀行網銀複製交易明細並貼在此處...&#10;範例：&#10;2026/07/30 12:47:342026/07/30 CD轉入 0 25,000 *** 00096294817209075,V 10300000480500182062 103214609&#10;2026/07/30 23:06:022026/07/31 CD轉入 0 6,000 *** 00096294813435927,V 80700014501800666832 807136521"
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs font-mono text-stone-800 placeholder-stone-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all resize-y shadow-inner leading-relaxed"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs font-mono text-stone-800 placeholder-stone-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all resize-y shadow-inner leading-relaxed min-h-[380px]"
                   />
                   {inputText && (
-                    <div className="absolute bottom-3 right-3 bg-white/90 border border-stone-200 px-2.5 py-1 rounded-md text-[11px] font-mono text-stone-500 shadow-sm">
+                    <div className="absolute bottom-3 right-3 bg-white/95 border border-stone-200 px-3 py-1.5 rounded-lg text-xs font-mono text-stone-600 shadow-sm font-bold">
                       共 {inputText.split('\n').filter(l => l.trim()).length} 列明細
                     </div>
                   )}
-                </div>
-
-                <div className="flex flex-wrap justify-between items-center gap-3 pt-2">
-                  <div className="text-xs text-stone-500 flex items-center gap-1.5">
-                    <span>💡 支援重複匯入（已入帳過款項會自動標記略過，絕不重複加總）</span>
-                  </div>
-
-                  <button
-                    onClick={handleParseAndMatch}
-                    disabled={isProcessing || !inputText.trim()}
-                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
-                  >
-                    {isProcessing ? (
-                      <span>正在解析比對中...</span>
-                    ) : (
-                      <>
-                        <span>🔍 開始智慧比對 ➔ 前往核對分頁</span>
-                      </>
-                    )}
-                  </button>
                 </div>
               </div>
 
