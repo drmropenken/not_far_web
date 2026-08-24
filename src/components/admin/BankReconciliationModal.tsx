@@ -756,6 +756,11 @@ export default function BankReconciliationModal({
                                       <span className="font-mono bg-stone-100 px-1.5 py-0.2 rounded border border-stone-200">{order.order_no}</span>
                                       <span>· 應收: NT${(order.total_amount || 0).toLocaleString()}</span>
                                       <span className="text-emerald-600 font-bold">· 已收: NT${(order.deposit_amount || 0).toLocaleString()}</span>
+                                      {(order.is_pinned || (order.admin_notes && (order.admin_notes.includes('[📌特約保留]') || order.admin_notes.includes('特約保留')))) && (
+                                        <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold border border-purple-200">
+                                          📌 特約保留
+                                        </span>
+                                      )}
                                     </div>
 
                                     {/* 展開此訂單後台既有的金流記錄 */}

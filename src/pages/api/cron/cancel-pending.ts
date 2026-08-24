@@ -29,8 +29,15 @@ export const GET: APIRoute = async () => {
       return new Response('No pending orders found', { status: 200 });
     }
 
-    // 篩選出已經過期的訂單
+    // 篩選出已經過期的訂單（特約保留單永久豁免自動取消）
     const expiredOrders = pendingOrders.filter(order => {
+      const isPinned = Boolean(
+        order.is_pinned || 
+        (order.admin_notes && (order.admin_notes.includes('[📌特約保留]') || order.admin_notes.includes('特約保留') || order.admin_notes.includes('包場保留'))) ||
+        (order.notes && (order.notes.includes('[📌特約保留]') || order.notes.includes('包場保留')))
+      );
+      if (isPinned) return false; // 特約保留單永久不自動取消！
+
       const createdAt = new Date(order.created_at);
       if (order.payment_method === 'bank_transfer') {
         return createdAt < thirtyDaysAgo; // 匯款保留 30 天

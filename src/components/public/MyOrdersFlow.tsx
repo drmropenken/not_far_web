@@ -29,6 +29,16 @@ const getOrderStatusInfo = (order: any) => {
   
   // Pending status checks
   if (order.status === 'pending') {
+    const isPinned = Boolean(
+      order.is_pinned || 
+      (order.admin_notes && (order.admin_notes.includes('[📌特約保留]') || order.admin_notes.includes('特約保留') || order.admin_notes.includes('包場保留'))) ||
+      (order.notes && (order.notes.includes('[📌特約保留]') || order.notes.includes('包場保留')))
+    );
+
+    if (isPinned) {
+      return { label: '待付款 (特約保留)', colorClass: 'bg-purple-100 text-purple-800 border-purple-200', type: 'pending' };
+    }
+
     if (order.payment_method === 'bank_transfer') {
       const orderDate = new Date(order.created_at).getTime();
       const now = new Date().getTime();

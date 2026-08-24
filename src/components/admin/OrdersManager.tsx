@@ -578,6 +578,37 @@ export default function OrdersManager() {
     fetchOrders();
   };
 
+  const isOrderPinned = (order: Order) => {
+    return Boolean(
+      (order as any).is_pinned || 
+      (order.admin_notes && (order.admin_notes.includes('[📌特約保留]') || order.admin_notes.includes('特約保留') || order.admin_notes.includes('包場保留'))) ||
+      (order.notes && (order.notes.includes('[📌特約保留]') || order.notes.includes('包場保留')))
+    );
+  };
+
+  const togglePinOrder = async (order: Order) => {
+    const currentPinned = isOrderPinned(order);
+    const newPinned = !currentPinned;
+    let newAdminNotes = order.admin_notes || '';
+
+    if (newPinned) {
+      newAdminNotes = `[📌特約保留] ${newAdminNotes}`.trim();
+    } else {
+      newAdminNotes = newAdminNotes.replace(/\[📌特約保留\]\s*/g, '').replace(/特約保留\s*/g, '').trim();
+    }
+
+    const { error } = await supabase
+      .from('nf_orders')
+      .update({ admin_notes: newAdminNotes })
+      .eq('id', order.id);
+
+    if (error) {
+      alert('切換特約保留失敗: ' + error.message);
+    } else {
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, admin_notes: newAdminNotes } : o));
+    }
+  };
+
   const filteredOrders = orders.filter(order => {
     // 1. 日期範圍篩選
     if (startDate && order.check_in_date < startDate) return false;
@@ -591,10 +622,10 @@ export default function OrdersManager() {
       matchesStatus = true;
     } else if (activeTab === 'pending') {
       // 待付款：入住日期在今天或未來
-      matchesStatus = order.status === 'pending' && order.check_in_date >= todayStr;
+      matchesStatus = order.status === 'pending' && (order.check_in_date >= todayStr || isOrderPinned(order));
     } else if (activeTab === 'overdue') {
-      // 已逾期：入住日期在今天之前
-      matchesStatus = order.status === 'pending' && order.check_in_date < todayStr;
+      // 已逾期：入住日期在今天之前且非特約保留
+      matchesStatus = order.status === 'pending' && order.check_in_date < todayStr && !isOrderPinned(order);
     } else {
       matchesStatus = order.status === activeTab;
     }
@@ -669,14 +700,16 @@ export default function OrdersManager() {
     });
   }, [filteredOrders]);
 
-  const getStatusBadge = (status: string, checkInDate: string) => {
+  const getStatusBadge = (status: string, checkInDate: string, order?: Order) => {
     const todayStr = new Date(new Date().getTime() + 8 * 3600000).toISOString().split('T')[0];
+    const isPinned = order ? isOrderPinned(order) : false;
+
     switch (status) {
       case 'paid': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold border border-emerald-200">已付款</span>;
       case 'deposit_paid': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-bold border border-teal-200 shadow-sm">🪙 已付定金</span>;
       case 'checked_in': return <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">✅ 已報到</span>;
       case 'pending': {
-        const isOverdue = checkInDate < todayStr;
+        const isOverdue = checkInDate < todayStr && !isPinned;
         return isOverdue ? (
           <span className="whitespace-nowrap shrink-0 px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold border border-rose-200">已逾期</span>
         ) : (
@@ -958,11 +991,27 @@ export default function OrdersManager() {
               <div key={order.id} className={`bg-white rounded-xl border ${order.status === 'cancelled' ? 'border-rose-100 opacity-75' : 'border-stone-200'} shadow-sm overflow-hidden flex flex-col group transition-all hover:shadow-md`}>
                 {/* 訂單表頭 */}
                 <div className={`bg-stone-100/50 border-b ${order.status === 'cancelled' ? 'border-rose-100' : 'border-stone-100'} px-4 sm:px-5 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0`}>
-                  <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
                     <span className="font-mono text-xs text-stone-500 bg-stone-200/70 px-2 py-1 rounded">
                       {order.order_no}
                     </span>
-                    {getStatusBadge(order.status, order.check_in_date)}
+                    {getStatusBadge(order.status, order.check_in_date, order)}
+
+                    {/* 📌 特約保留切換按鈕 */}
+                    {order.status !== 'cancelled' && (
+                      <button
+                        onClick={() => togglePinOrder(order)}
+                        title={isOrderPinned(order) ? "目前為特約保留單（永久不逾期），點擊可取消保留" : "點擊設為特約保留（永久不逾期）"}
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                          isOrderPinned(order)
+                            ? 'bg-purple-100 text-purple-800 border border-purple-300 hover:bg-purple-200 shadow-sm'
+                            : 'text-stone-400 hover:text-purple-700 hover:bg-purple-50 border border-dashed border-stone-300 hover:border-purple-300'
+                        }`}
+                      >
+                        <span>📌</span>
+                        <span>{isOrderPinned(order) ? '特約保留 (免逾期)' : '設為保留'}</span>
+                      </button>
+                    )}
                   </div>
                   <div className="text-xs text-stone-400">
                     下單時間: {new Date(order.created_at.endsWith('Z') || order.created_at.includes('+') ? order.created_at : order.created_at + 'Z').toLocaleString('zh-TW', {
