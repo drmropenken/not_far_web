@@ -54,7 +54,7 @@ export type ParsedTransaction = {
   isOrderRelated: boolean;
   status: 'matched' | 'already_logged' | 'unmatched' | 'ignored';
   matchedOrder?: any;
-  existingLog?: any;
+  existingLogs?: any[];
   selected: boolean;
 };
 
@@ -241,6 +241,7 @@ export default function BankReconciliationModal({
       } else if (item.virtualAccount && orderVAMap.has(item.virtualAccount)) {
         const order = orderVAMap.get(item.virtualAccount);
         item.matchedOrder = order;
+        item.existingLogs = paymentLogs[order.id] || [];
 
         // 判定 1: 檢查是否同一筆交易秒數已入帳過
         const isDuplicateTime = existingLogSet.has(`${order.id}_${item.amount}_${item.transactionTime}`);
@@ -639,7 +640,7 @@ export default function BankReconciliationModal({
                               </td>
                               <td className="p-3">
                                 {order ? (
-                                  <div className="space-y-1">
+                                  <div className="space-y-1.5 max-w-sm">
                                     <div className="font-bold text-stone-900 flex items-center gap-1.5">
                                       <span>{order.customer_name}</span>
                                       <span className="text-[10px] font-normal text-stone-500 font-mono">({order.customer_phone})</span>
@@ -648,12 +649,33 @@ export default function BankReconciliationModal({
                                       <span className="font-mono">{order.order_no}</span>
                                       <span>· 應收: NT${(order.total_amount || 0).toLocaleString()}</span>
                                       <span className="text-emerald-600 font-bold">· 已收: NT${(order.deposit_amount || 0).toLocaleString()}</span>
-                                      {(order.deposit_amount || 0) >= (order.total_amount || 0) && (
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200">
-                                          已滿額(加收入帳)
-                                        </span>
-                                      )}
                                     </div>
+
+                                    {/* 展開此訂單後台既有的金流記錄 */}
+                                    {item.existingLogs && item.existingLogs.length > 0 && (
+                                      <div className="bg-stone-50 p-2 rounded-lg border border-stone-200 text-[10px] space-y-1 text-stone-600">
+                                        <div className="font-bold text-stone-700 flex items-center gap-1">
+                                          <span>📜 後台既有金流 ({item.existingLogs.length}筆)：</span>
+                                        </div>
+                                        {item.existingLogs.map((log: any, lidx: number) => {
+                                          const timeStr = log.collected_at ? new Date(log.collected_at).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '無時間';
+                                          const typeStr = log.payment_type === 'onsite' ? '現場' : log.payment_type === 'credit_card' ? '信用卡' : '匯款';
+                                          return (
+                                            <div key={log.id || lidx} className="flex items-center justify-between gap-1 font-mono text-[10px] text-stone-600">
+                                              <span>• {timeStr} {typeStr} NT${log.amount?.toLocaleString()}</span>
+                                              <span className="text-stone-400 text-[9px] truncate max-w-[100px]">{log.collected_by || ''}</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+
+                                    {/* 滿額預警與重複匯款判定說明 */}
+                                    {(order.deposit_amount || 0) >= (order.total_amount || 0) && (
+                                      <div className="text-[10px] text-amber-800 bg-amber-50 px-2 py-1 rounded border border-amber-200 leading-relaxed">
+                                        <span>⚠️ 訂單已滿額。若客人此筆為「重複匯款 / 多付」，可手動勾選入帳；若為同筆款項請保持略過。</span>
+                                      </div>
+                                    )}
                                   </div>
                                 ) : (
                                   <span className="text-stone-400">--</span>
