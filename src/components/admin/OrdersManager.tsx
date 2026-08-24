@@ -990,19 +990,38 @@ export default function OrdersManager() {
               return (
               <div key={order.id} className={`bg-white rounded-xl border ${order.status === 'cancelled' ? 'border-rose-100 opacity-75' : 'border-stone-200'} shadow-sm overflow-hidden flex flex-col group transition-all hover:shadow-md`}>
                 {/* 訂單表頭 */}
-                <div className={`bg-stone-100/50 border-b ${order.status === 'cancelled' ? 'border-rose-100' : 'border-stone-100'} px-4 sm:px-5 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0`}>
-                  <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-                    <span className="font-mono text-xs text-stone-500 bg-stone-200/70 px-2 py-1 rounded">
+                <div className={`bg-stone-100/70 border-b ${order.status === 'cancelled' ? 'border-rose-100' : 'border-stone-200'} px-4 sm:px-5 py-2.5 flex flex-wrap justify-between items-center gap-2`}>
+                  {/* 左側：訂單編號 + 狀態標籤 */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-xs text-stone-600 bg-stone-200/80 px-2 py-0.5 rounded font-medium">
                       {order.order_no}
                     </span>
                     {getStatusBadge(order.status, order.check_in_date, order)}
                   </div>
-                  <div className="text-xs text-stone-400">
-                    下單時間: {new Date(order.created_at.endsWith('Z') || order.created_at.includes('+') ? order.created_at : order.created_at + 'Z').toLocaleString('zh-TW', {
-                      year: 'numeric', month: '2-digit', day: '2-digit',
-                      hour: '2-digit', minute: '2-digit', second: '2-digit',
-                      hour12: false
-                    })}
+
+                  {/* 右側：特約保留切換按鈕 + 下單時間 */}
+                  <div className="flex items-center gap-2.5">
+                    {order.status !== 'cancelled' && (
+                      <button
+                        onClick={() => togglePinOrder(order)}
+                        title={isOrderPinned(order) ? "目前為特約保留單（永久不逾期），點擊可取消保留" : "點擊設為特約保留（永久不逾期）"}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                          isOrderPinned(order)
+                            ? 'bg-purple-100 text-purple-800 border border-purple-300 hover:bg-purple-200 shadow-sm'
+                            : 'bg-white hover:bg-purple-50 text-stone-500 hover:text-purple-700 border border-stone-300 hover:border-purple-300'
+                        }`}
+                      >
+                        <span>📌</span>
+                        <span>{isOrderPinned(order) ? '特約保留 (免逾期)' : '設為保留'}</span>
+                      </button>
+                    )}
+                    <div className="text-xs text-stone-400 hidden sm:block">
+                      下單時間: {new Date(order.created_at.endsWith('Z') || order.created_at.includes('+') ? order.created_at : order.created_at + 'Z').toLocaleString('zh-TW', {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        hour12: false
+                      })}
+                    </div>
                   </div>
                 </div>
                 
@@ -1015,24 +1034,8 @@ export default function OrdersManager() {
                         {order.customer_name.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
                         <h3 className={`font-bold text-lg truncate ${order.status === 'cancelled' ? 'text-stone-500 line-through' : 'text-stone-800'}`}>{order.customer_name}</h3>
-                        
-                        {/* 📌 特約保留切換按鈕 (置於人名右側) */}
-                        {order.status !== 'cancelled' && (
-                          <button
-                            onClick={() => togglePinOrder(order)}
-                            title={isOrderPinned(order) ? "目前為特約保留單（永久不逾期），點擊可取消保留" : "點擊設為特約保留（永久不逾期）"}
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                              isOrderPinned(order)
-                                ? 'bg-purple-100 text-purple-800 border border-purple-300 hover:bg-purple-200 shadow-sm'
-                                : 'text-stone-400 hover:text-purple-700 hover:bg-purple-50 border border-dashed border-stone-300 hover:border-purple-300'
-                            }`}
-                          >
-                            <span>📌</span>
-                            <span>{isOrderPinned(order) ? '特約保留 (免逾期)' : '設為保留'}</span>
-                          </button>
-                        )}
                         {adminRole !== 'viewer' && (
                           <button onClick={() => {
                             setCustomerEditForm({
@@ -1044,7 +1047,7 @@ export default function OrdersManager() {
                               notes: parsed.notes
                             });
                             setEditingCustomerOrderId(order.id);
-                          }} className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-amber-600 transition-all p-1 shrink-0" title="編輯客戶資訊">
+                          }} className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-amber-600 transition-all p-1 shrink-0 cursor-pointer" title="編輯客戶資訊">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                           </button>
                         )}
