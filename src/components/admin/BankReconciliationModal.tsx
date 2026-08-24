@@ -77,6 +77,7 @@ export default function BankReconciliationModal({
   adminEmail,
   campId
 }: BankReconciliationModalProps) {
+  const [currentStep, setCurrentStep] = useState<'input' | 'review'>('input');
   const [inputText, setInputText] = useState('');
   const [parsedItems, setParsedItems] = useState<ParsedTransaction[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'matched' | 'already_logged' | 'unmatched' | 'ignored'>('all');
@@ -103,7 +104,6 @@ export default function BankReconciliationModal({
     const accountingDate = accDateMatch ? accDateMatch[1].replace(/-/g, '/') : transactionTime.split(' ')[0];
 
     // 尋找金額：通常緊隨在交易類型後面，支出為 0，存入為非 0 數字（可能含逗號）
-    // 範例：0 25,000 *** 或 0 3,000 ***
     let amount = 0;
     const amountMatch = trimmed.match(/\s+0\s+([0-9,]+)\s+/);
     if (amountMatch) {
@@ -268,6 +268,8 @@ export default function BankReconciliationModal({
 
     setParsedItems(parsedList);
     setIsProcessing(false);
+    // 自動切換至第二步驟：核對明細頁面
+    setCurrentStep('review');
   };
 
   // 3. 處理檔案上傳
@@ -390,11 +392,11 @@ export default function BankReconciliationModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 animate-fade-in">
-      <div className="bg-white border border-stone-200 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-stone-800">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm flex items-center justify-center p-2 md:p-5 animate-fade-in">
+      <div className="bg-white border border-stone-200 rounded-2xl w-full max-w-7xl shadow-2xl overflow-hidden flex flex-col h-[94vh] text-stone-800">
         
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-stone-900 via-stone-800 to-indigo-950 text-white px-6 py-4.5 flex justify-between items-center shrink-0 border-b border-stone-700">
+        <div className="bg-gradient-to-r from-stone-900 via-stone-800 to-indigo-950 text-white px-6 py-4 flex flex-wrap justify-between items-center shrink-0 border-b border-stone-700 gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-xl shadow-inner">
               🏦
@@ -402,120 +404,229 @@ export default function BankReconciliationModal({
             <div>
               <h2 className="text-lg font-black tracking-wider flex items-center gap-2">
                 銀行自動對帳與金流匯入
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 font-medium">智慧比對</span>
+                <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 font-medium">智慧比對</span>
               </h2>
               <p className="text-xs text-stone-400 mt-0.5">
-                貼上或上傳銀行明細 TXT / CSV，系統將自動比對 14 碼虛擬帳號（9629481xxxxxxx）並批次入帳
+                貼上銀行明細 TXT / CSV，系統將自動比對 14 碼虛擬帳號（9629481xxxxxxx）並自動過濾重複入帳
               </p>
             </div>
           </div>
+
+          {/* 步驟切換 Tabs (分頁導航) */}
+          <div className="flex items-center gap-2 bg-stone-950/60 p-1 rounded-xl border border-stone-700/60">
+            <button
+              onClick={() => setCurrentStep('input')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                currentStep === 'input'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-stone-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <span>📋 1. 輸入/上傳明細</span>
+              {inputText.trim() && (
+                <span className="text-[10px] bg-indigo-900 text-indigo-200 px-1.5 py-0.2 rounded-full">
+                  已填
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                if (parsedItems.length === 0 && inputText.trim()) {
+                  handleParseAndMatch();
+                } else if (parsedItems.length > 0) {
+                  setCurrentStep('review');
+                } else {
+                  alert('請先在步驟 1 貼上明細文字並點擊開始比對！');
+                }
+              }}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                currentStep === 'review'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'text-stone-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <span>📊 2. 對帳核對與入帳</span>
+              {counts.matched > 0 && (
+                <span className="text-[10px] bg-emerald-800 text-emerald-100 px-1.5 py-0.2 rounded-full font-mono">
+                  {counts.matched} 筆待入帳
+                </span>
+              )}
+            </button>
+          </div>
+
           <button 
             onClick={onClose}
-            className="text-stone-400 hover:text-white text-2xl leading-none transition-colors p-1 rounded-lg hover:bg-white/10 cursor-pointer"
+            className="text-stone-400 hover:text-white text-2xl leading-none transition-colors p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
           >
             &times;
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-5 bg-stone-50/50">
+        <div className="flex-1 overflow-y-auto bg-stone-50/60 p-4 md:p-6">
 
-          {/* 輸入區塊 */}
-          <div className="bg-white p-4.5 rounded-xl border border-stone-200 shadow-sm space-y-3">
-            <div className="flex justify-between items-center">
-              <label className="block text-xs font-bold text-stone-700 flex items-center gap-1.5">
-                <span>📋 貼上銀行交易明細文字 或 上傳檔案</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <label className="cursor-pointer text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-lg border border-stone-300 transition-colors flex items-center gap-1">
-                  <span>📂 選擇檔案 (.txt / .csv)</span>
-                  <input type="file" accept=".txt,.csv" onChange={handleFileUpload} className="hidden" />
-                </label>
-                {inputText && (
+          {/* ══════════════════════════════════════════════════════════════
+              分頁 1：輸入/上傳明細
+             ══════════════════════════════════════════════════════════════ */}
+          {currentStep === 'input' && (
+            <div className="max-w-4xl mx-auto space-y-5 animate-fade-in py-2">
+              
+              <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-4">
+                <div className="flex flex-wrap justify-between items-center gap-3">
+                  <div>
+                    <h3 className="text-base font-bold text-stone-800 flex items-center gap-2">
+                      <span>📋 貼上網銀交易明細文字 或 選擇檔案</span>
+                    </h3>
+                    <p className="text-xs text-stone-500 mt-1">
+                      可直接從網路銀行、台新、新光、彰銀、中信等網銀明細整批複製並貼入
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="cursor-pointer text-xs px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl border border-stone-300 transition-colors flex items-center gap-1.5 shadow-sm">
+                      <span>📂 上傳文字檔 (.txt / .csv)</span>
+                      <input type="file" accept=".txt,.csv" onChange={handleFileUpload} className="hidden" />
+                    </label>
+                    {inputText && (
+                      <button
+                        onClick={() => { setInputText(''); setParsedItems([]); setImportResult(null); }}
+                        className="text-xs text-stone-400 hover:text-rose-600 transition-colors px-2 py-1"
+                      >
+                        清空內容
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <textarea
+                    rows={11}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder="請直接從銀行網銀複製交易明細並貼在此處...&#10;範例：&#10;2026/07/30 12:47:342026/07/30 CD轉入 0 25,000 *** 00096294817209075,V 10300000480500182062 103214609&#10;2026/07/30 23:06:022026/07/31 CD轉入 0 6,000 *** 00096294813435927,V 80700014501800666832 807136521"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs font-mono text-stone-800 placeholder-stone-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all resize-y shadow-inner leading-relaxed"
+                  />
+                  {inputText && (
+                    <div className="absolute bottom-3 right-3 bg-white/90 border border-stone-200 px-2.5 py-1 rounded-md text-[11px] font-mono text-stone-500 shadow-sm">
+                      共 {inputText.split('\n').filter(l => l.trim()).length} 列明細
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap justify-between items-center gap-3 pt-2">
+                  <div className="text-xs text-stone-500 flex items-center gap-1.5">
+                    <span>💡 支援重複匯入（已入帳過款項會自動標記略過，絕不重複加總）</span>
+                  </div>
+
                   <button
-                    onClick={() => { setInputText(''); setParsedItems([]); setImportResult(null); }}
-                    className="text-xs text-stone-400 hover:text-rose-600 transition-colors"
+                    onClick={handleParseAndMatch}
+                    disabled={isProcessing || !inputText.trim()}
+                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
                   >
-                    清空內容
+                    {isProcessing ? (
+                      <span>正在解析比對中...</span>
+                    ) : (
+                      <>
+                        <span>🔍 開始智慧比對 ➔ 前往核對分頁</span>
+                      </>
+                    )}
                   </button>
-                )}
-              </div>
-            </div>
-
-            <textarea
-              rows={4}
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="請直接從銀行網銀複製交易明細並貼在此處...&#10;範例：2026/07/30 12:47:342026/07/30 CD轉入 0 25,000 *** 00096294817209075,V 10300000480500182062 103214609"
-              className="w-full bg-stone-50 border border-stone-200 rounded-lg p-3 text-xs font-mono text-stone-800 placeholder-stone-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all resize-y"
-            />
-
-            <div className="flex justify-between items-center pt-1">
-              <span className="text-[11px] text-stone-400">
-                💡 支援重複匯入（已入帳過款項會自動標記略過，絕不重複扣款）
-              </span>
-              <button
-                onClick={handleParseAndMatch}
-                disabled={isProcessing || !inputText.trim()}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                {isProcessing ? '正在解析比對中...' : '🔍 開始智慧比對'}
-              </button>
-            </div>
-          </div>
-
-          {/* 入帳成功提示 Alert */}
-          {importResult && (
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl flex items-center justify-between animate-fade-in">
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">🎉</span>
-                <div>
-                  <h4 className="font-bold text-sm">成功入帳 {importResult.successCount} 筆款項！</h4>
-                  <p className="text-xs text-emerald-600 mt-0.5">
-                    已入帳總額：<span className="font-black text-emerald-700 font-mono">NT$ {importResult.totalAmount.toLocaleString()}</span> 元，相關訂單狀態與金額已同步更新。
-                  </p>
                 </div>
               </div>
+
+              {/* 格式範例說明卡片 */}
+              <div className="bg-amber-50/60 border border-amber-200/80 rounded-xl p-4 text-xs text-amber-900 space-y-1.5">
+                <div className="font-bold flex items-center gap-1.5">
+                  <span>📌 支援的匯款格式說明：</span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  • 系統會自動抓取 14 碼專屬虛擬帳號（例如 <code className="font-mono bg-amber-100 px-1 rounded">9629481xxxxxxx</code> 或前綴含 000 之帳號）。<br />
+                  • 自動辨識轉出銀行（新光 103、永豐 807、中信 822、彰銀 009、台新 Richart 等）與精確交易秒數。<br />
+                  • 存款利息或非訂單繳費將自動過濾並標示為系統項目。
+                </p>
+              </div>
+
             </div>
           )}
 
-          {/* 解析結果展示區塊 */}
-          {parsedItems.length > 0 && (
-            <div className="space-y-3">
-              
+          {/* ══════════════════════════════════════════════════════════════
+              分頁 2：對帳核對與確認入帳
+             ══════════════════════════════════════════════════════════════ */}
+          {currentStep === 'review' && (
+            <div className="space-y-4 animate-fade-in">
+
+              {/* 入帳成功提示 Alert */}
+              {importResult && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🎉</span>
+                    <div>
+                      <h4 className="font-bold text-sm">成功入帳 {importResult.successCount} 筆款項！</h4>
+                      <p className="text-xs text-emerald-600 mt-0.5">
+                        已入帳總額：<span className="font-black text-emerald-700 font-mono">NT$ {importResult.totalAmount.toLocaleString()}</span> 元，相關訂單已轉為已付款並記錄金流明細。
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setImportResult(null)}
+                    className="text-xs text-emerald-600 hover:text-emerald-800 font-bold px-2 py-1"
+                  >
+                    關閉提示
+                  </button>
+                </div>
+              )}
+
               {/* 統計概覽 Bar */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm">
-                  <div className="text-[11px] text-stone-400 font-medium">待匯入入帳</div>
-                  <div className="text-base font-black text-emerald-600 font-mono mt-0.5">
-                    {counts.matched} 筆 <span className="text-xs font-normal text-stone-500">($ {counts.matchedAmount.toLocaleString()})</span>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="bg-white p-4 rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-sm flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-emerald-700 font-bold">🟢 待匯入入帳</div>
+                    <div className="text-xl font-black text-emerald-600 font-mono mt-1">
+                      {counts.matched} <span className="text-xs font-normal text-stone-500">筆</span>
+                    </div>
+                  </div>
+                  <div className="text-right font-mono font-bold text-sm text-emerald-700">
+                    NT$ {counts.matchedAmount.toLocaleString()}
                   </div>
                 </div>
-                <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm">
-                  <div className="text-[11px] text-stone-400 font-medium">已入帳 (自動略過)</div>
-                  <div className="text-base font-black text-amber-600 font-mono mt-0.5">
-                    {counts.already_logged} 筆
+
+                <div className="bg-white p-4 rounded-xl border border-amber-200 bg-amber-50/20 shadow-sm flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-amber-700 font-bold">🟡 已入帳 (自動略過)</div>
+                    <div className="text-xl font-black text-amber-600 font-mono mt-1">
+                      {counts.already_logged} <span className="text-xs font-normal text-stone-500">筆</span>
+                    </div>
                   </div>
+                  <span className="text-[11px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">已收訖</span>
                 </div>
-                <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm">
-                  <div className="text-[11px] text-stone-400 font-medium">查無對應訂單</div>
-                  <div className="text-base font-black text-rose-600 font-mono mt-0.5">
-                    {counts.unmatched} 筆
+
+                <div className="bg-white p-4 rounded-xl border border-rose-200 bg-rose-50/20 shadow-sm flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-rose-700 font-bold">🔴 查無對應訂單</div>
+                    <div className="text-xl font-black text-rose-600 font-mono mt-1">
+                      {counts.unmatched} <span className="text-xs font-normal text-stone-500">筆</span>
+                    </div>
                   </div>
+                  <span className="text-[11px] text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full font-medium">需人工核對</span>
                 </div>
-                <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm">
-                  <div className="text-[11px] text-stone-400 font-medium">系統/非訂單款項</div>
-                  <div className="text-base font-black text-stone-500 font-mono mt-0.5">
-                    {counts.ignored} 筆
+
+                <div className="bg-white p-4 rounded-xl border border-stone-200 bg-stone-50 shadow-sm flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-stone-500 font-bold">⚪ 系統 / 非訂單款項</div>
+                    <div className="text-xl font-black text-stone-600 font-mono mt-1">
+                      {counts.ignored} <span className="text-xs font-normal text-stone-500">筆</span>
+                    </div>
                   </div>
+                  <span className="text-[11px] text-stone-500 bg-stone-200 px-2 py-0.5 rounded-full font-medium">利息/繳費</span>
                 </div>
               </div>
 
-              {/* 狀態切換 Tabs & 全選按鈕 */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-b border-stone-200 pb-2">
-                <div className="flex items-center gap-1.5 text-xs">
+              {/* 篩選 Tabs 與全選控制列 */}
+              <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-1.5 text-xs overflow-x-auto py-0.5">
                   {[
-                    { id: 'all', label: `全部 (${counts.all})` },
+                    { id: 'all', label: `全部明細 (${counts.all})` },
                     { id: 'matched', label: `🟢 待入帳 (${counts.matched})` },
                     { id: 'already_logged', label: `🟡 已入帳 (${counts.already_logged})` },
                     { id: 'unmatched', label: `🔴 查無訂單 (${counts.unmatched})` },
@@ -524,10 +635,10 @@ export default function BankReconciliationModal({
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id as any)}
-                      className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap cursor-pointer ${
                         activeTab === tab.id
                           ? 'bg-stone-800 text-white shadow-sm'
-                          : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200'
+                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200 border border-stone-200'
                       }`}
                     >
                       {tab.label}
@@ -535,63 +646,72 @@ export default function BankReconciliationModal({
                   ))}
                 </div>
 
-                {activeTab === 'matched' || activeTab === 'all' ? (
-                  <div className="flex items-center gap-2 text-xs">
-                    <button
-                      onClick={() => toggleSelectAll(true)}
-                      className="text-indigo-600 hover:underline font-bold"
-                    >
-                      全選待入帳
-                    </button>
-                    <span className="text-stone-300">|</span>
-                    <button
-                      onClick={() => toggleSelectAll(false)}
-                      className="text-stone-500 hover:underline font-medium"
-                    >
-                      取消全選
-                    </button>
-                  </div>
-                ) : null}
+                <div className="flex items-center gap-2 text-xs">
+                  <button
+                    onClick={() => toggleSelectAll(true)}
+                    className="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg font-bold transition-colors cursor-pointer"
+                  >
+                    全選待入帳
+                  </button>
+                  <button
+                    onClick={() => toggleSelectAll(false)}
+                    className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-300 rounded-lg font-bold transition-colors cursor-pointer"
+                  >
+                    取消全選
+                  </button>
+                  <button
+                    onClick={() => setCurrentStep('input')}
+                    className="px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <span>⬅️ 調整明細內容</span>
+                  </button>
+                </div>
               </div>
 
-              {/* 明細清單表格 */}
+              {/* 明細比對表格 */}
               <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto max-h-[380px]">
+                <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-stone-100/80 text-stone-600 sticky top-0 z-10 border-b border-stone-200">
-                      <tr>
-                        <th className="p-3 w-10 text-center">勾選</th>
-                        <th className="p-3">交易時間</th>
-                        <th className="p-3 text-right">入帳金額</th>
-                        <th className="p-3">虛擬帳號</th>
-                        <th className="p-3">轉出銀行 / 來源</th>
-                        <th className="p-3">對應訂單資訊</th>
-                        <th className="p-3 text-center">比對狀態</th>
+                    <thead>
+                      <tr className="bg-stone-100/80 text-stone-600 font-bold border-b border-stone-200 text-[11px] tracking-wide">
+                        <th className="p-3.5 text-center w-12">勾選</th>
+                        <th className="p-3.5 w-44">交易時間</th>
+                        <th className="p-3.5 text-right w-32">入帳金額</th>
+                        <th className="p-3.5 w-40">虛擬帳號</th>
+                        <th className="p-3.5 w-48">轉出銀行 / 來源</th>
+                        <th className="p-3.5 min-w-[280px]">對應訂單資訊與金流核對</th>
+                        <th className="p-3.5 text-center w-36">比對狀態</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100">
                       {filteredItems.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="p-8 text-center text-stone-400">
-                            此分類下無交易資料
+                          <td colSpan={7} className="p-12 text-center text-stone-400">
+                            此分類下無任何交易紀錄
                           </td>
                         </tr>
                       ) : (
-                        filteredItems.map(item => {
+                        filteredItems.map((item) => {
                           const order = item.matchedOrder;
                           const isMatched = item.status === 'matched';
                           const isDuplicate = item.status === 'already_logged';
                           const isUnmatched = item.status === 'unmatched';
 
                           return (
-                            <tr 
+                            <tr
                               key={item.id}
-                              className={`hover:bg-stone-50/80 transition-colors ${
-                                item.selected ? 'bg-indigo-50/40' : ''
+                              className={`transition-colors ${
+                                item.selected
+                                  ? 'bg-indigo-50/40 hover:bg-indigo-50/70'
+                                  : isDuplicate
+                                  ? 'bg-amber-50/15 hover:bg-amber-50/30'
+                                  : isUnmatched
+                                  ? 'bg-rose-50/15 hover:bg-rose-50/30'
+                                  : 'hover:bg-stone-50/60'
                               }`}
                             >
-                              <td className="p-3 text-center">
-                                {item.matchedOrder ? (
+                              <td className="p-3.5 text-center">
+                                {order ? (
                                   <input
                                     type="checkbox"
                                     checked={item.selected}
@@ -602,16 +722,23 @@ export default function BankReconciliationModal({
                                   <span className="text-stone-300">-</span>
                                 )}
                               </td>
-                              <td className="p-3 whitespace-nowrap font-mono text-stone-700">
-                                {item.transactionTime}
+                              <td className="p-3.5 whitespace-nowrap font-mono text-stone-700">
+                                <div className="font-bold">{item.transactionTime}</div>
+                                <div className="text-[10px] text-stone-400">入帳日: {item.accountingDate}</div>
                               </td>
-                              <td className="p-3 text-right font-black font-mono text-sm text-stone-900 whitespace-nowrap">
+                              <td className="p-3.5 text-right font-black font-mono text-sm text-stone-900 whitespace-nowrap">
                                 NT$ {item.amount.toLocaleString()}
                               </td>
-                              <td className="p-3 whitespace-nowrap font-mono font-bold text-indigo-700">
-                                {item.virtualAccount || <span className="text-stone-400 font-normal">--</span>}
+                              <td className="p-3.5 whitespace-nowrap font-mono font-bold text-indigo-700">
+                                {item.virtualAccount ? (
+                                  <span className="bg-indigo-50 text-indigo-800 px-2 py-0.5 rounded border border-indigo-200">
+                                    {item.virtualAccount}
+                                  </span>
+                                ) : (
+                                  <span className="text-stone-400 font-normal">--</span>
+                                )}
                               </td>
-                              <td className="p-3">
+                              <td className="p-3.5">
                                 <div className="space-y-1">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border ${
@@ -632,28 +759,28 @@ export default function BankReconciliationModal({
                                     )}
                                   </div>
                                   {item.sourceAccountOrSeq && (
-                                    <span className="block text-[10px] text-stone-500 font-mono truncate max-w-[180px]" title={item.sourceAccountOrSeq}>
+                                    <span className="block text-[10px] text-stone-500 font-mono truncate max-w-[190px]" title={item.sourceAccountOrSeq}>
                                       序號: {item.sourceAccountOrSeq}
                                     </span>
                                   )}
                                 </div>
                               </td>
-                              <td className="p-3">
+                              <td className="p-3.5">
                                 {order ? (
-                                  <div className="space-y-1.5 max-w-sm">
-                                    <div className="font-bold text-stone-900 flex items-center gap-1.5">
-                                      <span>{order.customer_name}</span>
-                                      <span className="text-[10px] font-normal text-stone-500 font-mono">({order.customer_phone})</span>
+                                  <div className="space-y-1.5">
+                                    <div className="font-bold text-stone-900 flex items-center gap-2">
+                                      <span className="text-sm">{order.customer_name}</span>
+                                      <span className="text-[11px] font-normal text-stone-500 font-mono">({order.customer_phone})</span>
                                     </div>
                                     <div className="text-[11px] text-stone-500 flex items-center gap-2 flex-wrap">
-                                      <span className="font-mono">{order.order_no}</span>
+                                      <span className="font-mono bg-stone-100 px-1.5 py-0.2 rounded border border-stone-200">{order.order_no}</span>
                                       <span>· 應收: NT${(order.total_amount || 0).toLocaleString()}</span>
                                       <span className="text-emerald-600 font-bold">· 已收: NT${(order.deposit_amount || 0).toLocaleString()}</span>
                                     </div>
 
                                     {/* 展開此訂單後台既有的金流記錄 */}
                                     {item.existingLogs && item.existingLogs.length > 0 && (
-                                      <div className="bg-stone-50 p-2 rounded-lg border border-stone-200 text-[10px] space-y-1 text-stone-600">
+                                      <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-200 text-[10px] space-y-1 text-stone-600">
                                         <div className="font-bold text-stone-700 flex items-center gap-1">
                                           <span>📜 後台既有金流 ({item.existingLogs.length}筆)：</span>
                                         </div>
@@ -663,7 +790,7 @@ export default function BankReconciliationModal({
                                           return (
                                             <div key={log.id || lidx} className="flex items-center justify-between gap-1 font-mono text-[10px] text-stone-600">
                                               <span>• {timeStr} {typeStr} NT${log.amount?.toLocaleString()}</span>
-                                              <span className="text-stone-400 text-[9px] truncate max-w-[100px]">{log.collected_by || ''}</span>
+                                              <span className="text-stone-400 text-[9px] truncate max-w-[120px]">{log.collected_by || ''}</span>
                                             </div>
                                           );
                                         })}
@@ -672,8 +799,8 @@ export default function BankReconciliationModal({
 
                                     {/* 滿額預警與重複匯款判定說明 */}
                                     {(order.deposit_amount || 0) >= (order.total_amount || 0) && (
-                                      <div className="text-[10px] text-amber-800 bg-amber-50 px-2 py-1 rounded border border-amber-200 leading-relaxed">
-                                        <span>⚠️ 訂單已滿額。若客人此筆為「重複匯款 / 多付」，可手動勾選入帳；若為同筆款項請保持略過。</span>
+                                      <div className="text-[10px] text-amber-800 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200 leading-relaxed">
+                                        <span>⚠️ 訂單已全額收訖。若此筆為「客人重複匯款 / 多付」，可手動勾選入帳；若為同筆款項請保持略過。</span>
                                       </div>
                                     )}
                                   </div>
@@ -681,24 +808,24 @@ export default function BankReconciliationModal({
                                   <span className="text-stone-400">--</span>
                                 )}
                               </td>
-                              <td className="p-3 text-center whitespace-nowrap">
+                              <td className="p-3.5 text-center whitespace-nowrap">
                                 {isMatched && (
-                                  <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                  <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm">
                                     🟢 待入帳
                                   </span>
                                 )}
                                 {isDuplicate && (
-                                  <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200" title="此筆款項過去已入帳過，系統自動略過">
+                                  <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 shadow-sm" title="此筆款項過去已入帳過，系統自動略過">
                                     🟡 已入帳 (略過)
                                   </span>
                                 )}
                                 {isUnmatched && (
-                                  <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200" title="查無此虛擬帳號對應之訂單">
+                                  <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 shadow-sm" title="查無此虛擬帳號對應之訂單">
                                     🔴 查無訂單
                                   </span>
                                 )}
                                 {item.status === 'ignored' && (
-                                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-500 border border-stone-200" title="利息或非訂單款項">
+                                  <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-stone-100 text-stone-500 border border-stone-200" title="利息或非訂單款項">
                                     ⚪ 系統項目
                                   </span>
                                 )}
@@ -711,6 +838,7 @@ export default function BankReconciliationModal({
                   </table>
                 </div>
               </div>
+
             </div>
           )}
 
@@ -719,31 +847,58 @@ export default function BankReconciliationModal({
         {/* Modal Footer */}
         <div className="bg-stone-100 border-t border-stone-200 px-6 py-4 flex flex-wrap justify-between items-center gap-3 shrink-0">
           <div className="text-xs text-stone-600">
-            {parsedItems.length > 0 ? (
+            {currentStep === 'review' && parsedItems.length > 0 ? (
               <span>
                 已選取 <b className="text-indigo-600 text-sm font-mono">{counts.selectedCount}</b> 筆待入帳款項，
-                合計：<b className="text-emerald-700 text-base font-black font-mono">NT$ {counts.selectedAmount.toLocaleString()}</b> 元
+                合計金額：<b className="text-emerald-700 text-base font-black font-mono">NT$ {counts.selectedAmount.toLocaleString()}</b> 元
               </span>
             ) : (
-              <span className="text-stone-400">請貼上明細並執行比對</span>
+              <span className="text-stone-400">步驟 1：請先貼上明細並執行智慧比對</span>
             )}
           </div>
 
           <div className="flex items-center gap-2.5">
-            <button
-              onClick={onClose}
-              disabled={isImporting}
-              className="px-4 py-2 bg-white hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-lg border border-stone-300 transition-colors cursor-pointer"
-            >
-              關閉
-            </button>
-            <button
-              onClick={handleConfirmImport}
-              disabled={isImporting || counts.selectedCount === 0}
-              className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              {isImporting ? '正在寫入金流...' : `✅ 確認匯入入帳 (${counts.selectedCount} 筆)`}
-            </button>
+            {currentStep === 'review' ? (
+              <>
+                <button
+                  onClick={() => setCurrentStep('input')}
+                  disabled={isImporting}
+                  className="px-4 py-2 bg-white hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-lg border border-stone-300 transition-colors cursor-pointer"
+                >
+                  ⬅️ 返回修改明細
+                </button>
+                <button
+                  onClick={onClose}
+                  disabled={isImporting}
+                  className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                >
+                  關閉
+                </button>
+                <button
+                  onClick={handleConfirmImport}
+                  disabled={isImporting || counts.selectedCount === 0}
+                  className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isImporting ? '正在寫入金流...' : `✅ 確認匯入入帳 (${counts.selectedCount} 筆)`}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 bg-white hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-lg border border-stone-300 transition-colors cursor-pointer"
+                >
+                  關閉
+                </button>
+                <button
+                  onClick={handleParseAndMatch}
+                  disabled={isProcessing || !inputText.trim()}
+                  className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isProcessing ? '正在比對中...' : '🔍 開始智慧比對 ➔'}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
