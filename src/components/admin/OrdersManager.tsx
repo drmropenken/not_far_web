@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import OrderModal from './OrderModal';
 import EditOrderItemsModal from './EditOrderItemsModal';
+import BankReconciliationModal from './BankReconciliationModal';
 
 type Item = {
   id: string;
@@ -71,6 +72,7 @@ export default function OrdersManager() {
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'overdue' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBankReconcileOpen, setIsBankReconcileOpen] = useState(false);
   const [editingFinancialsId, setEditingFinancialsId] = useState<string | null>(null);
   const [financialsForm, setFinancialsForm] = useState({ total_amount: '', deposit_amount: '' });
   const [editingOrderItemsOrder, setEditingOrderItemsOrder] = useState<Order | null>(null);
@@ -850,8 +852,14 @@ export default function OrdersManager() {
             </div>
           </div>
 
-          {/* 右側：匯出與手動接單按鈕 */}
-          <div className="flex items-center gap-3">
+          {/* 右側：銀行對帳、匯出與手動接單按鈕 */}
+          <div className="flex items-center gap-2.5">
+            <button 
+              onClick={() => setIsBankReconcileOpen(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm tracking-wider transition-all shadow-sm flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer hover:shadow"
+            >
+              <span>🏦</span> 銀行自動對帳
+            </button>
             <button 
               onClick={handleExportCSV}
               className="bg-white text-emerald-700 hover:bg-emerald-50 px-4 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-emerald-200 flex items-center justify-center gap-2 whitespace-nowrap"
@@ -1683,6 +1691,19 @@ export default function OrdersManager() {
           </div>
         );
       })()}
+
+      {/* 🏦 銀行自動對帳 Modal */}
+      <BankReconciliationModal
+        isOpen={isBankReconcileOpen}
+        onClose={() => setIsBankReconcileOpen(false)}
+        onSuccess={() => {
+          fetchOrders();
+        }}
+        orders={orders}
+        paymentLogs={paymentLogs}
+        adminEmail={adminEmail}
+        campId={typeof window !== 'undefined' ? localStorage.getItem('camp_id') : null}
+      />
     </div>
   );
 }
