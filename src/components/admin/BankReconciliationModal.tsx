@@ -84,8 +84,6 @@ export default function BankReconciliationModal({
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ successCount: number; totalAmount: number } | null>(null);
 
-  if (!isOpen) return null;
-
   // 1. 解析單列文字
   const parseBankLine = (line: string, index: number): ParsedTransaction | null => {
     const trimmed = line.trim();
@@ -383,6 +381,8 @@ export default function BankReconciliationModal({
     return parsedItems.filter(item => item.status === activeTab);
   }, [parsedItems, activeTab]);
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 animate-fade-in">
       <div className="bg-white border border-stone-200 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-stone-800">
@@ -641,10 +641,10 @@ export default function BankReconciliationModal({
                                     </div>
                                     <div className="text-[11px] text-stone-500 flex items-center gap-2 flex-wrap">
                                       <span className="font-mono">{order.order_no}</span>
-                                      <span>· 應收: NT${order.total_amount.toLocaleString()}</span>
+                                      <span>· 應收: NT${(order.total_amount || 0).toLocaleString()}</span>
                                       <span className="text-emerald-600 font-bold">· 已收: NT${(order.deposit_amount || 0).toLocaleString()}</span>
-                                      {(order.deposit_amount || 0) >= order.total_amount && (
-                                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200">
+                                      {(order.deposit_amount || 0) >= (order.total_amount || 0) && (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200">
                                           已滿額(加收入帳)
                                         </span>
                                       )}
