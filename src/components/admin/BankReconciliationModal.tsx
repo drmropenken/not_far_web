@@ -44,6 +44,7 @@ export type ParsedTransaction = {
   rawLine: string;
   transactionTime: string; // YYYY/MM/DD HH:mm:ss
   accountingDate: string; // YYYY/MM/DD
+  txType: string; // 交易別 (例如 CD轉入, 跨行轉入, 存款息)
   amount: number;
   virtualAccount: string | null; // 9629481xxxxxxx
   sourceBankCode: string | null; // e.g. 103, 807
@@ -143,8 +144,25 @@ export default function BankReconciliationModal({
       }
     }
 
+    // 判斷交易類型（CD轉入、跨行轉入、Richart、存款息等）
+    let txType = '銀行轉入';
+    if (trimmed.includes('CD') || trimmed.includes('cd')) {
+      txType = 'CD轉入';
+    } else if (trimmed.includes('RICHART') || trimmed.includes('richart')) {
+      txType = 'Richart轉入';
+    } else if (trimmed.includes('跨行') || trimmed.includes('bsJ') || trimmed.includes('他行')) {
+      txType = '跨行轉入';
+    } else if (trimmed.includes('息') || trimmed.includes('利息') || trimmed.includes('存款息') || trimmed.includes('sڮ')) {
+      txType = '存款息';
+    } else {
+      const typeMatch = trimmed.match(/\d{4}[\/\-]\d{2}[\/\-]\d{2}\s+(.*?)\s+0\s+/);
+      if (typeMatch && typeMatch[1].trim()) {
+        txType = typeMatch[1].trim();
+      }
+    }
+
     // 判斷是否為訂單款項
-    const isInterest = trimmed.includes('息') || trimmed.includes('利息') || trimmed.includes('存款息');
+    const isInterest = txType === '存款息' || trimmed.includes('息') || trimmed.includes('利息') || trimmed.includes('存款息');
     const isOrderRelated = Boolean(virtualAccount && !isInterest);
 
     return {
@@ -152,6 +170,7 @@ export default function BankReconciliationModal({
       rawLine: trimmed,
       transactionTime,
       accountingDate,
+      txType,
       amount,
       virtualAccount,
       sourceBankCode,
@@ -288,7 +307,8 @@ export default function BankReconciliationModal({
         const order = item.matchedOrder;
         const sourceInfo = item.sourceBankName ? `${item.sourceBankName}${item.sourceBankCode ? `(${item.sourceBankCode})` : ''}` : '銀行轉帳';
         const accountInfo = item.sourceAccountOrSeq ? ` 轉出帳號/序號: ${item.sourceAccountOrSeq}` : '';
-        const notes = `[銀行自動對帳] 虛擬帳號: ${item.virtualAccount} | 來源: ${sourceInfo}${accountInfo} | 交易時間: ${item.transactionTime}`;
+        const rawNote = item.rawRemarks ? ` | 備註: ${item.rawRemarks}` : '';
+        const notes = `[銀行自動對帳] 類型: ${item.txType} | 虛擬帳號: ${item.virtualAccount} | 來源銀行: ${sourceInfo}${accountInfo}${rawNote} | 交易時間: ${item.transactionTime}`;
 
         // 精確交易時間轉 ISO
         const isoCollectedAt = new Date(item.transactionTime.replace(/\//g, '-')).toISOString();
@@ -574,18 +594,31 @@ export default function BankReconciliationModal({
                                 {item.virtualAccount || <span className="text-stone-400 font-normal">--</span>}
                               </td>
                               <td className="p-3">
-                                {item.sourceBankName ? (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-200 font-medium">
-                                    🏛️ {item.sourceBankName}
-                                  </span>
-                                ) : (
-                                  <span className="text-stone-400">銀行匯款</span>
-                                )}
-                                {item.sourceAccountOrSeq && (
-                                  <span className="block text-[10px] text-stone-400 font-mono mt-0.5 truncate max-w-[160px]" title={item.sourceAccountOrSeq}>
-                                    序號: {item.sourceAccountOrSeq}
-                                  </span>
-                                )}
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border ${
+                                      item.txType === 'CD轉入' 
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                                        : item.txType === 'Richart轉入'
+                                        ? 'bg-red-50 text-red-700 border-red-200'
+                                        : item.txType === '跨行轉入'
+                                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                        : 'bg-stone-100 text-stone-700 border-stone-200'
+                                    }`}>
+                                      {item.txType}
+                                    </span>
+                                    {item.sourceBankName && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-stone-100 text-stone-800 border border-stone-200 font-medium text-[11px]">
+                                        🏛️ {item.sourceBankName}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {item.sourceAccountOrSeq && (
+                                    <span className="block text-[10px] text-stone-500 font-mono truncate max-w-[180px]" title={item.sourceAccountOrSeq}>
+                                      序號: {item.sourceAccountOrSeq}
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                               <td className="p-3">
                                 {order ? (
