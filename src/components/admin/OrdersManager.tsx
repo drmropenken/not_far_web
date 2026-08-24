@@ -996,22 +996,6 @@ export default function OrdersManager() {
                       {order.order_no}
                     </span>
                     {getStatusBadge(order.status, order.check_in_date, order)}
-
-                    {/* 📌 特約保留切換按鈕 */}
-                    {order.status !== 'cancelled' && (
-                      <button
-                        onClick={() => togglePinOrder(order)}
-                        title={isOrderPinned(order) ? "目前為特約保留單（永久不逾期），點擊可取消保留" : "點擊設為特約保留（永久不逾期）"}
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                          isOrderPinned(order)
-                            ? 'bg-purple-100 text-purple-800 border border-purple-300 hover:bg-purple-200 shadow-sm'
-                            : 'text-stone-400 hover:text-purple-700 hover:bg-purple-50 border border-dashed border-stone-300 hover:border-purple-300'
-                        }`}
-                      >
-                        <span>📌</span>
-                        <span>{isOrderPinned(order) ? '特約保留 (免逾期)' : '設為保留'}</span>
-                      </button>
-                    )}
                   </div>
                   <div className="text-xs text-stone-400">
                     下單時間: {new Date(order.created_at.endsWith('Z') || order.created_at.includes('+') ? order.created_at : order.created_at + 'Z').toLocaleString('zh-TW', {
@@ -1027,12 +1011,28 @@ export default function OrdersManager() {
                   {/* 客戶資訊 */}
                   <div className="w-full md:w-1/2 space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full ${order.status === 'cancelled' ? 'bg-rose-50 text-rose-500 border-rose-200' : 'bg-amber-50 text-amber-600 border-amber-200'} flex items-center justify-center font-bold text-lg border`}>
+                      <div className={`w-10 h-10 rounded-full ${order.status === 'cancelled' ? 'bg-rose-50 text-rose-500 border-rose-200' : 'bg-amber-50 text-amber-600 border-amber-200'} flex items-center justify-center font-bold text-lg border shrink-0`}>
                         {order.customer_name.charAt(0)}
                       </div>
-                      <div>
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
                         <h3 className={`font-bold text-lg truncate ${order.status === 'cancelled' ? 'text-stone-500 line-through' : 'text-stone-800'}`}>{order.customer_name}</h3>
+                        
+                        {/* 📌 特約保留切換按鈕 (置於人名右側) */}
+                        {order.status !== 'cancelled' && (
+                          <button
+                            onClick={() => togglePinOrder(order)}
+                            title={isOrderPinned(order) ? "目前為特約保留單（永久不逾期），點擊可取消保留" : "點擊設為特約保留（永久不逾期）"}
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                              isOrderPinned(order)
+                                ? 'bg-purple-100 text-purple-800 border border-purple-300 hover:bg-purple-200 shadow-sm'
+                                : 'text-stone-400 hover:text-purple-700 hover:bg-purple-50 border border-dashed border-stone-300 hover:border-purple-300'
+                            }`}
+                          >
+                            <span>📌</span>
+                            <span>{isOrderPinned(order) ? '特約保留 (免逾期)' : '設為保留'}</span>
+                          </button>
+                        )}
                         {adminRole !== 'viewer' && (
                           <button onClick={() => {
                             setCustomerEditForm({
