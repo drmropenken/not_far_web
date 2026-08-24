@@ -242,15 +242,20 @@ export default function BankReconciliationModal({
         const order = orderVAMap.get(item.virtualAccount);
         item.matchedOrder = order;
 
-        // 檢查是否為同一筆交易重複匯入（精確比對訂單ID + 金額 + 銀行交易時間秒數）
-        const isDuplicate = existingLogSet.has(`${order.id}_${item.amount}_${item.transactionTime}`);
+        // 判定 1: 檢查是否同一筆交易秒數已入帳過
+        const isDuplicateTime = existingLogSet.has(`${order.id}_${item.amount}_${item.transactionTime}`);
+        
+        // 判定 2: 檢查該訂單是否已經全額付清 (status 為 paid 或已收金額 >= 應收金額)
+        const currentPaid = (order.deposit_amount || 0);
+        const orderTotal = (order.total_amount || 0);
+        const isOrderFullyPaid = order.status === 'paid' || (orderTotal > 0 && currentPaid >= orderTotal);
 
-        if (isDuplicate) {
+        if (isDuplicateTime || isOrderFullyPaid) {
           item.status = 'already_logged';
-          item.selected = false; // 已入帳過的同一筆交易預設不勾選（若管理員想重匯仍可手動勾選）
+          item.selected = false; // 已滿額付清或已入過帳，預設標記為「已入帳(略過)」，不主動勾選
         } else {
           item.status = 'matched';
-          item.selected = true; // 只要是新的交易時間，即使金額相同或訂單已收滿，照常視為待入帳！
+          item.selected = true; // 尚未付清的訂單，預設標記為「待入帳」並主動勾選！
         }
       } else {
         item.status = 'unmatched';
