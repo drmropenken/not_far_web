@@ -204,17 +204,30 @@ export default function BankReconciliationModal({
       }
     });
 
-    // 建立所有既有金流記錄的比對 Set (order_id + amount + collected_at_date)
+    // 建立所有既有金流記錄的比對 Set (以 精確交易時間 YYYY/MM/DD HH:mm:ss 或 notes 內容進行唯一性比對)
     const existingLogSet = new Set<string>();
     Object.entries(paymentLogs).forEach(([orderId, logs]) => {
       logs.forEach(log => {
         if (log.payment_type === 'bank_transfer' || log.payment_type === 'onsite') {
-          // 格式：orderId_amount_dateStr (YYYY/MM/DD)
-          const logDate = log.collected_at ? new Date(log.collected_at).toISOString().split('T')[0] : '';
-          existingLogSet.add(`${orderId}_${log.amount}_${logDate}`);
-          // 亦記錄精確時間比對
-          if (log.notes && log.notes.includes(logDate)) {
-            existingLogSet.add(`${orderId}_${log.amount}_notes`);
+          // 精確時間字串
+          if (log.collected_at) {
+            const dateObj = new Date(log.collected_at);
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            const h = String(dateObj.getHours()).padStart(2, '0');
+            const min = String(dateObj.getMinutes()).padStart(2, '0');
+            const s = String(dateObj.getSeconds()).padStart(2, '0');
+            const exactTime = `${y}/${m}/${d} ${h}:${min}:${s}`;
+            existingLogSet.add(`${orderId}_${log.amount}_${exactTime}`);
+          }
+          // 從 notes 中抓取精確交易時間
+          if (log.notes) {
+            const timeMatch = log.notes.match(/交易時間:\s*([0-9\/\-\s:]+)/);
+            if (timeMatch) {
+              const cleanedTime = timeMatch[1].trim().replace(/-/g, '/');
+              existingLogSet.add(`${orderId}_${log.amount}_${cleanedTime}`);
+            }
           }
         }
       });
@@ -231,16 +244,15 @@ export default function BankReconciliationModal({
         const order = orderVAMap.get(item.virtualAccount);
         item.matchedOrder = order;
 
-        // 檢查是否已入過帳
-        const txDateStr = item.transactionTime.split(' ')[0].replace(/\//g, '-');
-        const isDuplicate = existingLogSet.has(`${order.id}_${item.amount}_${txDateStr}`);
+        // 檢查是否為同一筆交易重複匯入（精確比對訂單ID + 金額 + 銀行交易時間秒數）
+        const isDuplicate = existingLogSet.has(`${order.id}_${item.amount}_${item.transactionTime}`);
 
         if (isDuplicate) {
           item.status = 'already_logged';
-          item.selected = false; // 已入帳預設不勾選
+          item.selected = false; // 已入帳過的同一筆交易預設不勾選（若管理員想重匯仍可手動勾選）
         } else {
           item.status = 'matched';
-          item.selected = true; // 待入帳預設勾選
+          item.selected = true; // 只要是新的交易時間，即使金額相同或訂單已收滿，照常視為待入帳！
         }
       } else {
         item.status = 'unmatched';
@@ -281,7 +293,7 @@ export default function BankReconciliationModal({
 
   const toggleSelectAll = (checked: boolean) => {
     setParsedItems(prev => prev.map(item => {
-      if (item.status === 'matched') {
+      if (item.matchedOrder) {
         return { ...item, selected: checked };
       }
       return item;
@@ -290,7 +302,7 @@ export default function BankReconciliationModal({
 
   // 5. 批次確認入帳
   const handleConfirmImport = async () => {
-    const toImport = parsedItems.filter(item => item.selected && item.status === 'matched' && item.matchedOrder);
+    const toImport = parsedItems.filter(item => item.selected && item.matchedOrder);
     if (toImport.length === 0) {
       alert('請先勾選欲入帳的款項！');
       return;
@@ -573,7 +585,7 @@ export default function BankReconciliationModal({
                               }`}
                             >
                               <td className="p-3 text-center">
-                                {isMatched ? (
+                                {item.matchedOrder ? (
                                   <input
                                     type="checkbox"
                                     checked={item.selected}
@@ -622,15 +634,20 @@ export default function BankReconciliationModal({
                               </td>
                               <td className="p-3">
                                 {order ? (
-                                  <div className="space-y-0.5">
+                                  <div className="space-y-1">
                                     <div className="font-bold text-stone-900 flex items-center gap-1.5">
                                       <span>{order.customer_name}</span>
                                       <span className="text-[10px] font-normal text-stone-500 font-mono">({order.customer_phone})</span>
                                     </div>
-                                    <div className="text-[11px] text-stone-500 flex items-center gap-2">
+                                    <div className="text-[11px] text-stone-500 flex items-center gap-2 flex-wrap">
                                       <span className="font-mono">{order.order_no}</span>
                                       <span>· 應收: NT${order.total_amount.toLocaleString()}</span>
                                       <span className="text-emerald-600 font-bold">· 已收: NT${(order.deposit_amount || 0).toLocaleString()}</span>
+                                      {(order.deposit_amount || 0) >= order.total_amount && (
+                                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200">
+                                          已滿額(加收入帳)
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                 ) : (
