@@ -829,88 +829,90 @@ export default function OrdersManager() {
       <div className="flex-1 overflow-auto bg-stone-50 rounded-2xl flex flex-col">
         
         {/* Row 1: 搜尋、時間篩選、手動接單與匯出 */}
-        <div className="p-4 md:p-6 pb-3.5 bg-white md:rounded-t-2xl border-b border-stone-100 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="p-3.5 md:p-6 pb-3 md:pb-3.5 bg-white md:rounded-t-2xl border-b border-stone-100 flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-3 shrink-0">
           {/* 左側：搜尋 + 時間篩選 */}
-          <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 md:gap-2.5 flex-1 min-w-0">
             {/* 搜尋框 */}
-            <div className="relative w-full sm:w-44 lg:w-48">
+            <div className="relative w-full sm:w-44 lg:w-48 shrink-0">
               <input 
                 type="text" 
                 placeholder="搜尋姓名、電話..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all h-[34px]"
+                className="w-full pl-8 pr-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all h-[36px] md:h-[34px]"
               />
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-50 text-xs">🔍</span>
             </div>
 
-            {/* 快速時間區間 / 選月 */}
-            <select
-              value={selectedMonth}
-              onChange={(e) => handleMonthChange(e.target.value)}
-              className="bg-stone-50 border border-stone-200 rounded-lg text-xs px-2.5 py-1.5 font-bold text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-500/50 h-[34px] cursor-pointer"
-            >
-              <option value="all">🌐 全部訂單 (所有月份)</option>
-              <option value="future">🔮 未來訂單 (明天之後)</option>
-              <option value="past">📜 過去訂單 (今天以前)</option>
-              <option value="custom" disabled hidden>自訂區間</option>
-              <optgroup label="── 📅 指定月份 ──">
-                {getMonthsList().map(m => (
-                  <option key={m} value={m}>{m.replace('-', '年 ')}月</option>
-                ))}
-              </optgroup>
-            </select>
+            {/* 快速時間區間 / 選月 與 自訂日期範圍 */}
+            <div className="flex items-center gap-2 w-full sm:w-auto flex-1 min-w-0">
+              <select
+                value={selectedMonth}
+                onChange={(e) => handleMonthChange(e.target.value)}
+                className="flex-1 sm:flex-initial bg-stone-50 border border-stone-200 rounded-lg text-xs px-2.5 py-1.5 font-bold text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-500/50 h-[36px] md:h-[34px] cursor-pointer min-w-0 truncate"
+              >
+                <option value="all">🌐 全部訂單 (所有月份)</option>
+                <option value="future">🔮 未來訂單 (明天之後)</option>
+                <option value="past">📜 過去訂單 (今天以前)</option>
+                <option value="custom" disabled hidden>自訂區間</option>
+                <optgroup label="── 📅 指定月份 ──">
+                  {getMonthsList().map(m => (
+                    <option key={m} value={m}>{m.replace('-', '年 ')}月</option>
+                  ))}
+                </optgroup>
+              </select>
 
-            {/* 自訂日期範圍 (使用單一框與 border-none 設計以節省空間) */}
-            <div className="flex items-center gap-1 bg-stone-50 border border-stone-200 rounded-lg px-2 h-[34px] focus-within:ring-2 focus-within:ring-amber-500/50 focus-within:border-amber-500 transition-all">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  setSelectedMonth('custom');
-                }}
-                className="bg-transparent border-none text-xs p-0 focus:ring-0 outline-none w-[112px] text-stone-700"
-              />
-              <span className="text-stone-400 text-xs px-1">~</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setSelectedMonth('custom');
-                }}
-                className="bg-transparent border-none text-xs p-0 focus:ring-0 outline-none w-[112px] text-stone-700"
-              />
+              {/* 自訂日期範圍 (使用單一框與 border-none 設計以節省空間) */}
+              <div className="flex items-center gap-1 bg-stone-50 border border-stone-200 rounded-lg px-2 h-[36px] md:h-[34px] focus-within:ring-2 focus-within:ring-amber-500/50 focus-within:border-amber-500 transition-all shrink-0">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setSelectedMonth('custom');
+                  }}
+                  className="bg-transparent border-none text-xs p-0 focus:ring-0 outline-none w-[96px] sm:w-[112px] text-stone-700 cursor-pointer"
+                />
+                <span className="text-stone-400 text-xs px-0.5">~</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setSelectedMonth('custom');
+                  }}
+                  className="bg-transparent border-none text-xs p-0 focus:ring-0 outline-none w-[96px] sm:w-[112px] text-stone-700 cursor-pointer"
+                />
+              </div>
             </div>
           </div>
 
-          {/* 右側：銀行對帳、匯出與手動接單按鈕 */}
-          <div className="flex items-center gap-2.5">
+          {/* 右側：銀行對帳、匯出與手動接單按鈕 (手機上 3 等分整齊滿版，電腦維持靠右 flex 排列) */}
+          <div className="grid grid-cols-3 gap-2 w-full md:w-auto md:flex md:items-center md:gap-2.5 shrink-0 pt-0.5 md:pt-0">
             <button 
               onClick={() => setIsBankReconcileOpen(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm tracking-wider transition-all shadow-sm flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer hover:shadow"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm tracking-tight sm:tracking-wider transition-all shadow-sm flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap cursor-pointer hover:shadow"
             >
-              <span>🏦</span> 銀行自動對帳
+              <span>🏦</span> <span className="hidden sm:inline">銀行自動</span>對帳
             </button>
             <button 
               onClick={handleExportCSV}
-              className="bg-white text-emerald-700 hover:bg-emerald-50 px-4 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-emerald-200 flex items-center justify-center gap-2 whitespace-nowrap"
+              className="bg-white text-emerald-700 hover:bg-emerald-50 px-2 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm tracking-tight sm:tracking-wider transition-colors shadow-sm border border-emerald-200 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap cursor-pointer"
             >
-              📥 匯出 Excel
+              <span>📥</span> 匯出<span className="hidden sm:inline"> Excel</span>
             </button>
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="bg-emerald-700 text-emerald-50 hover:bg-stone-700 px-5 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-stone-700 flex items-center justify-center gap-2 whitespace-nowrap"
+              className="bg-emerald-700 text-white hover:bg-emerald-800 px-2 sm:px-5 py-2 rounded-lg font-bold text-xs sm:text-sm tracking-tight sm:tracking-wider transition-colors shadow-sm border border-emerald-800 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap cursor-pointer"
             >
-              <span className="text-base leading-none mb-0.5">+</span> 手動接單
+              <span className="text-base leading-none mb-0.5 font-black">+</span> 手動接單
             </button>
           </div>
         </div>
 
         {/* Row 2: 狀態分頁標籤 */}
-        <div className="px-4 md:px-6 pt-2 border-b border-stone-200 bg-white shrink-0">
-          <div className="flex gap-2 md:gap-4 overflow-x-auto hide-scrollbar w-full md:w-auto pb-1 md:pb-0">
+        <div className="px-3 md:px-6 pt-1.5 md:pt-2 border-b border-stone-200 bg-white shrink-0">
+          <div className="flex gap-1.5 md:gap-4 overflow-x-auto hide-scrollbar w-full md:w-auto pb-1 md:pb-0" style={{ WebkitOverflowScrolling: 'touch' }}>
             {[
               { id: 'all', label: '全部訂單' },
               { id: 'pending', label: '待付款' },
@@ -923,7 +925,7 @@ export default function OrdersManager() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`px-4 py-2 md:px-5 md:py-2.5 rounded-t-lg font-bold text-sm transition-all border-b-2 whitespace-nowrap ${
+                className={`px-3 py-1.5 md:px-5 md:py-2.5 rounded-t-lg font-bold text-xs md:text-sm transition-all border-b-2 whitespace-nowrap shrink-0 ${
                   activeTab === tab.id 
                     ? 'border-amber-500 text-amber-600 bg-amber-50/50' 
                     : 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-50'
@@ -936,43 +938,43 @@ export default function OrdersManager() {
         </div>
 
         {/* Row 3: 區間財務看板 */}
-        <div className="p-4 md:p-6 pb-2 shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-stone-700">📊 區間財務明細加總</h3>
-            <div className="text-xs font-medium text-stone-500 bg-stone-200/50 px-2.5 py-1 rounded-md border border-stone-200/50">
+        <div className="p-3 md:p-6 pb-2 shrink-0">
+          <div className="flex items-center justify-between mb-2 md:mb-3">
+            <h3 className="text-xs md:text-sm font-bold text-stone-700">📊 區間財務明細加總</h3>
+            <div className="text-[11px] md:text-xs font-medium text-stone-500 bg-stone-200/50 px-2 md:px-2.5 py-0.5 md:py-1 rounded-md border border-stone-200/50">
               篩選區間內共有 <span className="font-bold text-amber-600">{filteredOrders.length}</span> 筆訂單
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
-              <span className="text-[11px] font-bold text-stone-400">總營業額 (訂單總額)</span>
-              <span className="text-lg font-black text-stone-700 mt-1">NT$ {stats.totalAmountSum.toLocaleString()}</span>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-3">
+            <div className="bg-white p-2.5 md:p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
+              <span className="text-[10px] md:text-[11px] font-bold text-stone-400 truncate">總營業額 (訂單總額)</span>
+              <span className="text-sm sm:text-base md:text-lg font-black text-stone-700 mt-1 truncate">NT$ {stats.totalAmountSum.toLocaleString()}</span>
             </div>
-            <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between border-l-4 border-l-emerald-500">
-              <span className="text-[11px] font-bold text-stone-400">已收總額 (實收月營收)</span>
-              <span className="text-lg font-black text-emerald-600 mt-1">NT$ {stats.receivedTotal.toLocaleString()}</span>
+            <div className="bg-white p-2.5 md:p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between border-l-4 border-l-emerald-500">
+              <span className="text-[10px] md:text-[11px] font-bold text-stone-400 truncate">已收總額 (實收月營收)</span>
+              <span className="text-sm sm:text-base md:text-lg font-black text-emerald-600 mt-1 truncate">NT$ {stats.receivedTotal.toLocaleString()}</span>
             </div>
-            <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between border-l-4 border-l-rose-500">
-              <span className="text-[11px] font-bold text-stone-400">未付尾款 (應收帳款)</span>
-              <span className="text-lg font-black text-rose-600 mt-1">NT$ {stats.receivableTotal.toLocaleString()}</span>
+            <div className="bg-white p-2.5 md:p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between border-l-4 border-l-rose-500">
+              <span className="text-[10px] md:text-[11px] font-bold text-stone-400 truncate">未付尾款 (應收帳款)</span>
+              <span className="text-sm sm:text-base md:text-lg font-black text-rose-600 mt-1 truncate">NT$ {stats.receivableTotal.toLocaleString()}</span>
             </div>
-            <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
-              <span className="text-[11px] font-bold text-stone-400">實收：信用卡 (綠界)</span>
-              <span className="text-lg font-bold text-blue-600 mt-1">NT$ {stats.creditCardTotal.toLocaleString()}</span>
+            <div className="bg-white p-2.5 md:p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
+              <span className="text-[10px] md:text-[11px] font-bold text-stone-400 truncate">實收：信用卡 (綠界)</span>
+              <span className="text-sm sm:text-base md:text-lg font-bold text-blue-600 mt-1 truncate">NT$ {stats.creditCardTotal.toLocaleString()}</span>
             </div>
-            <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
-              <span className="text-[11px] font-bold text-stone-400">實收：虛擬匯款</span>
-              <span className="text-lg font-bold text-stone-600 mt-1">NT$ {stats.bankTransferTotal.toLocaleString()}</span>
+            <div className="bg-white p-2.5 md:p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
+              <span className="text-[10px] md:text-[11px] font-bold text-stone-400 truncate">實收：虛擬匯款</span>
+              <span className="text-sm sm:text-base md:text-lg font-bold text-stone-600 mt-1 truncate">NT$ {stats.bankTransferTotal.toLocaleString()}</span>
             </div>
-            <div className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
-              <span className="text-[11px] font-bold text-stone-400">實收：現場/現金</span>
-              <span className="text-lg font-bold text-teal-600 mt-1">NT$ {stats.onsiteTotal.toLocaleString()}</span>
+            <div className="bg-white p-2.5 md:p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
+              <span className="text-[10px] md:text-[11px] font-bold text-stone-400 truncate">實收：現場/現金</span>
+              <span className="text-sm sm:text-base md:text-lg font-bold text-teal-600 mt-1 truncate">NT$ {stats.onsiteTotal.toLocaleString()}</span>
             </div>
           </div>
         </div>
 
         {/* Row 4: 訂單列表區域 */}
-        <div className="flex-1 p-4 md:p-6 pb-32 md:pb-32 bg-stone-50 min-h-0">
+        <div className="flex-1 p-3 md:p-6 pb-24 md:pb-32 bg-stone-50 min-h-0">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-full text-amber-600/60 space-y-4 min-h-[300px]">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500"></div>
@@ -1047,7 +1049,7 @@ export default function OrdersManager() {
                               notes: parsed.notes
                             });
                             setEditingCustomerOrderId(order.id);
-                          }} className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-amber-600 transition-all p-1 shrink-0 cursor-pointer" title="編輯客戶資訊">
+                          }} className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-stone-400 hover:text-amber-600 transition-all p-1 shrink-0 cursor-pointer" title="編輯客戶資訊">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                           </button>
                         )}
@@ -1307,47 +1309,49 @@ export default function OrdersManager() {
 
                 {/* 操作按鈕 */}
                 {adminRole !== 'viewer' && (
-                  <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                  <div className="px-3.5 sm:px-5 py-2.5 sm:py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     {/* 左邊：刪除（僅 dr.mr.openken） */}
-                    {adminEmail === 'dr.mr.openken@gmail.com' && (
-                      <button onClick={() => deleteOrder(order.id)} className="px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors">
-                        刪除
-                      </button>
-                    )}
-                    {/* 左邊：取消訂單 / 恢復訂單 */}
-                    {order.status !== 'cancelled' ? (
-                      <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="px-3 py-1.5 text-xs font-bold text-stone-600 bg-white hover:bg-stone-100 border border-stone-200 rounded-md transition-colors">
-                        取消訂單
-                      </button>
-                    ) : (
-                      <div className="flex gap-1.5">
-                        <button onClick={() => updateOrderStatus(order.id, 'paid')} className="px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors shadow-sm">
-                          🔄 恢復訂單 (轉已付款)
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      {adminEmail === 'dr.mr.openken@gmail.com' && (
+                        <button onClick={() => deleteOrder(order.id)} className="px-2.5 sm:px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors">
+                          刪除
                         </button>
-                        <button onClick={() => updateOrderStatus(order.id, 'pending')} className="px-3 py-1.5 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-md transition-colors">
-                          ↩️ 轉待付款
+                      )}
+                      {/* 左邊：取消訂單 / 恢復訂單 */}
+                      {order.status !== 'cancelled' ? (
+                        <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="px-2.5 sm:px-3 py-1.5 text-xs font-bold text-stone-600 bg-white hover:bg-stone-100 border border-stone-200 rounded-md transition-colors">
+                          取消訂單
                         </button>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex gap-1.5">
+                          <button onClick={() => updateOrderStatus(order.id, 'paid')} className="px-2.5 sm:px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors shadow-sm">
+                            🔄 恢復訂單
+                          </button>
+                          <button onClick={() => updateOrderStatus(order.id, 'pending')} className="px-2.5 sm:px-3 py-1.5 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-md transition-colors">
+                            ↩️ 轉待付款
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     {/* 右邊區塊（ml-auto 推到底） */}
-                    <div className="ml-auto flex flex-wrap items-center gap-2">
+                    <div className="ml-auto flex flex-wrap items-center gap-1.5 sm:gap-2">
                       {order.status === 'paid' && (
-                        <button onClick={() => updateOrderStatus(order.id, 'checked_in')} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors shadow-sm">
-                          ✅ 標記已報到
+                        <button onClick={() => updateOrderStatus(order.id, 'checked_in')} className="whitespace-nowrap px-2.5 sm:px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors shadow-sm">
+                          ✅ 報到
                         </button>
                       )}
                       {/* 線上付款（信用卡／匯款） */}
                       {order.status !== 'cancelled' && (
                         <button
                           onClick={() => { setOnlinePaymentOrderId(order.id); setOnlinePaymentAmount(''); setOnlinePaymentType('bank_transfer'); setOnlinePaymentCollectedAt(getLocalDateTimeString()); }}
-                          className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors"
+                          className="whitespace-nowrap px-2.5 sm:px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors"
                         >
                           💳 線上付款
                         </button>
                       )}
                       {/* 現場收款 */}
                       {order.status !== 'cancelled' && (
-                        <button onClick={() => { setOnsitePaymentOrderId(order.id); setOnsiteAmount(''); setOnsiteNotes(''); setOnsiteCollectedAt(getLocalDateTimeString()); }} className="whitespace-nowrap px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
+                        <button onClick={() => { setOnsitePaymentOrderId(order.id); setOnsiteAmount(''); setOnsiteNotes(''); setOnsiteCollectedAt(getLocalDateTimeString()); }} className="whitespace-nowrap px-2.5 sm:px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
                           💵 現場收款
                         </button>
                       )}
