@@ -1110,17 +1110,18 @@ export default function InventoryCalendar() {
                 </button>
               </div>
 
-              {/* Modal Tabs */}
-              <div className="flex border-b border-stone-200 bg-stone-100/60 px-4 pt-2 gap-2 text-sm font-bold overflow-x-auto">
+              {/* Modal Tabs - 手機版自動平分 3 等份塞在同一行，免左右滑動 */}
+              <div className="grid grid-cols-3 border-b border-stone-200 bg-stone-100/60 px-2 md:px-4 pt-2 gap-1 md:gap-2 text-xs md:text-sm font-bold">
                 <button
                   onClick={() => setActiveDayTab('financial')}
-                  className={`px-3 md:px-4 py-2 rounded-t-lg transition-all border-t border-x whitespace-nowrap text-xs md:text-sm ${
+                  className={`py-2 px-1 md:px-3 rounded-t-lg transition-all border-t border-x text-center flex items-center justify-center gap-1 ${
                     activeDayTab === 'financial'
-                      ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px'
+                      ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px shadow-xs'
                       : 'text-stone-500 hover:text-stone-800 border-transparent'
                   }`}
                 >
-                  💰 當日財務數據
+                  <span>💰</span>
+                  <span className="hidden sm:inline">當日</span><span>財務數據</span>
                 </button>
                 <button
                   onClick={() => {
@@ -1129,26 +1130,28 @@ export default function InventoryCalendar() {
                       setNoteEditMode(true);
                     }
                   }}
-                  className={`px-3 md:px-4 py-2 rounded-t-lg transition-all border-t border-x whitespace-nowrap text-xs md:text-sm flex items-center gap-1.5 ${
+                  className={`py-2 px-1 md:px-3 rounded-t-lg transition-all border-t border-x text-center flex items-center justify-center gap-1 ${
                     activeDayTab === 'notes'
-                      ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px'
+                      ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px shadow-xs'
                       : 'text-stone-500 hover:text-stone-800 border-transparent'
                   }`}
                 >
-                  <span>📝 當日記事 / 包場</span>
+                  <span>📝</span>
+                  <span className="hidden sm:inline">當日</span><span>營運記事</span>
                   {calendarNotes[summary.dateStr] && (
-                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                    <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-purple-500 shrink-0"></span>
                   )}
                 </button>
                 <button
                   onClick={() => setActiveDayTab('quota')}
-                  className={`px-3 md:px-4 py-2 rounded-t-lg transition-all border-t border-x whitespace-nowrap text-xs md:text-sm ${
+                  className={`py-2 px-1 md:px-3 rounded-t-lg transition-all border-t border-x text-center flex items-center justify-center gap-1 ${
                     activeDayTab === 'quota'
-                      ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px'
+                      ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px shadow-xs'
                       : 'text-stone-500 hover:text-stone-800 border-transparent'
                   }`}
                 >
-                  ⚙️ 修改全天庫存
+                  <span>⚙️</span>
+                  <span className="hidden sm:inline">修改</span><span>全天庫存</span>
                 </button>
               </div>
 
@@ -1179,19 +1182,19 @@ export default function InventoryCalendar() {
                     {/* 金額統計卡片 */}
                     <div className="grid grid-cols-3 gap-2.5">
                       <div className="bg-emerald-50/70 border border-emerald-200/80 p-3 rounded-xl text-center shadow-sm">
-                        <div className="text-[11px] font-semibold text-emerald-700 mb-1">應收總額</div>
+                        <div className="text-[11px] font-semibold text-emerald-700 mb-1 whitespace-nowrap">應收總額</div>
                         <div className="text-base md:text-lg font-black text-emerald-800 font-mono">
                           NT$ {summary.totalRevenue.toLocaleString()}
                         </div>
                       </div>
                       <div className="bg-teal-50/70 border border-teal-200/80 p-3 rounded-xl text-center shadow-sm">
-                        <div className="text-[11px] font-semibold text-teal-700 mb-1">已收金額 / 定金</div>
+                        <div className="text-[11px] font-semibold text-teal-700 mb-1 whitespace-nowrap">已收金額</div>
                         <div className="text-base md:text-lg font-black text-teal-800 font-mono">
                           NT$ {summary.totalPaid.toLocaleString()}
                         </div>
                       </div>
                       <div className="bg-rose-50/70 border border-rose-200/80 p-3 rounded-xl text-center shadow-sm">
-                        <div className="text-[11px] font-semibold text-rose-700 mb-1">未收尾款</div>
+                        <div className="text-[11px] font-semibold text-rose-700 mb-1 whitespace-nowrap">未收尾款</div>
                         <div className="text-base md:text-lg font-black text-rose-700 font-mono">
                           NT$ {summary.totalUnpaid.toLocaleString()}
                         </div>
@@ -1410,6 +1413,32 @@ export default function InventoryCalendar() {
                               className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                             />
                           </div>
+
+                          {/* 快速點選帶入營區/營位名稱 */}
+                          {items.length > 0 && (
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[11px] font-bold text-stone-600">
+                                  ⛺️ 快速帶入包區營位/商品名稱：
+                                </span>
+                                <span className="text-[10px] text-stone-400">點擊直接插入標題</span>
+                              </div>
+                              <div className="flex flex-wrap gap-1 max-h-[72px] overflow-y-auto p-1.5 bg-white rounded-xl border border-stone-200">
+                                {items.map(item => (
+                                  <button
+                                    key={item.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setNoteTitle(prev => prev ? `${prev} + ${item.name}` : item.name);
+                                    }}
+                                    className="text-[10px] font-medium bg-stone-50 hover:bg-emerald-50 hover:text-emerald-700 border border-stone-200 hover:border-emerald-300 px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
+                                  >
+                                    + {item.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
                           <div>
                             <label className="block text-xs font-bold text-stone-700 mb-1.5">
