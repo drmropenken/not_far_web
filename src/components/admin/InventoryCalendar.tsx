@@ -743,32 +743,44 @@ export default function InventoryCalendar() {
                       key={day} 
                       id={isToday ? 'today-col-header' : undefined} 
                       onClick={() => openDayModal(day, 'financial')} 
-                      title={`點擊查看 ${day} 日財務統計、營運記事與修改庫存`}
+                      title={dayNote && noteConfig 
+                        ? `【${noteConfig.label}】${dayNote.title ? dayNote.title + '：' : ''}${dayNote.content || ''}\n點擊查看當日財務、營運記事與修改庫存`
+                        : `點擊查看 ${day} 日財務統計、營運記事與修改庫存`}
                       className={`relative p-1 md:p-1.5 border-b border-r min-w-[46px] md:min-w-[56px] cursor-pointer hover:bg-stone-200/60 transition-colors group/day ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-stone-200/80' : 'text-stone-600 border-stone-200/80'}`}
                     >
-                      <div className="flex flex-col items-center justify-center space-y-0.5 group-hover/day:scale-105 transition-transform">
-                        <span className={`font-bold text-base md:text-lg ${isToday ? 'text-amber-700' : ''}`}>{day}</span>
+                      {/* 頂部記事彩色狀態線 (如包場/維護/公休) */}
+                      {dayNote && (
+                        <div className={`absolute top-0 left-0 right-0 h-1.5 ${
+                          dayNote.tag === 'full_venue' ? 'bg-purple-500' :
+                          dayNote.tag === 'partial_venue' ? 'bg-blue-500' :
+                          dayNote.tag === 'maintenance' ? 'bg-amber-500' :
+                          dayNote.tag === 'closed' ? 'bg-rose-500' :
+                          'bg-emerald-500'
+                        }`} />
+                      )}
+
+                      {/* 右上角懸浮小圖標 (不佔用排版高度，平整無突起) */}
+                      {dayNote && noteConfig && (
+                        <span 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDayModal(day, 'notes');
+                          }}
+                          className="absolute top-1 right-1 text-xs leading-none transition-transform hover:scale-125 select-none"
+                          title={`【${noteConfig.label}】${dayNote.title || ''}`}
+                        >
+                          {noteConfig.icon}
+                        </span>
+                      )}
+
+                      <div className="flex flex-col items-center justify-center space-y-0.5 group-hover/day:scale-105 transition-transform py-0.5">
+                        <span className={`font-bold text-base md:text-lg leading-tight ${isToday ? 'text-amber-700' : ''}`}>{day}</span>
                         <span className={`text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-amber-200/80 text-amber-800' : isWeekend ? 'bg-rose-100/50 text-rose-600' : 'bg-stone-200/50 text-stone-500'}`}>
                           {['日', '一', '二', '三', '四', '五', '六'][date.getDay()]}
                         </span>
-
-                        {/* 記事 / 包場標籤 Badge */}
-                        {dayNote && noteConfig && (
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDayModal(day, 'notes');
-                            }}
-                            className={`mt-1 max-w-[44px] md:max-w-[52px] truncate text-[9px] md:text-[10px] font-bold px-1 py-0.5 rounded border shadow-2xs transition-transform hover:scale-110 cursor-pointer flex items-center justify-center gap-0.5 ${noteConfig.badgeClass}`}
-                            title={`【${noteConfig.label}】${dayNote.title ? dayNote.title + '：' : ''}${dayNote.content || ''}`}
-                          >
-                            <span className="shrink-0">{noteConfig.icon}</span>
-                            <span className="truncate">{dayNote.title || noteConfig.shortLabel}</span>
-                          </div>
-                        )}
-
-                        {isToday && <div className="absolute top-0 w-full h-1 bg-amber-400 left-0"></div>}
                       </div>
+
+                      {isToday && <div className="absolute top-0 w-full h-1 bg-amber-400 left-0"></div>}
                     </th>
                   );
                 })}
