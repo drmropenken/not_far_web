@@ -21,6 +21,76 @@ const getNextDayString = (dateStr: string) => {
   return `${y}-${m}-${dayNum}`;
 };
 
+export type CalendarNoteTag = 'full_venue' | 'partial_venue' | 'maintenance' | 'closed' | 'note';
+
+export type CalendarNote = {
+  id: string;
+  camp_id: string;
+  date: string;
+  title: string | null;
+  content: string | null;
+  tag: CalendarNoteTag;
+  updated_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export const CALENDAR_NOTE_TAGS: Record<CalendarNoteTag, {
+  label: string;
+  shortLabel: string;
+  icon: string;
+  badgeClass: string;
+  dotClass: string;
+  buttonClass: string;
+  selectedClass: string;
+}> = {
+  full_venue: {
+    label: '全區包場',
+    shortLabel: '包場',
+    icon: '👑',
+    badgeClass: 'bg-purple-100 text-purple-800 border-purple-300',
+    dotClass: 'bg-purple-500',
+    buttonClass: 'border-purple-200 text-purple-700 bg-purple-50/70 hover:bg-purple-100',
+    selectedClass: 'bg-purple-600 text-white border-purple-600 shadow-purple-200'
+  },
+  partial_venue: {
+    label: '區域包場',
+    shortLabel: '包區',
+    icon: '⛺️',
+    badgeClass: 'bg-blue-100 text-blue-800 border-blue-300',
+    dotClass: 'bg-blue-500',
+    buttonClass: 'border-blue-200 text-blue-700 bg-blue-50/70 hover:bg-blue-100',
+    selectedClass: 'bg-blue-600 text-white border-blue-600 shadow-blue-200'
+  },
+  maintenance: {
+    label: '園區維護',
+    shortLabel: '維護',
+    icon: '🛠️',
+    badgeClass: 'bg-amber-100 text-amber-800 border-amber-300',
+    dotClass: 'bg-amber-500',
+    buttonClass: 'border-amber-200 text-amber-800 bg-amber-50/70 hover:bg-amber-100',
+    selectedClass: 'bg-amber-600 text-white border-amber-600 shadow-amber-200'
+  },
+  closed: {
+    label: '公休休園',
+    shortLabel: '公休',
+    icon: '🌧️',
+    badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
+    dotClass: 'bg-rose-500',
+    buttonClass: 'border-rose-200 text-rose-700 bg-rose-50/70 hover:bg-rose-100',
+    selectedClass: 'bg-rose-600 text-white border-rose-600 shadow-rose-200'
+  },
+  note: {
+    label: '一般備忘',
+    shortLabel: '備忘',
+    icon: '📝',
+    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    dotClass: 'bg-emerald-500',
+    buttonClass: 'border-emerald-200 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100',
+    selectedClass: 'bg-emerald-700 text-white border-emerald-700 shadow-emerald-200'
+  }
+};
+
 type InventoryRecord = {
   id?: string;
   item_id: string;
@@ -87,10 +157,39 @@ export default function InventoryCalendar() {
   const [activeCellTab, setActiveCellTab] = useState<'orders' | 'quota'>('orders');
   const [newQuota, setNewQuota] = useState<string>('');
   
-  // 批次修改某日的全部庫存 / 財務數據 Modal 狀態
+  // 批次修改某日的全部庫存 / 財務數據 / 營運記事 Modal 狀態
   const [editingDay, setEditingDay] = useState<number | null>(null);
-  const [activeDayTab, setActiveDayTab] = useState<'financial' | 'quota'>('financial');
+  const [activeDayTab, setActiveDayTab] = useState<'financial' | 'notes' | 'quota'>('financial');
   const [dayOrderFilter, setDayOrderFilter] = useState<'check_in' | 'active'>('check_in');
+
+  // 行事曆營運記事 / 包場備忘狀態
+  const [calendarNotes, setCalendarNotes] = useState<Record<string, CalendarNote>>({});
+  const [noteTag, setNoteTag] = useState<CalendarNoteTag>('full_venue');
+  const [noteTitle, setNoteTitle] = useState('');
+  const [noteContent, setNoteContent] = useState('');
+  const [noteEditMode, setNoteEditMode] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
+
+  const openDayModal = (day: number, initialTab: 'financial' | 'notes' | 'quota' = 'financial') => {
+    setEditingDay(day);
+    setActiveDayTab(initialTab);
+
+    const year = currentDate.getFullYear();
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+    const dateStr = `${year}-${month}-${day.toString().padStart(2, '0')}`;
+    const existing = calendarNotes[dateStr];
+    if (existing) {
+      setNoteTag(existing.tag || 'full_venue');
+      setNoteTitle(existing.title || '');
+      setNoteContent(existing.content || '');
+      setNoteEditMode(false);
+    } else {
+      setNoteTag('full_venue');
+      setNoteTitle('');
+      setNoteContent('');
+      setNoteEditMode(true);
+    }
+  };
 
   // Hover Tooltip 狀態
   const [hoveredCell, setHoveredCell] = useState<{
@@ -221,6 +320,28 @@ export default function InventoryCalendar() {
       }
     }
 
+    // 5. 撈取當月營區行事曆記事與包場註記 (nf_calendar_notes)
+    try {
+      const { data: notesData, error: notesError } = await supabase
+        .from('nf_calendar_notes')
+        .select('*')
+        .eq('camp_id', campId)
+        .gte('date', startDate)
+        .lte('date', endDate);
+
+      if (notesError) {
+        console.error('Fetch calendar notes error:', notesError);
+      } else if (notesData) {
+        const notesMap: Record<string, CalendarNote> = {};
+        notesData.forEach((note: any) => {
+          notesMap[note.date] = note;
+        });
+        setCalendarNotes(notesMap);
+      }
+    } catch (err) {
+      console.error('Fetch calendar notes exception:', err);
+    }
+
     setLoading(false);
   };
 
@@ -302,8 +423,6 @@ export default function InventoryCalendar() {
     
     setLoading(true);
     const day = editingDay;
-    setEditingDay(null);
-
     const year = currentDate.getFullYear();
     const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
     const dateStr = `${year}-${month}-${day.toString().padStart(2, '0')}`;
@@ -336,6 +455,129 @@ export default function InventoryCalendar() {
 
     await Promise.all(promises);
     await fetchData();
+
+    // 如果是一鍵歸零，且該天尚未有任何包場/營運記事，貼心詢問管理員是否記錄原因
+    if (overrideValue === 0 && !calendarNotes[dateStr]) {
+      const wantNote = confirm(`已將 ${dateStr} 全區庫存歸零！\n是否要立即前往「當日營運記事」標註包場或關閉原因？`);
+      if (wantNote) {
+        openDayModal(day, 'notes');
+        return;
+      }
+    }
+
+    setEditingDay(null);
+  };
+
+  // 儲存當日營運記事 / 包場備忘
+  const handleSaveNote = async () => {
+    if (editingDay === null) return;
+    const campId = localStorage.getItem('camp_id');
+    if (!campId) {
+      alert('找不到營區 ID，請重新整理或登入');
+      return;
+    }
+
+    const year = currentDate.getFullYear();
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+    const dateStr = `${year}-${month}-${editingDay.toString().padStart(2, '0')}`;
+    const adminName = localStorage.getItem('admin_name') || localStorage.getItem('admin_email') || '管理員';
+
+    if (!noteTitle.trim() && !noteContent.trim()) {
+      alert('請至少輸入標題或詳細內容');
+      return;
+    }
+
+    setIsSavingNote(true);
+    try {
+      const payload = {
+        camp_id: campId,
+        date: dateStr,
+        tag: noteTag,
+        title: noteTitle.trim() || null,
+        content: noteContent.trim() || null,
+        updated_by: adminName,
+        updated_at: new Date().toISOString()
+      };
+
+      const existing = calendarNotes[dateStr];
+      let res;
+      if (existing?.id) {
+        res = await supabase
+          .from('nf_calendar_notes')
+          .update(payload)
+          .eq('id', existing.id)
+          .select()
+          .single();
+      } else {
+        res = await supabase
+          .from('nf_calendar_notes')
+          .insert([payload])
+          .select()
+          .single();
+      }
+
+      if (res.error) {
+        console.error('Save calendar note error:', res.error);
+        alert('儲存失敗：' + res.error.message);
+      } else if (res.data) {
+        setCalendarNotes(prev => ({
+          ...prev,
+          [dateStr]: res.data as CalendarNote
+        }));
+        setNoteEditMode(false);
+      }
+    } catch (err: any) {
+      console.error('Save calendar note exception:', err);
+      alert('儲存過程發生異常：' + (err?.message || err));
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  // 刪除當日營運記事
+  const handleDeleteNote = async () => {
+    if (editingDay === null) return;
+    const year = currentDate.getFullYear();
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+    const dateStr = `${year}-${month}-${editingDay.toString().padStart(2, '0')}`;
+    const existing = calendarNotes[dateStr];
+
+    if (!existing?.id) {
+      setNoteTitle('');
+      setNoteContent('');
+      setNoteEditMode(true);
+      return;
+    }
+
+    if (!confirm(`確定要刪除 ${dateStr} 的營運記事紀錄嗎？`)) {
+      return;
+    }
+
+    setIsSavingNote(true);
+    try {
+      const { error } = await supabase
+        .from('nf_calendar_notes')
+        .delete()
+        .eq('id', existing.id);
+
+      if (error) {
+        console.error('Delete calendar note error:', error);
+        alert('刪除失敗：' + error.message);
+      } else {
+        setCalendarNotes(prev => {
+          const updated = { ...prev };
+          delete updated[dateStr];
+          return updated;
+        });
+        setNoteTitle('');
+        setNoteContent('');
+        setNoteEditMode(true);
+      }
+    } catch (err: any) {
+      alert('刪除發生異常：' + (err?.message || err));
+    } finally {
+      setIsSavingNote(false);
+    }
   };
 
   // 當日財務與訂單資料計算
@@ -408,11 +650,12 @@ export default function InventoryCalendar() {
         {/* 提示說明 (縮小至一行) */}
         <div className="text-xs text-stone-600 bg-gradient-to-r from-emerald-50 to-teal-50/30 px-4 py-2 rounded-lg border border-emerald-100/60 flex items-center gap-3 shadow-sm flex-1 overflow-x-auto whitespace-nowrap hide-scrollbar">
           <span className="text-emerald-500 text-base leading-none">💡</span>
-          <span className="text-stone-700 font-medium mr-2 hidden md:inline">點擊日期標題可看當日財務與批次關閉，點擊格子可強制修改當天總量。</span>
-          <div className="flex items-center gap-4">
+          <span className="text-stone-700 font-medium mr-2 hidden md:inline">點擊日期標題可查看財務、記錄包場/營運記事與批次關閉；點擊格子可看訂單與修改庫存。</span>
+          <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-white border border-stone-300 rounded-full"></div> 正常可訂</span>
             <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-amber-50 border border-amber-300 rounded-full"></div> 手動調整</span>
             <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-rose-50 border border-rose-300 rounded-full"></div> 滿帳</span>
+            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-purple-100 border border-purple-400 rounded-full"></div> 👑 包場/記事</span>
           </div>
         </div>
 
@@ -491,23 +734,39 @@ export default function InventoryCalendar() {
                   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
                   const today = new Date();
                   const isToday = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth() && day === today.getDate();
+                  const dateStr = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                  const dayNote = calendarNotes[dateStr];
+                  const noteConfig = dayNote ? CALENDAR_NOTE_TAGS[dayNote.tag] : null;
                   
                   return (
                     <th 
                       key={day} 
                       id={isToday ? 'today-col-header' : undefined} 
-                      onClick={() => {
-                        setEditingDay(day);
-                        setActiveDayTab('financial');
-                      }} 
-                      title={`點擊查看 ${day} 日財務統計與修改庫存`}
-                      className={`relative p-1.5 border-b border-r min-w-[45px] md:min-w-[55px] cursor-pointer hover:bg-stone-200/60 transition-colors group/day ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-stone-200/80' : 'text-stone-600 border-stone-200/80'}`}
+                      onClick={() => openDayModal(day, 'financial')} 
+                      title={`點擊查看 ${day} 日財務統計、營運記事與修改庫存`}
+                      className={`relative p-1 md:p-1.5 border-b border-r min-w-[46px] md:min-w-[56px] cursor-pointer hover:bg-stone-200/60 transition-colors group/day ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-stone-200/80' : 'text-stone-600 border-stone-200/80'}`}
                     >
                       <div className="flex flex-col items-center justify-center space-y-0.5 group-hover/day:scale-105 transition-transform">
                         <span className={`font-bold text-base md:text-lg ${isToday ? 'text-amber-700' : ''}`}>{day}</span>
                         <span className={`text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-amber-200/80 text-amber-800' : isWeekend ? 'bg-rose-100/50 text-rose-600' : 'bg-stone-200/50 text-stone-500'}`}>
                           {['日', '一', '二', '三', '四', '五', '六'][date.getDay()]}
                         </span>
+
+                        {/* 記事 / 包場標籤 Badge */}
+                        {dayNote && noteConfig && (
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDayModal(day, 'notes');
+                            }}
+                            className={`mt-1 max-w-[44px] md:max-w-[52px] truncate text-[9px] md:text-[10px] font-bold px-1 py-0.5 rounded border shadow-2xs transition-transform hover:scale-110 cursor-pointer flex items-center justify-center gap-0.5 ${noteConfig.badgeClass}`}
+                            title={`【${noteConfig.label}】${dayNote.title ? dayNote.title + '：' : ''}${dayNote.content || ''}`}
+                          >
+                            <span className="shrink-0">{noteConfig.icon}</span>
+                            <span className="truncate">{dayNote.title || noteConfig.shortLabel}</span>
+                          </div>
+                        )}
+
                         {isToday && <div className="absolute top-0 w-full h-1 bg-amber-400 left-0"></div>}
                       </div>
                     </th>
@@ -628,6 +887,31 @@ export default function InventoryCalendar() {
                 ✕
               </button>
             </div>
+
+            {/* 若當日有營運記事或包場，顯示提示列 */}
+            {calendarNotes[editingCell.dateStr] && (() => {
+              const cellDayNote = calendarNotes[editingCell.dateStr];
+              const cfg = CALENDAR_NOTE_TAGS[cellDayNote.tag] || CALENDAR_NOTE_TAGS.note;
+              return (
+                <div className="mx-4 mt-3 p-2.5 bg-purple-50/80 border border-purple-200 rounded-xl flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 text-purple-900 truncate min-w-0">
+                    <span className="text-sm shrink-0">{cfg.icon}</span>
+                    <span className="font-bold shrink-0">{cfg.label}：</span>
+                    <span className="truncate font-medium">{cellDayNote.title || cellDayNote.content || '無詳細說明'}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const dayNumber = editingCell.day;
+                      setEditingCell(null);
+                      openDayModal(dayNumber, 'notes');
+                    }}
+                    className="ml-2 px-2 py-0.5 bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 rounded-lg text-[11px] font-bold shrink-0 transition-colors shadow-2xs"
+                  >
+                    查看記事
+                  </button>
+                </div>
+              );
+            })()}
 
             {/* 分頁按鈕 */}
             <div className="flex border-b border-stone-200 bg-stone-100/60 px-4 pt-2 gap-2 text-sm font-bold">
@@ -816,7 +1100,7 @@ export default function InventoryCalendar() {
                       星期{dayOfWeekStr}
                     </span>
                   </h3>
-                  <p className="text-xs text-stone-500 mt-0.5">當日財務與庫存控制面板</p>
+                  <p className="text-xs text-stone-500 mt-0.5">當日財務、營運記事與庫存控制面板</p>
                 </div>
                 <button 
                   onClick={() => setEditingDay(null)} 
@@ -827,10 +1111,10 @@ export default function InventoryCalendar() {
               </div>
 
               {/* Modal Tabs */}
-              <div className="flex border-b border-stone-200 bg-stone-100/60 px-4 pt-2 gap-2 text-sm font-bold">
+              <div className="flex border-b border-stone-200 bg-stone-100/60 px-4 pt-2 gap-2 text-sm font-bold overflow-x-auto">
                 <button
                   onClick={() => setActiveDayTab('financial')}
-                  className={`px-4 py-2 rounded-t-lg transition-all border-t border-x ${
+                  className={`px-3 md:px-4 py-2 rounded-t-lg transition-all border-t border-x whitespace-nowrap text-xs md:text-sm ${
                     activeDayTab === 'financial'
                       ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px'
                       : 'text-stone-500 hover:text-stone-800 border-transparent'
@@ -839,8 +1123,26 @@ export default function InventoryCalendar() {
                   💰 當日財務數據
                 </button>
                 <button
+                  onClick={() => {
+                    setActiveDayTab('notes');
+                    if (!calendarNotes[summary.dateStr]) {
+                      setNoteEditMode(true);
+                    }
+                  }}
+                  className={`px-3 md:px-4 py-2 rounded-t-lg transition-all border-t border-x whitespace-nowrap text-xs md:text-sm flex items-center gap-1.5 ${
+                    activeDayTab === 'notes'
+                      ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px'
+                      : 'text-stone-500 hover:text-stone-800 border-transparent'
+                  }`}
+                >
+                  <span>📝 當日記事 / 包場</span>
+                  {calendarNotes[summary.dateStr] && (
+                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                  )}
+                </button>
+                <button
                   onClick={() => setActiveDayTab('quota')}
-                  className={`px-4 py-2 rounded-t-lg transition-all border-t border-x ${
+                  className={`px-3 md:px-4 py-2 rounded-t-lg transition-all border-t border-x whitespace-nowrap text-xs md:text-sm ${
                     activeDayTab === 'quota'
                       ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px'
                       : 'text-stone-500 hover:text-stone-800 border-transparent'
@@ -852,7 +1154,7 @@ export default function InventoryCalendar() {
 
               {/* Modal Content */}
               <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
-                {activeDayTab === 'financial' ? (
+                {activeDayTab === 'financial' && (
                   <div className="space-y-4">
                     {/* 訂單篩選切換 */}
                     <div className="flex items-center justify-between bg-stone-100 p-1 rounded-xl text-xs font-bold border border-stone-200">
@@ -985,12 +1287,211 @@ export default function InventoryCalendar() {
                       )}
                     </div>
                   </div>
-                ) : (
+                )}
+
+                {/* 分頁 2：當日營運記事 / 包場備忘 */}
+                {activeDayTab === 'notes' && (() => {
+                  const currentNote = calendarNotes[summary.dateStr];
+                  const currentTagConfig = currentNote ? CALENDAR_NOTE_TAGS[currentNote.tag] : null;
+
+                  return (
+                    <div className="space-y-4">
+                      {/* 若已有記事且非編輯模式，以卡片形式精美展示 */}
+                      {currentNote && !noteEditMode ? (
+                        <div className="bg-stone-50 border border-stone-200 rounded-2xl p-5 space-y-4 shadow-sm">
+                          <div className="flex items-center justify-between gap-2 border-b border-stone-200/80 pb-3">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${currentTagConfig?.badgeClass}`}>
+                                <span>{currentTagConfig?.icon}</span>
+                                <span>{currentTagConfig?.label}</span>
+                              </span>
+                              <span className="text-xs text-stone-400 font-mono">
+                                📅 {summary.dateStr}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setNoteTag(currentNote.tag);
+                                  setNoteTitle(currentNote.title || '');
+                                  setNoteContent(currentNote.content || '');
+                                  setNoteEditMode(true);
+                                }}
+                                disabled={adminRole === 'viewer'}
+                                className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl text-xs transition-colors disabled:opacity-50 flex items-center gap-1"
+                              >
+                                ✏️ 編輯
+                              </button>
+                              <button
+                                onClick={handleDeleteNote}
+                                disabled={adminRole === 'viewer' || isSavingNote}
+                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-xl text-xs transition-colors disabled:opacity-50 flex items-center gap-1 border border-rose-200"
+                              >
+                                🗑️ 刪除
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <h4 className="text-base font-black text-stone-800">
+                              {currentNote.title || <span className="text-stone-400 italic">未填寫標題</span>}
+                            </h4>
+                            {currentNote.content ? (
+                              <p className="text-sm text-stone-600 whitespace-pre-wrap leading-relaxed bg-white p-3.5 rounded-xl border border-stone-200/70">
+                                {currentNote.content}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-stone-400 italic">無補充詳細說明</p>
+                            )}
+                          </div>
+
+                          {/* 記錄者資訊 */}
+                          <div className="flex items-center justify-between text-[11px] text-stone-400 pt-2 border-t border-stone-200/60 font-mono">
+                            <span>紀錄人員：{currentNote.updated_by || '管理員'}</span>
+                            {currentNote.updated_at && (
+                              <span>最後更新：{new Date(currentNote.updated_at).toLocaleString('zh-TW', { hour12: false })}</span>
+                            )}
+                          </div>
+
+                          {/* 快捷操作聯動提示 */}
+                          {(currentNote.tag === 'full_venue' || currentNote.tag === 'maintenance' || currentNote.tag === 'closed') && (
+                            <div className="p-3 bg-purple-50/80 border border-purple-200 rounded-xl flex items-center justify-between gap-2 text-xs">
+                              <span className="text-purple-800 font-medium">
+                                💡 本日已標註【{currentTagConfig?.label}】，若尚未關閉可訂數量，可至全天庫存操作。
+                              </span>
+                              <button
+                                onClick={() => setActiveDayTab('quota')}
+                                className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold shrink-0 shadow-2xs transition-colors text-xs"
+                              >
+                                前往歸零庫存 ↗
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* 新增或編輯記事表單 */
+                        <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 md:p-5 space-y-4 shadow-sm">
+                          <div>
+                            <label className="block text-xs font-bold text-stone-700 mb-2">
+                              選擇記事類型標籤：
+                            </label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {(Object.keys(CALENDAR_NOTE_TAGS) as CalendarNoteTag[]).map((tagKey) => {
+                                const item = CALENDAR_NOTE_TAGS[tagKey];
+                                const isSelected = noteTag === tagKey;
+                                return (
+                                  <button
+                                    key={tagKey}
+                                    type="button"
+                                    onClick={() => setNoteTag(tagKey)}
+                                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 justify-center ${
+                                      isSelected
+                                        ? item.selectedClass
+                                        : item.buttonClass
+                                    }`}
+                                  >
+                                    <span>{item.icon}</span>
+                                    <span>{item.label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                              簡短標題 <span className="text-stone-400 font-normal">(將簡要顯示於行事曆頂部)</span>：
+                            </label>
+                            <input
+                              type="text"
+                              value={noteTitle}
+                              onChange={e => setNoteTitle(e.target.value)}
+                              placeholder="例：台積電福委會包場 / 草皮養護公休 / 某某車隊 15 帳"
+                              className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                              詳細說明與備註 <span className="text-stone-400 font-normal">(選填，記錄聯絡電話、訂金或施工細節)</span>：
+                            </label>
+                            <textarea
+                              rows={3}
+                              value={noteContent}
+                              onChange={e => setNoteContent(e.target.value)}
+                              placeholder="例：聯絡人陳先生 0912-345-678，全場營位保留不對外開放，訂金 30,000 已收訖。"
+                              className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-200/80">
+                            {currentNote && (
+                              <button
+                                type="button"
+                                onClick={() => setNoteEditMode(false)}
+                                disabled={isSavingNote}
+                                className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold rounded-xl text-xs transition-colors"
+                              >
+                                取消
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={handleSaveNote}
+                              disabled={adminRole === 'viewer' || isSavingNote}
+                              className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs transition-all shadow-sm hover:shadow flex items-center gap-1.5 disabled:opacity-50"
+                            >
+                              {isSavingNote ? (
+                                <>
+                                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  <span>儲存中...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>💾 儲存記事</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* 分頁 3：修改全天庫存 */}
+                {activeDayTab === 'quota' && (
                   <div className="space-y-4">
                     <p className="text-xs text-stone-500 bg-amber-50 p-3 rounded-xl border border-amber-200">
                       💡 批次修改全天庫存將影響全區商品在 <span className="font-mono font-bold text-stone-800">{summary.dateStr}</span> 的可訂數量。
                     </p>
-                    <div className="space-y-3 pt-2">
+
+                    {/* 當日備註記事狀態提示條 */}
+                    <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-xl flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 truncate text-purple-900 min-w-0">
+                        <span className="font-bold shrink-0">📌 當日營運備註：</span>
+                        <span className="truncate">
+                          {calendarNotes[summary.dateStr] ? (
+                            <span className="font-medium text-purple-800">
+                              {CALENDAR_NOTE_TAGS[calendarNotes[summary.dateStr].tag]?.icon} {calendarNotes[summary.dateStr].title || CALENDAR_NOTE_TAGS[calendarNotes[summary.dateStr].tag]?.label}
+                            </span>
+                          ) : (
+                            <span className="text-stone-400 italic">尚無備註紀錄</span>
+                          )}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setActiveDayTab('notes');
+                          if (!calendarNotes[summary.dateStr]) setNoteEditMode(true);
+                        }}
+                        className="text-purple-700 hover:text-purple-900 font-bold ml-2 shrink-0 hover:underline"
+                      >
+                        {calendarNotes[summary.dateStr] ? '查看/修改 ↗' : '+ 新增包場備註 ↗'}
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 pt-1">
                       <button 
                         onClick={() => handleBatchSaveQuota(0)}
                         disabled={adminRole === 'viewer'}
