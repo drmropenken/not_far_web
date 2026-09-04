@@ -620,35 +620,13 @@ export default function InventoryCalendar() {
                 <h3 className="text-lg font-bold text-stone-800">{editingCell.item.name}</h3>
                 <p className="text-xs text-stone-500 mt-0.5 font-mono">{editingCell.dateStr} 日庫存與訂單資訊</p>
               </div>
-              <div className="flex items-center gap-2">
-                {adminRole !== 'viewer' && (
-                  <button 
-                    onClick={() => {
-                      const item = editingCell.item;
-                      const checkIn = editingCell.dateStr;
-                      const checkOut = getNextDayString(checkIn);
-                      setBookingPrefill({
-                        checkIn,
-                        checkOut,
-                        item,
-                        quantity: 1
-                      });
-                      setEditingCell(null);
-                      setIsOrderModalOpen(true);
-                    }}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer hover:shadow"
-                    title="以此日期與營位直接建立手動訂單"
-                  >
-                    <span>➕</span> 幫客接單
-                  </button>
-                )}
-                <button 
-                  onClick={() => setEditingCell(null)} 
-                  className="w-8 h-8 rounded-full bg-stone-200/70 hover:bg-stone-200 text-stone-600 font-bold text-sm flex items-center justify-center transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
+              <button 
+                onClick={() => setEditingCell(null)} 
+                className="w-8 h-8 rounded-full bg-stone-200/70 hover:bg-stone-200 text-stone-600 font-bold text-sm flex items-center justify-center transition-colors shrink-0"
+                title="關閉"
+              >
+                ✕
+              </button>
             </div>
 
             {/* 分頁按鈕 */}
@@ -724,7 +702,7 @@ export default function InventoryCalendar() {
                             href={orderSearchUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                            className="px-3.5 py-1.5 bg-stone-800 hover:bg-stone-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 hover:shadow"
                           >
                             <span>🔍 開啟訂單管理對帳</span>
                             <span className="text-[10px]">↗</span>
@@ -800,7 +778,7 @@ export default function InventoryCalendar() {
                       setEditingCell(null);
                       setIsOrderModalOpen(true);
                     }}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors shadow-sm flex items-center gap-1.5 text-sm cursor-pointer"
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 text-xs sm:text-sm cursor-pointer hover:shadow-md"
                   >
                     <span>➕</span> 幫客手動接單
                   </button>
@@ -995,7 +973,7 @@ export default function InventoryCalendar() {
                                   href={orderSearchUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold transition-all shadow-sm flex items-center gap-1 shrink-0"
+                                  className="px-2.5 py-1 bg-stone-800 hover:bg-stone-900 text-white rounded-lg text-[11px] font-bold transition-all shadow-sm flex items-center gap-1 shrink-0 hover:shadow"
                                 >
                                   <span>對帳</span>
                                   <span className="text-[9px]">↗</span>
