@@ -251,10 +251,10 @@ export default function ItemsManager() {
   return (
     <div className="bg-white md:rounded-2xl shadow-sm border border-stone-200 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-48px)] w-full">
       {/* 工具列與篩選標籤 (緊湊設計) */}
-      <div className="px-4 md:px-6 pt-3 md:pt-4 border-b border-stone-200 shrink-0 flex flex-col-reverse md:flex-row justify-between md:items-end gap-3 bg-white md:rounded-t-2xl z-10">
+      <div className="px-3 md:px-6 pt-2.5 md:pt-4 border-b border-stone-200 shrink-0 flex flex-col-reverse md:flex-row justify-between md:items-end gap-2.5 bg-white md:rounded-t-2xl z-10">
         
         {/* 篩選標籤 */}
-        <div className="flex gap-2 md:gap-4 overflow-x-auto hide-scrollbar">
+        <div className="flex gap-1.5 md:gap-4 overflow-x-auto hide-scrollbar pb-0.5">
           {[
             { id: 'all', label: '全部項目' },
             { id: 'campsite', label: '⛺️ 營位' },
@@ -264,7 +264,7 @@ export default function ItemsManager() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-2 md:px-5 md:py-2.5 rounded-t-lg font-bold text-sm transition-all border-b-2 whitespace-nowrap ${
+              className={`px-3 py-1.5 md:px-5 md:py-2.5 rounded-t-lg font-bold text-xs sm:text-sm transition-all border-b-2 whitespace-nowrap ${
                 activeTab === tab.id 
                   ? 'border-amber-500 text-amber-600 bg-amber-50/50' 
                   : 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-50'
@@ -276,12 +276,12 @@ export default function ItemsManager() {
         </div>
 
         {/* 新增項目按鈕 */}
-        <div className="pb-2 flex justify-end">
+        <div className="pb-1.5 md:pb-2 flex justify-end">
           <button 
             onClick={() => handleOpenModal()}
-            className="bg-emerald-700 text-emerald-50 hover:bg-stone-700 px-5 py-2 rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm border border-stone-700 flex items-center justify-center gap-2"
+            className="bg-emerald-700 text-emerald-50 hover:bg-emerald-800 px-3.5 py-1.5 md:px-5 md:py-2 rounded-xl font-bold text-xs sm:text-sm tracking-wider transition-colors shadow-sm border border-emerald-800 flex items-center justify-center gap-1.5"
           >
-            <span className="text-base leading-none mb-0.5">+</span> 新增項目
+            <span className="text-base leading-none mb-0.5 font-bold">+</span> 新增項目
           </button>
         </div>
       </div>
@@ -292,9 +292,79 @@ export default function ItemsManager() {
           <p className="font-medium tracking-widest text-sm">載入項目資料中...</p>
         </div>
       ) : (
-        <div className="flex-1 overflow-auto bg-stone-50 p-4 md:p-6">
-          <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
-            <div className="overflow-x-auto">
+        <div className="flex-1 overflow-auto bg-stone-50 p-2.5 sm:p-4 md:p-6">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+            {/* Mobile Card List View */}
+            <div className="md:hidden divide-y divide-stone-100">
+              {filteredItems.length === 0 ? (
+                <div className="p-8 text-center text-gray-400 text-xs sm:text-sm">目前沒有符合條件的項目</div>
+              ) : (
+                filteredItems.map((item) => (
+                  <div key={item.id} className="p-3.5 space-y-2.5 hover:bg-stone-50/50 transition-colors">
+                    {/* Top Row: Category + Name + Actions */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
+                          item.category === 'campsite' ? 'bg-green-100 text-green-700' : 
+                          item.category === 'equipment' ? 'bg-blue-100 text-blue-700' : 
+                          'bg-orange-100 text-orange-700'
+                        }`}>
+                          {categoryLabels[item.category]}
+                        </span>
+                        <span className="font-bold text-xs sm:text-sm text-stone-800 truncate" title={item.name}>
+                          {item.name}
+                        </span>
+                      </div>
+
+                      {/* Right: Active Toggle & Edit/Delete buttons */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <label className="relative inline-flex items-center cursor-pointer select-none">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer"
+                            checked={item.is_active}
+                            onChange={() => handleToggleActive(item.id, item.is_active)}
+                          />
+                          <div className="w-8 h-4.5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3.5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                        </label>
+                        <button 
+                          onClick={() => handleOpenModal(item)} 
+                          className="px-2 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs font-bold transition-colors"
+                        >
+                          編輯
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(item.id)} 
+                          className="p-1 text-stone-400 hover:text-rose-500 rounded-lg transition-colors inline-flex items-center justify-center"
+                          title="刪除"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Bottom Row: Specs Pill Bar (每日數量、平日價、假日價) */}
+                    <div className="flex items-center gap-2 text-xs font-mono bg-stone-50 border border-stone-100 rounded-xl p-2 text-stone-600">
+                      <div className="flex-1 text-center border-r border-stone-200/80 pr-1">
+                        <span className="text-[10px] text-stone-400 font-sans block">每日數量</span>
+                        <span className="font-bold text-stone-700">{item.total_quantity}</span>
+                      </div>
+                      <div className="flex-1 text-center border-r border-stone-200/80 pr-1">
+                        <span className="text-[10px] text-stone-400 font-sans block">平日價</span>
+                        <span className="font-bold text-stone-800">${item.price_weekday.toLocaleString()}</span>
+                      </div>
+                      <div className="flex-1 text-center">
+                        <span className="text-[10px] text-stone-400 font-sans block">假日價</span>
+                        <span className="font-bold text-emerald-700">${item.price_holiday.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-sm">

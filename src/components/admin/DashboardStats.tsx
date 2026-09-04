@@ -98,50 +98,50 @@ export default function DashboardStats() {
   }
 
   return (
-    <div className="space-y-6 flex flex-col min-h-full">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 shrink-0">
+    <div className="space-y-4 sm:space-y-6 flex flex-col min-h-full">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6 shrink-0">
         {/* Stat Cards */}
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-all">
-          <div className="absolute -right-4 -bottom-4 text-emerald-500/10 text-8xl transition-transform group-hover:scale-110">⛺️</div>
-          <p className="text-sm text-stone-500 font-bold tracking-wider mb-2 z-10">近期進場 (未來 14 天)</p>
-          <p className="text-3xl font-black text-stone-800 z-10">{checkinsToday.length} <span className="text-base font-medium text-stone-400">組</span></p>
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-stone-200 p-3.5 sm:p-5 md:p-6 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="absolute -right-2 -bottom-2 sm:-right-4 sm:-bottom-4 text-emerald-500/10 text-5xl sm:text-7xl md:text-8xl transition-transform group-hover:scale-110">⛺️</div>
+          <p className="text-xs sm:text-sm text-stone-500 font-bold tracking-wider mb-1 sm:mb-2 z-10">近期進場 <span className="hidden sm:inline font-normal text-stone-400">(14天)</span></p>
+          <p className="text-xl sm:text-2xl md:text-3xl font-black text-stone-800 z-10">{checkinsToday.length} <span className="text-xs sm:text-base font-medium text-stone-400">組</span></p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-all">
-          <div className="absolute -right-4 -bottom-4 text-blue-500/10 text-8xl transition-transform group-hover:scale-110">🚗</div>
-          <p className="text-sm text-stone-500 font-bold tracking-wider mb-2 z-10">近期離場 (未來 14 天)</p>
-          <p className="text-3xl font-black text-stone-800 z-10">{checkoutsToday.length} <span className="text-base font-medium text-stone-400">組</span></p>
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-stone-200 p-3.5 sm:p-5 md:p-6 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="absolute -right-2 -bottom-2 sm:-right-4 sm:-bottom-4 text-blue-500/10 text-5xl sm:text-7xl md:text-8xl transition-transform group-hover:scale-110">🚗</div>
+          <p className="text-xs sm:text-sm text-stone-500 font-bold tracking-wider mb-1 sm:mb-2 z-10">近期離場 <span className="hidden sm:inline font-normal text-stone-400">(14天)</span></p>
+          <p className="text-xl sm:text-2xl md:text-3xl font-black text-stone-800 z-10">{checkoutsToday.length} <span className="text-xs sm:text-base font-medium text-stone-400">組</span></p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-all">
-          <div className="absolute -right-4 -bottom-4 text-amber-500/10 text-8xl transition-transform group-hover:scale-110">💰</div>
-          <p className="text-sm text-stone-500 font-bold tracking-wider mb-2 z-10">本月已收帳款</p>
-          <p className="text-3xl font-black text-emerald-600 z-10">NT$ {monthlyRevenue.toLocaleString()}</p>
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-stone-200 p-3.5 sm:p-5 md:p-6 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="absolute -right-2 -bottom-2 sm:-right-4 sm:-bottom-4 text-amber-500/10 text-5xl sm:text-7xl md:text-8xl transition-transform group-hover:scale-110">💰</div>
+          <p className="text-xs sm:text-sm text-stone-500 font-bold tracking-wider mb-1 sm:mb-2 z-10">本月已收帳款</p>
+          <p className="text-base sm:text-2xl md:text-3xl font-black text-emerald-600 z-10 truncate">NT$ {monthlyRevenue.toLocaleString()}</p>
         </div>
 
         <a 
           href="/admin/orders" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="bg-white rounded-2xl shadow-sm border border-rose-200 p-6 flex flex-col justify-center relative overflow-hidden group bg-rose-50/50 hover:shadow-md hover:border-rose-300 transition-all cursor-pointer block"
+          className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-rose-200 p-3.5 sm:p-5 md:p-6 flex flex-col justify-center relative overflow-hidden group bg-rose-50/50 hover:shadow-md hover:border-rose-300 transition-all cursor-pointer block"
         >
-          <div className="absolute -right-4 -bottom-4 text-rose-500/10 text-8xl transition-transform group-hover:scale-110">⚠️</div>
+          <div className="absolute -right-2 -bottom-2 sm:-right-4 sm:-bottom-4 text-rose-500/10 text-5xl sm:text-7xl md:text-8xl transition-transform group-hover:scale-110">⚠️</div>
           <div className="flex justify-between items-start z-10">
-            <p className="text-sm text-rose-600 font-bold tracking-wider mb-2">待收款訂單</p>
-            <span className="text-xs text-rose-500 font-bold bg-white px-2 py-0.5 rounded-full border border-rose-200 shadow-2xs group-hover:bg-rose-600 group-hover:text-white transition-colors">對帳 ↗</span>
+            <p className="text-xs sm:text-sm text-rose-600 font-bold tracking-wider mb-1 sm:mb-2">待收款訂單</p>
+            <span className="text-[10px] sm:text-xs text-rose-500 font-bold bg-white px-1.5 py-0.5 sm:px-2 rounded-full border border-rose-200 shadow-2xs group-hover:bg-rose-600 group-hover:text-white transition-colors">對帳 ↗</span>
           </div>
-          <p className="text-3xl font-black text-rose-700 z-10">{pendingOrders.length} <span className="text-base font-medium text-rose-400">筆未結</span></p>
+          <p className="text-xl sm:text-2xl md:text-3xl font-black text-rose-700 z-10">{pendingOrders.length} <span className="text-xs sm:text-base font-medium text-rose-400">筆未結</span></p>
         </a>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Check-ins List */}
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden flex flex-col h-[540px] xl:h-[calc(100vh-270px)] min-h-[460px] flex-1">
-          <div className="px-6 py-4 border-b border-stone-100 flex justify-between items-center bg-stone-50 shrink-0">
-            <h3 className="font-bold text-stone-800 tracking-wide flex items-center gap-2">
-              <span className="text-emerald-500">📥</span> 近期進場名單 <span className="text-xs text-stone-400 font-normal ml-1">(含未來 14 天)</span>
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden flex flex-col h-[460px] sm:h-[500px] xl:h-[calc(100vh-270px)] min-h-[380px] flex-1">
+          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-stone-100 flex justify-between items-center bg-stone-50 shrink-0">
+            <h3 className="font-bold text-stone-800 tracking-wide flex items-center gap-2 text-xs sm:text-sm">
+              <span className="text-emerald-500">📥</span> 近期進場名單 <span className="text-xs text-stone-400 font-normal ml-1 hidden sm:inline">(未來 14 天)</span>
             </h3>
-            <span className="text-xs font-bold bg-stone-200 text-stone-600 px-2 py-1 rounded-full">{checkinsToday.length} 組</span>
+            <span className="text-xs font-bold bg-stone-200 text-stone-600 px-2 py-0.5 sm:py-1 rounded-full">{checkinsToday.length} 組</span>
           </div>
           <div className="p-3 overflow-y-auto flex-1 hide-scrollbar bg-stone-50/30">
             {checkinsToday.length === 0 ? (
@@ -228,12 +228,12 @@ export default function DashboardStats() {
                       </div>
                     )}
                     <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between">
-                      <span className="text-[11px] font-mono text-stone-400">訂單單號：{order.order_no}</span>
+                      <span className="text-[11px] font-mono text-stone-400">單號：{order.order_no}</span>
                       <a
                         href={orderSearchUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1 shrink-0"
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1 shrink-0 hover:shadow"
                       >
                         <span>🔍 開啟訂單管理對帳</span>
                         <span className="text-[10px]">↗</span>
@@ -329,12 +329,12 @@ export default function DashboardStats() {
                       </div>
                     )}
                     <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between">
-                      <span className="text-[11px] font-mono text-stone-400">訂單單號：{order.order_no}</span>
+                      <span className="text-[11px] font-mono text-stone-400">單號：{order.order_no}</span>
                       <a
                         href={orderSearchUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1 shrink-0"
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1 shrink-0 hover:shadow"
                       >
                         <span>🔍 開啟訂單管理對帳</span>
                         <span className="text-[10px]">↗</span>

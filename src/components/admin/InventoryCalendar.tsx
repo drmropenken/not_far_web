@@ -702,7 +702,7 @@ export default function InventoryCalendar() {
                             href={orderSearchUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3.5 py-1.5 bg-stone-800 hover:bg-stone-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 hover:shadow"
+                            className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 hover:shadow"
                           >
                             <span>🔍 開啟訂單管理對帳</span>
                             <span className="text-[10px]">↗</span>
@@ -778,7 +778,7 @@ export default function InventoryCalendar() {
                       setEditingCell(null);
                       setIsOrderModalOpen(true);
                     }}
-                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 text-xs sm:text-sm cursor-pointer hover:shadow-md"
+                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 text-xs sm:text-sm cursor-pointer hover:shadow-md border border-emerald-800"
                   >
                     <span>➕</span> 幫客手動接單
                   </button>
@@ -786,7 +786,7 @@ export default function InventoryCalendar() {
                 {activeCellTab === 'quota' && (
                   <button 
                     onClick={handleSaveQuota}
-                    className="px-5 py-2 bg-stone-700 text-white font-bold rounded-lg hover:bg-stone-800 transition-colors shadow-sm flex items-center gap-2 text-sm"
+                    className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2 text-sm cursor-pointer hover:shadow"
                   >
                     儲存容量變更
                   </button>
@@ -973,7 +973,7 @@ export default function InventoryCalendar() {
                                   href={orderSearchUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="px-2.5 py-1 bg-stone-800 hover:bg-stone-900 text-white rounded-lg text-[11px] font-bold transition-all shadow-sm flex items-center gap-1 shrink-0 hover:shadow"
+                                  className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-sm flex items-center gap-1 shrink-0 hover:shadow"
                                 >
                                   <span>對帳</span>
                                   <span className="text-[9px]">↗</span>
