@@ -1325,13 +1325,9 @@ export default function InventoryCalendar() {
                       ) : (
                         /* 新增或編輯備忘表單 (純標題與內容，無預設分類限制) */
                         <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 md:p-5 space-y-4 shadow-sm">
-                          <p className="text-xs text-stone-500">
-                            💡 提供管理員自由記錄當日包場名單、團體需求、活動備忘、游泳池開放或施工維護等營運注意事項。
-                          </p>
-
                           <div>
                             <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                              備忘標題 <span className="text-stone-400 font-normal">(選填，如：Peter 包上營區 / 游泳池開放)</span>：
+                              備忘標題：
                             </label>
                             <input
                               type="text"
@@ -1344,7 +1340,7 @@ export default function InventoryCalendar() {
 
                           <div>
                             <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                              詳細內容 / 注意事項 <span className="text-stone-400 font-normal">(選填，可直接貼上 LINE 訊息或輸入細節)</span>：
+                              詳細內容 / 注意事項：
                             </label>
                             <textarea
                               rows={5}
