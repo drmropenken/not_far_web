@@ -680,9 +680,9 @@ export default function InventoryCalendar() {
                     <th 
                       key={day} 
                       id={isToday ? 'today-col-header' : undefined} 
-                      onClick={() => openDayModal(day, 'financial')} 
+                      onClick={() => openDayModal(day, dayNote ? 'notes' : 'financial')} 
                       title={dayNote 
-                        ? `【備忘事項】${dayNote.title ? dayNote.title + '：' : ''}${dayNote.content || ''}\n點擊查看當日財務、營運備忘與修改庫存`
+                        ? `【備忘事項】${dayNote.title ? dayNote.title + '：' : ''}${dayNote.content || ''}\n點擊直接查看當日營運備忘`
                         : `點擊查看 ${day} 日財務統計、營運備忘與修改庫存`}
                       className={`relative p-1 md:p-1.5 border-b border-r min-w-[46px] md:min-w-[56px] cursor-pointer hover:bg-stone-200/60 transition-colors group/day ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-stone-200/80' : 'text-stone-600 border-stone-200/80'}`}
                     >
@@ -832,6 +832,32 @@ export default function InventoryCalendar() {
               </button>
             </div>
 
+            {/* 若當日有營運備忘，顯示提示列並提供一鍵跳轉 */}
+            {calendarNotes[editingCell.dateStr] && (
+              <div 
+                onClick={() => {
+                  const dayNumber = editingCell.day;
+                  setEditingCell(null);
+                  openDayModal(dayNumber, 'notes');
+                }}
+                className="mx-4 mt-3 p-2.5 bg-emerald-50/90 border border-emerald-200 rounded-xl flex items-center justify-between text-xs cursor-pointer hover:bg-emerald-100/80 transition-colors shadow-2xs"
+                title="點擊前往查看當日詳細營運備忘"
+              >
+                <div className="flex items-center gap-1.5 text-emerald-950 truncate min-w-0">
+                  <span className="text-sm shrink-0">📝</span>
+                  <span className="font-bold shrink-0">當日營運備忘：</span>
+                  <span className="truncate font-medium text-emerald-800">
+                    {calendarNotes[editingCell.dateStr].title || calendarNotes[editingCell.dateStr].content || '已記錄備忘'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="ml-2 px-2.5 py-1 bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 rounded-lg text-[11px] font-bold shrink-0 shadow-2xs transition-colors"
+                >
+                  跳到備忘 ↗
+                </button>
+              </div>
+            )}
 
             {/* 分頁按鈕 */}
             <div className="flex border-b border-stone-200 bg-stone-100/60 px-4 pt-2 gap-2 text-sm font-bold">
@@ -1073,6 +1099,26 @@ export default function InventoryCalendar() {
               <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
                 {activeDayTab === 'financial' && (
                   <div className="space-y-4">
+                    {/* 當日備忘狀態提示條 (點擊直接切換到備忘分頁) */}
+                    {calendarNotes[summary.dateStr] && (
+                      <div 
+                        onClick={() => setActiveDayTab('notes')}
+                        className="p-3 bg-emerald-50/90 border border-emerald-200 rounded-xl flex items-center justify-between text-xs cursor-pointer hover:bg-emerald-100/80 transition-colors shadow-2xs"
+                        title="點擊前往查看當日詳細營運備忘"
+                      >
+                        <div className="flex items-center gap-2 truncate text-emerald-950 min-w-0">
+                          <span className="text-sm shrink-0">📝</span>
+                          <span className="font-bold shrink-0">當日營運備忘：</span>
+                          <span className="truncate font-medium text-emerald-800">
+                            {calendarNotes[summary.dateStr].title || calendarNotes[summary.dateStr].content}
+                          </span>
+                        </div>
+                        <span className="text-emerald-700 font-bold ml-2 shrink-0 flex items-center gap-0.5 hover:underline">
+                          查看備忘 ↗
+                        </span>
+                      </div>
+                    )}
+
                     {/* 訂單篩選切換 */}
                     <div className="flex items-center justify-between bg-stone-100 p-1 rounded-xl text-xs font-bold border border-stone-200">
                       <button
