@@ -213,6 +213,7 @@ export default function InventoryCalendar() {
   // 點擊格子開啟編輯 Modal
   const handleCellClick = (item: Item, day: number, cellOrders: MonthOrder[] = []) => {
     if (adminRole === 'viewer') return;
+    setHoveredCell(null);
     const year = currentDate.getFullYear();
     const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
     const dateStr = `${year}-${month}-${day.toString().padStart(2, '0')}`;
@@ -565,7 +566,8 @@ export default function InventoryCalendar() {
                         className={`relative p-1 md:p-1.5 border-b border-r cursor-pointer group/cell ${isToday ? 'bg-amber-50/40 border-amber-200 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.3)]' : 'border-stone-100/60'}`} 
                         onClick={() => handleCellClick(item, day, cellOrders)}
                         onMouseEnter={(e) => {
-                          if (cellOrders.length > 0) {
+                          // 僅在支援滑鼠真實 Hover 的裝置（非手機觸控）且 Modal 未開啟時才觸發預覽
+                          if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches && !editingCell && cellOrders.length > 0) {
                             setHoveredCell({
                               rect: e.currentTarget.getBoundingClientRect(),
                               orders: cellOrders,
@@ -978,10 +980,10 @@ export default function InventoryCalendar() {
         );
       })()}
 
-      {/* 浮動的 Hover Tooltip (純預覽，不干擾滑鼠，點擊格子開啟 Modal 對帳) */}
-      {hoveredCell && (
+      {/* 浮動的 Hover Tooltip (純預覽，僅在桌機滑鼠 Hover 且 Modal 未開啟時顯示) */}
+      {!editingCell && hoveredCell && (
         <div 
-          className="fixed z-[99999] pointer-events-none w-[280px] bg-stone-800/95 backdrop-blur-md text-white text-xs rounded-xl shadow-2xl p-3.5 border border-stone-700 animate-in fade-in duration-150"
+          className="hidden md:block fixed z-[99999] pointer-events-none w-[280px] bg-stone-800/95 backdrop-blur-md text-white text-xs rounded-xl shadow-2xl p-3.5 border border-stone-700 animate-in fade-in duration-150"
           style={{
             left: hoveredCell.rect.left + hoveredCell.rect.width / 2,
             transform: 'translateX(-50%)',
