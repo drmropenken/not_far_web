@@ -31,7 +31,7 @@ function SyncDescriptions() {
         type="button"
         onClick={handleSync}
         disabled={syncing}
-        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-stone-400 text-white rounded-lg font-bold text-sm transition-colors shadow-sm flex items-center gap-2"
+        className="w-full sm:w-auto px-4 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-stone-400 text-white rounded-xl font-bold text-xs sm:text-sm transition-colors shadow-sm flex items-center justify-center gap-2"
       >
         {syncing ? (
           <>
@@ -162,43 +162,43 @@ export default function CampSettings() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-stone-200">
-      <form onSubmit={handleSave} className="p-6 md:p-8 space-y-6">
+    <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+      <form onSubmit={handleSave} className="p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6">
         <div>
-          <h3 className="text-lg font-bold text-stone-800 mb-1">營區基本設定</h3>
-          <p className="text-sm text-stone-500">編輯營區的名稱、描述等資訊，修改後會立即更新到前台頁面。</p>
+          <h3 className="text-base sm:text-lg font-bold text-stone-800 mb-1">營區基本設定</h3>
+          <p className="text-xs sm:text-sm text-stone-500">編輯營區的名稱、描述等資訊，修改後會立即更新到前台頁面。</p>
         </div>
 
-        <div className="border-t border-stone-200 pt-6 space-y-5">
+        <div className="border-t border-stone-200 pt-5 space-y-4 sm:space-y-5">
           {/* 營區名稱 */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">
+            <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">
               營區名稱 <span className="text-red-400">*</span>
             </label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none text-stone-800"
+              className="w-full border border-stone-300 rounded-xl p-2.5 sm:p-3 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-stone-800 transition-all"
               placeholder="例如：不遠露營度假山莊"
               required
             />
-            <p className="text-xs text-stone-400 mt-1">會顯示在網站標題、導覽列與 SEO 中</p>
+            <p className="text-[11px] sm:text-xs text-stone-400 mt-1">會顯示在網站標題、導覽列與 SEO 中</p>
           </div>
 
           {/* 營區描述 */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">
+            <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">
               營區描述
             </label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none text-stone-800 min-h-[120px] resize-y leading-relaxed"
+              className="w-full border border-stone-300 rounded-xl p-2.5 sm:p-3 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-stone-800 min-h-[110px] sm:min-h-[120px] resize-y leading-relaxed transition-all"
               placeholder="簡單介紹營區的特色與理念..."
-              rows={6}
+              rows={5}
             />
-            <p className="text-xs text-stone-400 mt-1">
+            <p className="text-[11px] sm:text-xs text-stone-400 mt-1 leading-relaxed">
               這段文字會顯示在首頁主視覺區與營區介紹頁的標題下方，也是 SEO 描述。
               建議 50-200 字以內。
             </p>
@@ -206,33 +206,33 @@ export default function CampSettings() {
 
           {/* 官方網站 */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">
+            <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">
               官方網站網址
             </label>
             <input
               type="url"
               value={form.official_url}
               onChange={(e) => setForm({ ...form, official_url: e.target.value })}
-              className="w-full border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none text-stone-800"
+              className="w-full border border-stone-300 rounded-xl p-2.5 sm:p-3 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-stone-800 transition-all"
               placeholder="https://example.com"
             />
           </div>
         </div>
 
         {/* 當前資料預覽 */}
-        <details className="border border-stone-200 rounded-lg">
-          <summary className="px-4 py-3 text-sm font-medium text-stone-600 cursor-pointer hover:bg-stone-50 select-none rounded-lg">
+        <details className="border border-stone-200 rounded-xl overflow-hidden">
+          <summary className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-stone-600 cursor-pointer hover:bg-stone-50 select-none transition-colors">
             📋 查看當前前台顯示效果
           </summary>
-          <div className="px-4 pb-4 pt-2 border-t border-stone-100">
-            <div className="bg-stone-50 rounded-lg p-4 space-y-2">
-              <p className="text-xs text-stone-400 font-medium">🏠 首頁 Hero 區塊</p>
-              <p className="text-stone-700 text-sm leading-relaxed">
+          <div className="px-3.5 pb-3.5 pt-2 sm:px-4 sm:pb-4 border-t border-stone-100">
+            <div className="bg-stone-50 rounded-xl p-3 sm:p-4 space-y-2">
+              <p className="text-[11px] sm:text-xs text-stone-400 font-bold">🏠 首頁 Hero 區塊</p>
+              <p className="text-stone-700 text-xs sm:text-sm leading-relaxed">
                 {form.description || '（尚未填寫描述，將顯示預設文字）'}
               </p>
               <hr className="border-stone-200 my-2" />
-              <p className="text-xs text-stone-400 font-medium">🔍 SEO 描述</p>
-              <p className="text-stone-600 text-xs leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-stone-400 font-bold">🔍 SEO 描述</p>
+              <p className="text-stone-600 text-xs sm:text-xs leading-relaxed">
                 {form.description 
                   ? `${form.name}，${form.description}。提供完善的露營、住宿預訂與豐富的自然生態體驗。`
                   : '（將顯示預設 SEO 描述）'}
@@ -243,7 +243,7 @@ export default function CampSettings() {
 
         {/* 訊息提示 */}
         {message && (
-          <div className={`p-3 rounded-lg text-sm font-medium ${
+          <div className={`p-3 rounded-xl text-xs sm:text-sm font-medium ${
             message.type === 'success' 
               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
               : 'bg-red-50 text-red-600 border border-red-200'
@@ -253,20 +253,20 @@ export default function CampSettings() {
         )}
 
         {/* 同步商品描述 */}
-        <div className="border-t border-stone-200 pt-6">
-          <h4 className="text-sm font-bold text-stone-700 mb-1">🔄 同步商品描述</h4>
-          <p className="text-xs text-stone-500 mb-3">
+        <div className="bg-amber-50/50 border border-amber-200/70 rounded-xl p-3.5 sm:p-4">
+          <h4 className="text-xs sm:text-sm font-bold text-stone-800 mb-1">🔄 同步商品描述</h4>
+          <p className="text-xs text-stone-500 mb-3 leading-relaxed">
             如果商品名稱與描述不一致，可以點擊下方按鈕，將網頁上完整的描述寫入資料庫。
           </p>
           <SyncDescriptions />
         </div>
 
         {/* 送出按鈕 */}
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="pt-3 border-t border-stone-200 flex justify-end">
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-stone-400 text-white rounded-lg font-bold text-sm tracking-wider transition-colors shadow-sm flex items-center gap-2"
+            className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-stone-400 text-white rounded-xl font-bold text-xs sm:text-sm tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2"
           >
             {saving ? (
               <>
