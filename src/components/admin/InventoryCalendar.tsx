@@ -1557,17 +1557,6 @@ export default function InventoryCalendar() {
                   </div>
                 )}
               </div>
-
-              {/* Modal Footer */}
-              <div className="p-4 border-t border-stone-100 flex justify-end bg-stone-50/50">
-                <button 
-                  onClick={() => setEditingDay(null)}
-                  className="px-6 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold rounded-xl transition-colors text-sm"
-                >
-                  關閉
-                </button>
-              </div>
-
             </div>
           </div>
         );
