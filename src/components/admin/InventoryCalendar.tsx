@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import OrderModal from './OrderModal';
 
 type Item = {
   id: string;
@@ -7,6 +8,17 @@ type Item = {
   category: string;
   total_quantity: number;
   image_url?: string | null;
+};
+
+const getNextDayString = (dateStr: string) => {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  d.setDate(d.getDate() + 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dayNum = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dayNum}`;
 };
 
 type InventoryRecord = {
@@ -53,6 +65,16 @@ export default function InventoryCalendar() {
   const [monthOrders, setMonthOrders] = useState<MonthOrder[]>([]);
   const [paymentLogs, setPaymentLogs] = useState<Record<string, PaymentLog[]>>({});
   const [loading, setLoading] = useState(true);
+
+  // 手動接單 Modal 狀態
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [bookingPrefill, setBookingPrefill] = useState<{
+    checkIn: string;
+    checkOut: string;
+    item: Item;
+    quantity: number;
+  } | null>(null);
+
   const [editingCell, setEditingCell] = useState<{
     item: Item;
     day: number;
@@ -593,17 +615,40 @@ export default function InventoryCalendar() {
       {editingCell && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setEditingCell(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+            <div className="p-5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between gap-2">
               <div>
                 <h3 className="text-lg font-bold text-stone-800">{editingCell.item.name}</h3>
                 <p className="text-xs text-stone-500 mt-0.5 font-mono">{editingCell.dateStr} 日庫存與訂單資訊</p>
               </div>
-              <button 
-                onClick={() => setEditingCell(null)} 
-                className="w-8 h-8 rounded-full bg-stone-200/70 hover:bg-stone-200 text-stone-600 font-bold text-sm flex items-center justify-center transition-colors"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                {adminRole !== 'viewer' && (
+                  <button 
+                    onClick={() => {
+                      const item = editingCell.item;
+                      const checkIn = editingCell.dateStr;
+                      const checkOut = getNextDayString(checkIn);
+                      setBookingPrefill({
+                        checkIn,
+                        checkOut,
+                        item,
+                        quantity: 1
+                      });
+                      setEditingCell(null);
+                      setIsOrderModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer hover:shadow"
+                    title="以此日期與營位直接建立手動訂單"
+                  >
+                    <span>➕</span> 幫客接單
+                  </button>
+                )}
+                <button 
+                  onClick={() => setEditingCell(null)} 
+                  className="w-8 h-8 rounded-full bg-stone-200/70 hover:bg-stone-200 text-stone-600 font-bold text-sm flex items-center justify-center transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* 分頁按鈕 */}
@@ -732,21 +777,43 @@ export default function InventoryCalendar() {
               )}
             </div>
 
-            <div className="p-4 border-t border-stone-100 flex justify-end gap-3 bg-stone-50/50">
+            <div className="p-4 border-t border-stone-100 flex items-center justify-between gap-3 bg-stone-50/50">
               <button 
                 onClick={() => setEditingCell(null)}
-                className="px-5 py-2 text-stone-600 font-bold hover:bg-stone-200 rounded-lg transition-colors text-sm"
+                className="px-4 sm:px-5 py-2 text-stone-600 font-bold hover:bg-stone-200 rounded-lg transition-colors text-sm"
               >
                 關閉
               </button>
-              {activeCellTab === 'quota' && (
-                <button 
-                  onClick={handleSaveQuota}
-                  className="px-5 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex items-center gap-2 text-sm"
-                >
-                  儲存容量變更
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {adminRole !== 'viewer' && (
+                  <button 
+                    onClick={() => {
+                      const item = editingCell.item;
+                      const checkIn = editingCell.dateStr;
+                      const checkOut = getNextDayString(checkIn);
+                      setBookingPrefill({
+                        checkIn,
+                        checkOut,
+                        item,
+                        quantity: 1
+                      });
+                      setEditingCell(null);
+                      setIsOrderModalOpen(true);
+                    }}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors shadow-sm flex items-center gap-1.5 text-sm cursor-pointer"
+                  >
+                    <span>➕</span> 幫客手動接單
+                  </button>
+                )}
+                {activeCellTab === 'quota' && (
+                  <button 
+                    onClick={handleSaveQuota}
+                    className="px-5 py-2 bg-stone-700 text-white font-bold rounded-lg hover:bg-stone-800 transition-colors shadow-sm flex items-center gap-2 text-sm"
+                  >
+                    儲存容量變更
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1038,6 +1105,24 @@ export default function InventoryCalendar() {
           ></div>
         </div>
       )}
+
+      {/* 手動接單 Modal (共用相同系統，自動預選選定日期與營位) */}
+      <OrderModal
+        isOpen={isOrderModalOpen}
+        onClose={() => {
+          setIsOrderModalOpen(false);
+          setBookingPrefill(null);
+        }}
+        onSuccess={() => {
+          setIsOrderModalOpen(false);
+          setBookingPrefill(null);
+          fetchMonthData();
+        }}
+        initialCheckInDate={bookingPrefill?.checkIn}
+        initialCheckOutDate={bookingPrefill?.checkOut}
+        initialItemId={bookingPrefill?.item.id}
+        initialItemQuantity={bookingPrefill?.quantity || 1}
+      />
     </div>
   );
 }

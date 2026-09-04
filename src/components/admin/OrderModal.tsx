@@ -15,6 +15,10 @@ type OrderModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialCheckInDate?: string;
+  initialCheckOutDate?: string;
+  initialItemId?: string;
+  initialItemQuantity?: number;
 };
 
 const getCategoryStyle = (category: string) => {
@@ -37,7 +41,15 @@ const getNextDayString = (dateStr: string) => {
   return `${y}-${m}-${dayNum}`;
 };
 
-export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalProps) {
+export default function OrderModal({ 
+  isOpen, 
+  onClose, 
+  onSuccess,
+  initialCheckInDate,
+  initialCheckOutDate,
+  initialItemId,
+  initialItemQuantity = 1
+}: OrderModalProps) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -67,7 +79,8 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
       fetchItems();
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      const tomorrowStr = getNextDayString(todayStr);
+      const defaultCheckIn = initialCheckInDate || todayStr;
+      const defaultCheckOut = initialCheckOutDate || getNextDayString(defaultCheckIn);
 
       // Reset form
       setFormData({
@@ -77,8 +90,8 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
         adults: '2',
         children: '0',
         license_plate: '',
-        check_in_date: todayStr,
-        check_out_date: tomorrowStr,
+        check_in_date: defaultCheckIn,
+        check_out_date: defaultCheckOut,
         notes: '',
         discount_code: '',
       });
@@ -88,7 +101,7 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
       setManualTotal('');
       setDepositAmount('');
     }
-  }, [isOpen]);
+  }, [isOpen, initialCheckInDate, initialCheckOutDate, initialItemId, initialItemQuantity]);
 
   // Re-fetch availability whenever dates change
   useEffect(() => {
@@ -115,6 +128,13 @@ export default function OrderModal({ isOpen, onClose, onSuccess }: OrderModalPro
         return a.sort_order - b.sort_order;
       });
       setItems(data);
+
+      if (initialItemId) {
+        const found = data.find(i => i.id === initialItemId);
+        if (found) {
+          setSelectedItems([{ item: found, quantity: initialItemQuantity || 1 }]);
+        }
+      }
     }
     setLoading(false);
   };
