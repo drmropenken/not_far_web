@@ -1301,18 +1301,19 @@ export default function InventoryCalendar() {
                     <div className="space-y-4">
                       {/* 若已有記事且非編輯模式，以卡片形式精美展示 */}
                       {currentNote && !noteEditMode ? (
-                        <div className="bg-stone-50 border border-stone-200 rounded-2xl p-5 space-y-4 shadow-sm">
-                          <div className="flex items-center justify-between gap-2 border-b border-stone-200/80 pb-3">
-                            <div className="flex items-center gap-2">
-                              <span className={`text-xs font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${currentTagConfig?.badgeClass}`}>
+                        <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 md:p-5 space-y-4 shadow-sm">
+                          {/* 卡片標題列：手機版自動分兩層，元素不折行 */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200/80 pb-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`text-xs font-bold px-3 py-1 rounded-full border inline-flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${currentTagConfig?.badgeClass}`}>
                                 <span>{currentTagConfig?.icon}</span>
                                 <span>{currentTagConfig?.label}</span>
                               </span>
-                              <span className="text-xs text-stone-400 font-mono">
+                              <span className="text-xs text-stone-500 font-mono bg-stone-100 px-2.5 py-1 rounded-lg border border-stone-200/70 whitespace-nowrap">
                                 📅 {summary.dateStr}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
                               <button
                                 onClick={() => {
                                   setNoteTag(currentNote.tag);
@@ -1321,14 +1322,14 @@ export default function InventoryCalendar() {
                                   setNoteEditMode(true);
                                 }}
                                 disabled={adminRole === 'viewer'}
-                                className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl text-xs transition-colors disabled:opacity-50 flex items-center gap-1"
+                                className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl text-xs transition-colors disabled:opacity-50 inline-flex items-center gap-1 whitespace-nowrap cursor-pointer shadow-2xs"
                               >
                                 ✏️ 編輯
                               </button>
                               <button
                                 onClick={handleDeleteNote}
                                 disabled={adminRole === 'viewer' || isSavingNote}
-                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-xl text-xs transition-colors disabled:opacity-50 flex items-center gap-1 border border-rose-200"
+                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-xl text-xs transition-colors disabled:opacity-50 inline-flex items-center gap-1 border border-rose-200 whitespace-nowrap cursor-pointer shadow-2xs"
                               >
                                 🗑️ 刪除
                               </button>
@@ -1336,7 +1337,7 @@ export default function InventoryCalendar() {
                           </div>
 
                           <div className="space-y-2">
-                            <h4 className="text-base font-black text-stone-800">
+                            <h4 className="text-base font-black text-stone-800 leading-snug">
                               {currentNote.title || <span className="text-stone-400 italic">未填寫標題</span>}
                             </h4>
                             {currentNote.content ? (
@@ -1348,11 +1349,16 @@ export default function InventoryCalendar() {
                             )}
                           </div>
 
-                          {/* 記錄者資訊 */}
-                          <div className="flex items-center justify-between text-[11px] text-stone-400 pt-2 border-t border-stone-200/60 font-mono">
-                            <span>紀錄人員：{currentNote.updated_by || '管理員'}</span>
+                          {/* 記錄者資訊：手機版上下分行，避免長 Email 碰撞 */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-stone-400 pt-2.5 border-t border-stone-200/60 font-mono gap-1">
+                            <div className="truncate">
+                              <span className="text-stone-500">紀錄人員：</span>
+                              <span className="text-stone-700 font-medium">{currentNote.updated_by || '管理員'}</span>
+                            </div>
                             {currentNote.updated_at && (
-                              <span>最後更新：{new Date(currentNote.updated_at).toLocaleString('zh-TW', { hour12: false })}</span>
+                              <div className="shrink-0 text-stone-400">
+                                <span>最後更新：{new Date(currentNote.updated_at).toLocaleString('zh-TW', { hour12: false })}</span>
+                              </div>
                             )}
                           </div>
 
