@@ -93,6 +93,17 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
+// 輔助函式：清理銀行特殊字元（將 Big5 罕見小斜線 ﹧ 轉為正常斜線 /，並將全形數字轉為半形）
+function cleanBankText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/[\uFE67\uFE68]/g, '/') // 將 Big5 轉出的小斜線 ﹧ (U+FE67) 轉為一般斜線
+    .replace(/\uFF0F/g, '/')        // 全形斜線 ／ 轉為 /
+    .replace(/[\uFF10-\uFF19]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xfee0)) // 全形數字轉半形
+    .replace(/\u3000/g, ' ')        // 全形空格轉半形空格
+    .trim();
+}
+
 export default function BankReconciliationModal({
   isOpen,
   onClose,
@@ -151,8 +162,8 @@ export default function BankReconciliationModal({
 
           const detailCol = cols[7] || '';
           const userNoteCol = cols[8] || '';
-          // 備註優先記錄使用者自訂備註 (例如 １０１７下營區、林先生１８人)，若有明細資訊也一併保留
-          rawRemarks = userNoteCol || (detailCol.includes(',') ? detailCol.split(',')[1]?.trim() : detailCol);
+          // 備註優先記錄使用者自訂備註 (例如 １０１７下營區、林先生１８人)，若有明細資訊也一併保留，並自動清洗特殊字元
+          rawRemarks = cleanBankText(userNoteCol || (detailCol.includes(',') ? detailCol.split(',')[1]?.trim() : detailCol));
 
           // 尋找虛擬帳號（9629481 + 7 碼數字）
           const vaMatch = trimmed.match(/(?:000)?(9629481\d{7})/);
@@ -246,7 +257,7 @@ export default function BankReconciliationModal({
         }
       }
 
-      rawRemarks = trimmed.slice(trimmed.lastIndexOf('***') + 3).trim();
+      rawRemarks = cleanBankText(trimmed.slice(trimmed.lastIndexOf('***') + 3).trim());
     }
 
     // 判斷是否為訂單款項
@@ -371,7 +382,7 @@ export default function BankReconciliationModal({
     reader.onload = (event) => {
       const content = event.target?.result as string;
       if (content) {
-        setInputText(content);
+        setInputText(cleanBankText(content));
       }
     };
     reader.readAsText(file);
@@ -593,7 +604,7 @@ export default function BankReconciliationModal({
                   <textarea
                     rows={15}
                     value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
+                    onChange={(e) => setInputText(cleanBankText(e.target.value))}
                     placeholder="請直接從銀行網銀複製交易明細並貼在此處...&#10;範例：&#10;2026/07/30 12:47:342026/07/30 CD轉入 0 25,000 *** 00096294817209075,V 10300000480500182062 103214609&#10;2026/07/30 23:06:022026/07/31 CD轉入 0 6,000 *** 00096294813435927,V 80700014501800666832 807136521"
                     className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs font-mono text-stone-800 placeholder-stone-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all resize-y shadow-inner leading-relaxed min-h-[380px]"
                   />
