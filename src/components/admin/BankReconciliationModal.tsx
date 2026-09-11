@@ -68,6 +68,31 @@ type BankReconciliationModalProps = {
   campId?: string | null;
 };
 
+// 輔助函式：解析 CSV 格式單列（正確處理雙引號與內部逗號）
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
 export default function BankReconciliationModal({
   isOpen,
   onClose,
@@ -85,78 +110,143 @@ export default function BankReconciliationModal({
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ successCount: number; totalAmount: number } | null>(null);
 
-  // 1. 解析單列文字
+  // 1. 解析單列文字（同時支援 CSV 引號逗號格式 與 TXT 空白排版格式）
   const parseBankLine = (line: string, index: number): ParsedTransaction | null => {
     const trimmed = line.trim();
     if (!trimmed) return null;
 
-    // 比對時間開頭：YYYY/MM/DD HH:mm:ss 或 YYYY-MM-DD HH:mm:ss
-    const timeMatch = trimmed.match(/^(\d{4}[\/\-]\d{2}[\/\-]\d{2}\s+\d{2}:\d{2}:\d{2})/);
-    if (!timeMatch) {
-      return null;
-    }
-
-    const transactionTime = timeMatch[1].replace(/-/g, '/');
-    const remainingAfterTime = trimmed.slice(timeMatch[0].length).trim();
-
-    // 次一個日期為入帳日
-    const accDateMatch = remainingAfterTime.match(/^(\d{4}[\/\-]\d{2}[\/\-]\d{2})/);
-    const accountingDate = accDateMatch ? accDateMatch[1].replace(/-/g, '/') : transactionTime.split(' ')[0];
-
-    // 尋找金額：通常緊隨在交易類型後面，支出為 0，存入為非 0 數字（可能含逗號）
+    let transactionTime = '';
+    let accountingDate = '';
+    let txType = '銀行轉入';
     let amount = 0;
-    const amountMatch = trimmed.match(/\s+0\s+([0-9,]+)\s+/);
-    if (amountMatch) {
-      amount = parseInt(amountMatch[1].replace(/,/g, ''), 10) || 0;
-    } else {
-      // 容錯找其他數字格式
-      const fallbackAmountMatch = trimmed.match(/([0-9,]{1,10})\s+\*{3}/);
-      if (fallbackAmountMatch) {
-        amount = parseInt(fallbackAmountMatch[1].replace(/,/g, ''), 10) || 0;
-      }
-    }
-
-    // 尋找虛擬帳號（9629481 + 7 碼數字，前面可能補 000）
-    const vaMatch = trimmed.match(/(?:000)?(9629481\d{7})/);
-    const virtualAccount = vaMatch ? vaMatch[1] : null;
-
-    // 尋找轉出銀行代碼與資訊（例如 V 103... 或 RICHART）
+    let virtualAccount: string | null = null;
     let sourceBankCode: string | null = null;
     let sourceBankName: string | null = null;
     let sourceAccountOrSeq: string | null = null;
+    let rawRemarks = '';
 
-    if (trimmed.includes('RICHART') || trimmed.includes('richart')) {
-      sourceBankCode = '812';
-      sourceBankName = '台新 Richart';
-    }
+    // 情況 A：CSV 格式（以引號包覆或含逗號分隔，例如 "2026/08/16","10:14:47",...）
+    const isCSV = trimmed.startsWith('"') || (trimmed.includes(',') && /^\d{4}[\/\-]\d{2}[\/\-]\d{2}/.test(trimmed.replace(/^"/, '')));
 
-    const bankCodeMatch = trimmed.match(/V\s+(\d{3})(\d+)/);
-    if (bankCodeMatch) {
-      sourceBankCode = bankCodeMatch[1];
-      sourceBankName = TAIWAN_BANKS[sourceBankCode] || `銀行代碼 ${sourceBankCode}`;
-      sourceAccountOrSeq = bankCodeMatch[1] + bankCodeMatch[2];
-    } else {
-      const vMatch = trimmed.match(/V\s+([A-Za-z0-9\s]+)/);
-      if (vMatch) {
-        sourceAccountOrSeq = vMatch[1].trim();
+    if (isCSV) {
+      const cols = parseCSVLine(trimmed);
+      if (cols.length >= 6) {
+        const dateCol = cols[0].replace(/-/g, '/');
+        const timeCol = cols[1];
+
+        // 檢查前兩欄是否為交易日與時間
+        if (/^\d{4}\/\d{2}\/\d{2}$/.test(dateCol) && /^\d{2}:\d{2}:\d{2}$/.test(timeCol)) {
+          transactionTime = `${dateCol} ${timeCol}`;
+          accountingDate = cols[2] ? cols[2].replace(/-/g, '/') : dateCol;
+          txType = cols[3] || '銀行轉入';
+
+          // 金額：支出 cols[4], 存入 cols[5]
+          const inAmountStr = cols[5]?.replace(/,/g, '') || '0';
+          amount = parseInt(inAmountStr, 10) || 0;
+          if (amount === 0 && cols[4]) {
+            const outAmountStr = cols[4]?.replace(/,/g, '') || '0';
+            const outAmount = parseInt(outAmountStr, 10) || 0;
+            if (outAmount > 0) amount = -outAmount;
+          }
+
+          const detailCol = cols[7] || '';
+          const userNoteCol = cols[8] || '';
+          // 備註優先記錄使用者自訂備註 (例如 １０１７下營區、林先生１８人)，若有明細資訊也一併保留
+          rawRemarks = userNoteCol || (detailCol.includes(',') ? detailCol.split(',')[1]?.trim() : detailCol);
+
+          // 尋找虛擬帳號（9629481 + 7 碼數字）
+          const vaMatch = trimmed.match(/(?:000)?(9629481\d{7})/);
+          virtualAccount = vaMatch ? vaMatch[1] : null;
+
+          // 尋找轉出銀行代碼與資訊（例如 V 103... 或 RICHART）
+          if (trimmed.includes('RICHART') || trimmed.includes('richart')) {
+            sourceBankCode = '812';
+            sourceBankName = '台新 Richart';
+            const richartAcc = trimmed.match(/轉出(\d+)/);
+            if (richartAcc) sourceAccountOrSeq = richartAcc[1];
+          }
+
+          const bankCodeMatch = trimmed.match(/V\s+(\d{3})(\d+)/);
+          if (bankCodeMatch) {
+            sourceBankCode = bankCodeMatch[1];
+            sourceBankName = TAIWAN_BANKS[sourceBankCode] || `銀行代碼 ${sourceBankCode}`;
+            sourceAccountOrSeq = bankCodeMatch[1] + bankCodeMatch[2];
+          } else if (!sourceAccountOrSeq) {
+            const vMatch = trimmed.match(/V\s+([A-Za-z0-9\s]+)/);
+            if (vMatch) {
+              sourceAccountOrSeq = vMatch[1].trim();
+            }
+          }
+        }
       }
     }
 
-    // 判斷交易類型（CD轉入、跨行轉入、Richart、存款息等）
-    let txType = '銀行轉入';
-    if (trimmed.includes('CD') || trimmed.includes('cd')) {
-      txType = 'CD轉入';
-    } else if (trimmed.includes('RICHART') || trimmed.includes('richart')) {
-      txType = 'Richart轉入';
-    } else if (trimmed.includes('跨行') || trimmed.includes('bsJ') || trimmed.includes('他行')) {
-      txType = '跨行轉入';
-    } else if (trimmed.includes('息') || trimmed.includes('利息') || trimmed.includes('存款息') || trimmed.includes('sڮ')) {
-      txType = '存款息';
-    } else {
-      const typeMatch = trimmed.match(/\d{4}[\/\-]\d{2}[\/\-]\d{2}\s+(.*?)\s+0\s+/);
-      if (typeMatch && typeMatch[1].trim()) {
-        txType = typeMatch[1].trim();
+    // 情況 B：若非 CSV 或 CSV 解析失敗，回退至原本的空白排版 TXT 格式
+    if (!transactionTime) {
+      // 比對時間開頭：YYYY/MM/DD HH:mm:ss 或 YYYY-MM-DD HH:mm:ss
+      const timeMatch = trimmed.match(/^(\d{4}[\/\-]\d{2}[\/\-]\d{2}\s+\d{2}:\d{2}:\d{2})/);
+      if (!timeMatch) {
+        return null;
       }
+
+      transactionTime = timeMatch[1].replace(/-/g, '/');
+      const remainingAfterTime = trimmed.slice(timeMatch[0].length).trim();
+
+      // 次一個日期為入帳日
+      const accDateMatch = remainingAfterTime.match(/^(\d{4}[\/\-]\d{2}[\/\-]\d{2})/);
+      accountingDate = accDateMatch ? accDateMatch[1].replace(/-/g, '/') : transactionTime.split(' ')[0];
+
+      // 尋找金額：通常緊隨在交易類型後面，支出為 0，存入為非 0 數字（可能含逗號）
+      const amountMatch = trimmed.match(/\s+0\s+([0-9,]+)\s+/);
+      if (amountMatch) {
+        amount = parseInt(amountMatch[1].replace(/,/g, ''), 10) || 0;
+      } else {
+        // 容錯找其他數字格式
+        const fallbackAmountMatch = trimmed.match(/([0-9,]{1,10})\s+\*{3}/);
+        if (fallbackAmountMatch) {
+          amount = parseInt(fallbackAmountMatch[1].replace(/,/g, ''), 10) || 0;
+        }
+      }
+
+      // 尋找虛擬帳號（9629481 + 7 碼數字，前面可能補 000）
+      const vaMatch = trimmed.match(/(?:000)?(9629481\d{7})/);
+      virtualAccount = vaMatch ? vaMatch[1] : null;
+
+      // 尋找轉出銀行代碼與資訊（例如 V 103... 或 RICHART）
+      if (trimmed.includes('RICHART') || trimmed.includes('richart')) {
+        sourceBankCode = '812';
+        sourceBankName = '台新 Richart';
+      }
+
+      const bankCodeMatch = trimmed.match(/V\s+(\d{3})(\d+)/);
+      if (bankCodeMatch) {
+        sourceBankCode = bankCodeMatch[1];
+        sourceBankName = TAIWAN_BANKS[sourceBankCode] || `銀行代碼 ${sourceBankCode}`;
+        sourceAccountOrSeq = bankCodeMatch[1] + bankCodeMatch[2];
+      } else {
+        const vMatch = trimmed.match(/V\s+([A-Za-z0-9\s]+)/);
+        if (vMatch) {
+          sourceAccountOrSeq = vMatch[1].trim();
+        }
+      }
+
+      // 判斷交易類型（CD轉入、跨行轉入、Richart、存款息等）
+      if (trimmed.includes('CD') || trimmed.includes('cd')) {
+        txType = 'CD轉入';
+      } else if (trimmed.includes('RICHART') || trimmed.includes('richart')) {
+        txType = 'Richart轉入';
+      } else if (trimmed.includes('跨行') || trimmed.includes('bsJ') || trimmed.includes('他行')) {
+        txType = '跨行轉入';
+      } else if (trimmed.includes('息') || trimmed.includes('利息') || trimmed.includes('存款息') || trimmed.includes('sڮ')) {
+        txType = '存款息';
+      } else {
+        const typeMatch = trimmed.match(/\d{4}[\/\-]\d{2}[\/\-]\d{2}\s+(.*?)\s+0\s+/);
+        if (typeMatch && typeMatch[1].trim()) {
+          txType = typeMatch[1].trim();
+        }
+      }
+
+      rawRemarks = trimmed.slice(trimmed.lastIndexOf('***') + 3).trim();
     }
 
     // 判斷是否為訂單款項
@@ -174,7 +264,7 @@ export default function BankReconciliationModal({
       sourceBankCode,
       sourceBankName: sourceBankName || (sourceBankCode ? TAIWAN_BANKS[sourceBankCode] || null : null),
       sourceAccountOrSeq,
-      rawRemarks: trimmed.slice(trimmed.lastIndexOf('***') + 3).trim(),
+      rawRemarks,
       isOrderRelated,
       status: 'unmatched',
       selected: false
@@ -741,6 +831,11 @@ export default function BankReconciliationModal({
                                   {item.sourceAccountOrSeq && (
                                     <span className="block text-[10px] text-stone-500 font-mono truncate max-w-[190px]" title={item.sourceAccountOrSeq}>
                                       序號: {item.sourceAccountOrSeq}
+                                    </span>
+                                  )}
+                                  {item.rawRemarks && (
+                                    <span className="block text-[10px] text-amber-800 font-medium truncate max-w-[190px]" title={item.rawRemarks}>
+                                      💬 備註: {item.rawRemarks}
                                     </span>
                                   )}
                                 </div>
