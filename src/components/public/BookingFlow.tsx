@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import liff from '@line/liff';
 import { supabase } from '../../lib/supabase';
 import ImageCarousel from './ImageCarousel';
+import BookingCalendarPicker from './BookingCalendarPicker';
 import roomImagesMap from '../../lib/roomImagesMap.json';
 
 type Item = {
@@ -185,7 +186,12 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
           setStep(prev => prev === 0 ? 1 : prev);
         } else {
           setSession(null);
-          setStep(0);
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('dev_step')) {
+            setStep(Number(urlParams.get('dev_step')));
+          } else {
+            setStep(0);
+          }
         }
         setLoading(false);
       }
@@ -693,46 +699,36 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
         )}
 
         {step === 1 && (
-          <div className="flex-1 p-6 flex flex-col min-h-0">
-            <h2 className="text-2xl font-black text-slate-800 mb-6">選擇入住日期</h2>
-            <div className="space-y-6 flex-1">
-              <div className="bg-emerald-50/60 p-6 rounded-2xl shadow-sm border border-emerald-100/50">
-                <label className="block text-sm font-black text-emerald-800 uppercase tracking-wider mb-3">入住日期 (Check-in)</label>
-                <input
-                  type="date"
-                  value={dates.checkIn}
-                  min={new Date().toLocaleDateString('en-CA')}
-                  max={(() => { const d = new Date(); d.setMonth(d.getMonth() + 6); return d.toLocaleDateString('en-CA'); })()}
-                  onChange={(e) => {
-                    const newCheckIn = e.target.value;
-                    const nextDay = getNextDayString(newCheckIn);
-                    setDates({
-                      checkIn: newCheckIn,
-                      checkOut: nextDay
-                    });
-                  }}
-                  className="w-full text-xl font-black text-slate-800 bg-white border-2 border-emerald-200/60 rounded-xl px-4 py-4 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all shadow-inner"
-                />
-              </div>
-              <div className="bg-emerald-50/60 p-6 rounded-2xl shadow-sm border border-emerald-100/50">
-                <label className="block text-sm font-black text-emerald-800 uppercase tracking-wider mb-3">退房日期 (Check-out)</label>
-                <input
-                  type="date"
-                  value={dates.checkOut}
-                  min={dates.checkIn ? getNextDayString(dates.checkIn) : new Date().toLocaleDateString('en-CA')}
-                  onChange={(e) => setDates({ ...dates, checkOut: e.target.value })}
-                  disabled={!dates.checkIn}
-                  className="w-full text-xl font-black text-slate-800 bg-white border-2 border-emerald-200/60 rounded-xl px-4 py-4 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all disabled:opacity-50 shadow-inner"
-                />
-              </div>
+          <div className="flex-1 p-5 flex flex-col min-h-0 overflow-y-auto">
+            <div className="mb-3">
+              <h2 className="text-2xl font-black text-slate-800 leading-tight">選擇入住日期</h2>
+              <p className="text-xs text-slate-500 font-medium mt-1">
+                請點選入住日與退房日（反灰標記「滿」為客滿或公休不開放）
+              </p>
             </div>
-            <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm -mx-6 px-6 pb-6 pt-4 mt-auto border-t border-slate-200 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+
+            <div className="flex-1 pb-4">
+              <BookingCalendarPicker
+                campId={getCampId()}
+                checkIn={dates.checkIn}
+                checkOut={dates.checkOut}
+                onChange={(checkIn, checkOut) => {
+                  setDates({ checkIn, checkOut });
+                }}
+              />
+            </div>
+
+            <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm -mx-5 px-5 pb-5 pt-3 mt-auto border-t border-slate-200 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
               <button
                 onClick={() => setStep(2)}
                 disabled={!dates.checkIn || !dates.checkOut}
-                className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-slate-800 text-emerald-400 font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 transition-colors text-lg tracking-widest flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                下一步 <span>&rarr;</span>
+                {!dates.checkIn || !dates.checkOut ? (
+                  <span>請先選擇入住與退房日期</span>
+                ) : (
+                  <>下一步 <span>&rarr;</span></>
+                )}
               </button>
             </div>
           </div>
