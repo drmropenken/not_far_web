@@ -623,44 +623,28 @@ export default function InventoryCalendar() {
   return (
     <div className="bg-white md:rounded-2xl shadow-sm border border-stone-200 md:p-5 p-3 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-80px)] w-full relative">
       
-      {/* 頂部控制列 (極致緊湊設計) */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 shrink-0">
-        
-        {/* 提示說明 (縮小至一行) */}
-        <div className="text-xs text-stone-600 bg-gradient-to-r from-emerald-50 to-teal-50/30 px-4 py-2 rounded-lg border border-emerald-100/60 flex items-center gap-3 shadow-sm flex-1 overflow-x-auto whitespace-nowrap hide-scrollbar">
-          <span className="text-emerald-500 text-base leading-none">💡</span>
-          <span className="text-stone-700 font-medium mr-2 hidden md:inline">點擊日期標題可查看財務、記錄包場/營運記事與批次關閉；點擊格子可看訂單與修改庫存。</span>
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-white border border-stone-300 rounded-full"></div> 正常可訂</span>
-            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-amber-50 border border-amber-300 rounded-full"></div> 手動調整</span>
-            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-stone-100 border border-stone-400 rounded-full flex items-center justify-center text-[7px] leading-none font-bold">🔒</div> 鎖定</span>
-            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-rose-50 border border-rose-300 rounded-full"></div> 滿帳</span>
-            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-purple-100 border border-purple-400 rounded-full"></div> 👑 包場/記事</span>
-          </div>
+      {/* 頂部控制列（僅保留搜尋與月份切換） */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 shrink-0">
+        {/* 訂單快速搜尋 */}
+        <div className="relative flex items-center w-full sm:w-72 md:w-80">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="🔍 搜尋訂單號 / 姓名 / 電話..."
+            className="w-full text-xs bg-stone-50/80 hover:bg-white focus:bg-white border border-stone-200 rounded-xl px-3 py-2 pr-8 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none shadow-2xs font-sans text-stone-800 placeholder-stone-400"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 text-stone-400 hover:text-stone-600 text-xs w-4 h-4 flex items-center justify-center cursor-pointer"
+              title="清除搜尋"
+            >
+              ✕
+            </button>
+          )}
         </div>
-
-        {/* 右側：訂單搜尋輸入框 + 月份切換 */}
-        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-          {/* 訂單快速搜尋 */}
-          <div className="relative flex items-center">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="🔍 搜尋訂單號 / 姓名 / 電話..."
-              className="w-36 md:w-52 text-xs bg-white border border-stone-200 rounded-xl px-2.5 py-1.5 pr-7 focus:w-48 md:focus:w-60 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none shadow-2xs font-sans text-stone-800"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2 text-stone-400 hover:text-stone-600 text-xs w-4 h-4 flex items-center justify-center cursor-pointer"
-                title="清除搜尋"
-              >
-                ✕
-              </button>
-            )}
-          </div>
 
           {/* 月份切換 (支援直接選年、選月、上一月/下一月與回到今天) */}
           <div className="flex flex-wrap items-center gap-1.5 bg-stone-100/80 p-1 rounded-xl border border-stone-200 shadow-inner shrink-0">
@@ -734,7 +718,6 @@ export default function InventoryCalendar() {
             </button>
           </div>
         </div>
-      </div>
 
       {loading ? (
         <div className="flex-1 flex flex-col items-center justify-center text-emerald-600/60 space-y-4">
@@ -962,6 +945,23 @@ export default function InventoryCalendar() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* 底部圖例說明列 (Footer Legend) */}
+      {!loading && (
+        <div className="pt-2.5 px-1 flex flex-wrap items-center justify-between text-xs text-stone-500 gap-y-2 shrink-0 border-t border-stone-100 mt-2">
+          <div className="flex items-center gap-3 md:gap-4 flex-wrap">
+            <span className="font-bold text-stone-600 text-[11px]">圖例：</span>
+            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-white border border-stone-300 rounded-sm shadow-2xs"></div> 正常可訂</span>
+            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-amber-50 border border-amber-300 rounded-sm shadow-2xs"></div> 手動調整</span>
+            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-stone-100 border border-stone-300 rounded-sm shadow-2xs flex items-center justify-center text-[7px] font-bold leading-none">🔒</div> 鎖定不售</span>
+            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-rose-50 border border-rose-300 rounded-sm shadow-2xs"></div> 客滿</span>
+            <span className="flex items-center gap-1.5"><span className="text-xs leading-none">📝</span> 營運備忘</span>
+          </div>
+          <div className="text-[11px] text-stone-400 font-mono hidden sm:block">
+            點擊表頭可管理財務與備忘・點擊格子可查訂單
+          </div>
         </div>
       )}
       
