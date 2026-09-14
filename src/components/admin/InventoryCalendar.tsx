@@ -1555,69 +1555,74 @@ export default function InventoryCalendar() {
                   );
                 })()}
 
-                {/* 分頁 3：修改全天庫存 */}
+                {/* 分頁 3：修改全天庫存（精簡狀態卡與左右雙按鈕） */}
                 {activeDayTab === 'quota' && (() => {
                   const dayStats = getDailyCampsiteStats(summary.dateStr);
 
                   return (
-                    <div className="space-y-4">
-                      {/* 當前鎖定狀態提示條 */}
-                      {dayStats.isAllLocked ? (
-                        <div className="p-3 bg-stone-100 border border-stone-300 rounded-xl flex items-center gap-2 text-stone-800 text-xs font-bold shadow-2xs">
-                          <span className="text-base">🔒</span>
-                          <span>目前狀態：全區庫存已鎖定（本日已完全關閉，客人無法預訂）</span>
-                        </div>
-                      ) : (
-                        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-emerald-800 text-xs font-bold shadow-2xs">
-                          <span className="text-base">✅</span>
-                          <span>目前狀態：正常開放預訂中（全區營位尚餘 {dayStats.remaining} 帳）</span>
-                        </div>
-                      )}
-
-                      <p className="text-xs text-stone-500 bg-amber-50 p-3 rounded-xl border border-amber-200">
-                        💡 批次修改全天庫存將影響全區商品在 <span className="font-mono font-bold text-stone-800">{summary.dateStr}</span> 的可訂數量。若需包場或公休請使用「一鍵鎖定」。
-                      </p>
-
-                      {/* 當日備忘狀態提示條 */}
-                      <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2 truncate text-emerald-950 min-w-0">
-                          <span className="font-bold shrink-0">📝 當日營運備忘：</span>
-                          <span className="truncate">
-                            {calendarNotes[summary.dateStr] ? (
-                              <span className="font-medium text-emerald-800">
-                                {calendarNotes[summary.dateStr].title || calendarNotes[summary.dateStr].content || '已記錄'}
+                    <div className="space-y-4 py-1">
+                      {/* 當前營位狀態總覽卡 */}
+                      <div className={`p-4 rounded-2xl border transition-all ${
+                        dayStats.isAllLocked 
+                          ? 'bg-stone-100/90 border-stone-300 text-stone-800' 
+                          : 'bg-gradient-to-br from-emerald-50 to-teal-50/40 border-emerald-200 text-emerald-950'
+                      }`}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl leading-none">
+                                {dayStats.isAllLocked ? '🔒' : '🟢'}
                               </span>
-                            ) : (
-                              <span className="text-stone-400 italic">尚無備忘紀錄</span>
-                            )}
-                          </span>
+                              <span className="font-bold text-sm md:text-base">
+                                {dayStats.isAllLocked ? '本日營位已全區鎖定' : '本日營位正常開放預訂中'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-stone-500 font-medium pl-7">
+                              {dayStats.isAllLocked 
+                                ? '前台已停止任何預訂，各商品庫存均已設為 0。' 
+                                : `全區營位目前尚餘 ${dayStats.remaining} 帳可供線上預訂。`}
+                            </p>
+                          </div>
+
+                          {/* 剩餘帳數膠囊 */}
+                          <div className={`px-3 py-1.5 rounded-xl border text-center font-mono shrink-0 ${
+                            dayStats.isAllLocked 
+                              ? 'bg-stone-200 text-stone-700 border-stone-300' 
+                              : 'bg-white text-emerald-800 border-emerald-200 shadow-2xs'
+                          }`}>
+                            <div className="text-[10px] text-stone-400 font-sans">剩餘總量</div>
+                            <div className="text-base font-black leading-tight">
+                              {dayStats.isAllLocked ? '0' : dayStats.remaining}
+                            </div>
+                          </div>
                         </div>
-                        <button
-                          onClick={() => {
-                            setActiveDayTab('notes');
-                            if (!calendarNotes[summary.dateStr]) setNoteEditMode(true);
-                          }}
-                          className="text-emerald-700 hover:text-emerald-900 font-bold ml-2 shrink-0 hover:underline cursor-pointer"
-                        >
-                          {calendarNotes[summary.dateStr] ? '查看/修改 ↗' : '+ 新增備忘 ↗'}
-                        </button>
                       </div>
 
-                      <div className="space-y-3 pt-1">
-                        <button 
-                          onClick={() => handleBatchSaveQuota(0)}
-                          disabled={adminRole === 'viewer'}
-                          className="w-full py-3.5 px-4 bg-stone-100 text-stone-800 border border-stone-300 rounded-xl hover:bg-stone-200 hover:border-stone-400 disabled:opacity-50 transition-colors font-bold flex items-center justify-center gap-2 shadow-sm text-sm cursor-pointer"
-                        >
-                          🔒 一鍵鎖定本日（全區關閉不售）
-                        </button>
-                        <button 
-                          onClick={() => handleBatchSaveQuota(null)}
-                          disabled={adminRole === 'viewer'}
-                          className="w-full py-3.5 px-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-100 hover:border-emerald-300 disabled:opacity-50 transition-colors font-bold flex items-center justify-center gap-2 shadow-sm text-sm cursor-pointer"
-                        >
-                          🔓 一鍵解除鎖定（恢復預設庫存）
-                        </button>
+                      {/* 快速調度操作（雙按鈕左右對稱） */}
+                      <div className="space-y-2 pt-1">
+                        <div className="text-xs font-bold text-stone-600 px-0.5">
+                          ⚡️ 快速調度操作：
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <button 
+                            type="button"
+                            onClick={() => handleBatchSaveQuota(0)}
+                            disabled={adminRole === 'viewer'}
+                            className="py-3 px-4 bg-stone-100 hover:bg-stone-200 active:bg-stone-300 text-stone-800 border border-stone-300 rounded-xl disabled:opacity-50 transition-all font-bold flex items-center justify-center gap-2 shadow-2xs text-xs sm:text-sm cursor-pointer hover:shadow-sm"
+                          >
+                            <span>🔒</span>
+                            <span>一鍵鎖定（關閉不賣）</span>
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => handleBatchSaveQuota(null)}
+                            disabled={adminRole === 'viewer'}
+                            className="py-3 px-4 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-300 rounded-xl disabled:opacity-50 transition-all font-bold flex items-center justify-center gap-2 shadow-2xs text-xs sm:text-sm cursor-pointer hover:shadow-sm"
+                          >
+                            <span>🔓</span>
+                            <span>恢復預設開放庫存</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
