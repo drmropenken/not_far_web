@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import OrderModal from './OrderModal';
+import { getTaiwanHoliday } from '@/utils/taiwanHolidays';
 
 type Item = {
   id: string;
@@ -77,6 +78,7 @@ export default function InventoryCalendar() {
   const [monthOrders, setMonthOrders] = useState<MonthOrder[]>([]);
   const [paymentLogs, setPaymentLogs] = useState<Record<string, PaymentLog[]>>({});
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // 手動接單 Modal 狀態
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
@@ -160,6 +162,44 @@ export default function InventoryCalendar() {
 
   const daysInMonth = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth());
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  // 僅計算露營營位 (campsite) 的庫存統計（表頭總空位框專用）
+  const campsiteItems = useMemo(() => {
+    const camps = items.filter(i => i.category === 'campsite');
+    return camps.length > 0 ? camps : items;
+  }, [items]);
+
+  const getDailyCampsiteStats = (dateStr: string) => {
+    if (campsiteItems.length === 0) return { remaining: 0, total: 0, isAllLocked: false, isFull: false };
+
+    let totalAvailSum = 0;
+    let remainingSum = 0;
+    let lockedCount = 0;
+
+    campsiteItems.forEach(item => {
+      const record = inventory.find(i => i.item_id === item.id && i.date === dateStr);
+      const isOverridden = record?.override_quantity !== null && record?.override_quantity !== undefined;
+      const avail = isOverridden ? record!.override_quantity! : item.total_quantity;
+      const booked = record?.booked_quantity || 0;
+      const rem = Math.max(0, avail - booked);
+
+      if (isOverridden && record!.override_quantity === 0) {
+        lockedCount++;
+      }
+      totalAvailSum += avail;
+      remainingSum += rem;
+    });
+
+    const isAllLocked = campsiteItems.length > 0 && lockedCount === campsiteItems.length;
+    const isFull = totalAvailSum > 0 && remainingSum === 0;
+
+    return {
+      remaining: remainingSum,
+      total: totalAvailSum,
+      isAllLocked,
+      isFull
+    };
+  };
 
   useEffect(() => {
     fetchData();
@@ -593,67 +633,106 @@ export default function InventoryCalendar() {
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-white border border-stone-300 rounded-full"></div> 正常可訂</span>
             <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-amber-50 border border-amber-300 rounded-full"></div> 手動調整</span>
+            <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-stone-100 border border-stone-400 rounded-full flex items-center justify-center text-[7px] leading-none font-bold">🔒</div> 鎖定</span>
             <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-rose-50 border border-rose-300 rounded-full"></div> 滿帳</span>
             <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-purple-100 border border-purple-400 rounded-full"></div> 👑 包場/記事</span>
           </div>
         </div>
 
-        {/* 月份切換 (支援直接選年、選月、上一月/下一月與回到當月) */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-stone-100/80 p-1 rounded-xl border border-stone-200 shadow-inner shrink-0">
-          <button 
-            onClick={handlePrevMonth} 
-            className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-xs rounded-lg transition-all"
-            title="查看上個月"
-          >
-            &lt; 上個月
-          </button>
-
-          <div className="flex items-center gap-1">
-            {/* 年份選擇 */}
-            <select
-              value={currentDate.getFullYear()}
-              onChange={(e) => {
-                const newYear = parseInt(e.target.value, 10);
-                setCurrentDate(new Date(newYear, currentDate.getMonth(), 1));
-              }}
-              className="bg-white border border-stone-200/90 text-stone-800 font-bold text-xs rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs"
-            >
-              {yearsList.map(y => (
-                <option key={y} value={y}>{y} 年</option>
-              ))}
-            </select>
-
-            {/* 月份選擇 */}
-            <select
-              value={currentDate.getMonth() + 1}
-              onChange={(e) => {
-                const newMonth = parseInt(e.target.value, 10) - 1;
-                setCurrentDate(new Date(currentDate.getFullYear(), newMonth, 1));
-              }}
-              className="bg-white border border-stone-200/90 text-stone-800 font-bold text-xs rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs"
-            >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                <option key={m} value={m}>{m} 月</option>
-              ))}
-            </select>
+        {/* 右側：訂單搜尋輸入框 + 月份切換 */}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          {/* 訂單快速搜尋 */}
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="🔍 搜尋訂單號 / 姓名 / 電話..."
+              className="w-36 md:w-52 text-xs bg-white border border-stone-200 rounded-xl px-2.5 py-1.5 pr-7 focus:w-48 md:focus:w-60 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none shadow-2xs font-sans text-stone-800"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 text-stone-400 hover:text-stone-600 text-xs w-4 h-4 flex items-center justify-center cursor-pointer"
+                title="清除搜尋"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
-          <button 
-            onClick={handleNextMonth} 
-            className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-xs rounded-lg transition-all"
-            title="查看下個月"
-          >
-            下個月 &gt;
-          </button>
+          {/* 月份切換 (支援直接選年、選月、上一月/下一月與回到今天) */}
+          <div className="flex flex-wrap items-center gap-1.5 bg-stone-100/80 p-1 rounded-xl border border-stone-200 shadow-inner shrink-0">
+            <button 
+              onClick={handlePrevMonth} 
+              className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-xs rounded-lg transition-all cursor-pointer"
+              title="查看上個月"
+            >
+              &lt; 上個月
+            </button>
 
-          {/* 回到當月 */}
-          <button
-            onClick={() => setCurrentDate(new Date())}
-            className="px-2 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors ml-0.5"
-            title="快速跳轉回今天所在的月份"
-          >
-            回到當月
-          </button>
+            <div className="flex items-center gap-1">
+              {/* 年份選擇 */}
+              <select
+                value={currentDate.getFullYear()}
+                onChange={(e) => {
+                  const newYear = parseInt(e.target.value, 10);
+                  setCurrentDate(new Date(newYear, currentDate.getMonth(), 1));
+                }}
+                className="bg-white border border-stone-200/90 text-stone-800 font-bold text-xs rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs"
+              >
+                {yearsList.map(y => (
+                  <option key={y} value={y}>{y} 年</option>
+                ))}
+              </select>
+
+              {/* 月份選擇 */}
+              <select
+                value={currentDate.getMonth() + 1}
+                onChange={(e) => {
+                  const newMonth = parseInt(e.target.value, 10) - 1;
+                  setCurrentDate(new Date(currentDate.getFullYear(), newMonth, 1));
+                }}
+                className="bg-white border border-stone-200/90 text-stone-800 font-bold text-xs rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs"
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                  <option key={m} value={m}>{m} 月</option>
+                ))}
+              </select>
+            </div>
+
+            <button 
+              onClick={handleNextMonth} 
+              className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-xs rounded-lg transition-all cursor-pointer"
+              title="查看下個月"
+            >
+              下個月 &gt;
+            </button>
+
+            {/* 📍 今天 按鈕 (自動跳回當月並置中滾動) */}
+            <button
+              onClick={() => {
+                const today = new Date();
+                if (currentDate.getFullYear() !== today.getFullYear() || currentDate.getMonth() !== today.getMonth()) {
+                  setCurrentDate(new Date(today.getFullYear(), today.getMonth(), 1));
+                } else {
+                  const todayCell = document.getElementById('today-col-header');
+                  if (todayCell && scrollContainerRef.current) {
+                    scrollContainerRef.current.scrollTo({
+                      left: Math.max(0, todayCell.offsetLeft - scrollContainerRef.current.clientWidth / 2 + todayCell.clientWidth / 2),
+                      behavior: 'smooth'
+                    });
+                  }
+                }
+              }}
+              className="px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors ml-0.5 flex items-center gap-1 cursor-pointer shadow-2xs"
+              title="快速跳轉回今天並置中"
+            >
+              <span>📍</span>
+              <span>今天</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -675,6 +754,9 @@ export default function InventoryCalendar() {
                   const isToday = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth() && day === today.getDate();
                   const dateStr = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
                   const dayNote = calendarNotes[dateStr];
+                  const holiday = getTaiwanHoliday(dateStr);
+                  const isHolidayOrWeekend = isWeekend || !!holiday;
+                  const dayStats = getDailyCampsiteStats(dateStr);
                   
                   return (
                     <th 
@@ -684,7 +766,7 @@ export default function InventoryCalendar() {
                       title={dayNote 
                         ? `【備忘事項】${dayNote.title ? dayNote.title + '：' : ''}${dayNote.content || ''}\n點擊直接查看當日營運備忘`
                         : `點擊查看 ${day} 日財務統計、營運備忘與修改庫存`}
-                      className={`relative p-1 md:p-1.5 border-b border-r min-w-[46px] md:min-w-[56px] cursor-pointer hover:bg-stone-200/60 transition-colors group/day ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isWeekend ? 'text-rose-500 bg-rose-50/30 border-stone-200/80' : 'text-stone-600 border-stone-200/80'}`}
+                      className={`relative p-1 md:p-1.5 border-b border-r min-w-[50px] md:min-w-[62px] cursor-pointer hover:bg-stone-200/60 transition-colors group/day ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isHolidayOrWeekend ? 'bg-rose-50/30 border-stone-200/80' : 'border-stone-200/80'}`}
                     >
                       {/* 頂部備忘提示線 */}
                       {dayNote && (
@@ -705,11 +787,56 @@ export default function InventoryCalendar() {
                         </span>
                       )}
 
-                      <div className="flex flex-col items-center justify-center space-y-0.5 group-hover/day:scale-105 transition-transform py-0.5">
-                        <span className={`font-bold text-base md:text-lg leading-tight ${isToday ? 'text-amber-700' : ''}`}>{day}</span>
-                        <span className={`text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-amber-200/80 text-amber-800' : isWeekend ? 'bg-rose-100/50 text-rose-600' : 'bg-stone-200/50 text-stone-500'}`}>
-                          {['日', '一', '二', '三', '四', '五', '六'][date.getDay()]}
+                      <div className="flex flex-col items-center justify-between min-h-[60px] py-0.5 group-hover/day:scale-105 transition-transform">
+                        {/* 第一行：日期數字 */}
+                        <span className={`font-bold text-sm md:text-base leading-tight ${isToday ? 'text-amber-700' : isHolidayOrWeekend ? 'text-rose-600' : 'text-stone-800'}`}>
+                          {day}
                         </span>
+
+                        {/* 第二行：星期 + 國定假日標記（固定高度維持全月平齊） */}
+                        <div className="h-4 flex items-center justify-center gap-0.5">
+                          <span className={`text-[9px] md:text-[10px] font-semibold px-1 py-0.5 rounded-full ${
+                            isToday ? 'bg-amber-200/80 text-amber-800' :
+                            isHolidayOrWeekend ? 'bg-rose-100/70 text-rose-600' :
+                            'bg-stone-200/50 text-stone-500'
+                          }`}>
+                            {['日', '一', '二', '三', '四', '五', '六'][date.getDay()]}
+                          </span>
+                          {holiday && (
+                            <span 
+                              className="text-[9px] font-bold px-1 py-0.2 rounded bg-rose-500 text-white leading-tight shadow-2xs shrink-0" 
+                              title={`${holiday.fullName}${holiday.isCompensatory ? '（補假）' : ''}`}
+                            >
+                              {holiday.name}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 第三行：當日全區剩餘營位空位框（仿專業 PMS 徽章，一目瞭然） */}
+                        <div className="pt-0.5 flex items-center justify-center">
+                          {dayStats.isAllLocked ? (
+                            <span 
+                              className="inline-flex items-center justify-center min-w-[28px] px-1 py-0.5 text-[10px] font-mono font-bold bg-stone-200/90 text-stone-600 rounded border border-stone-300 shadow-2xs"
+                              title="本日營位已全區手動鎖定（不開放預訂）"
+                            >
+                              🔒 0
+                            </span>
+                          ) : dayStats.isFull ? (
+                            <span 
+                              className="inline-flex items-center justify-center min-w-[28px] px-1 py-0.5 text-[10px] font-mono font-bold bg-rose-100 text-rose-700 rounded border border-rose-300 shadow-2xs"
+                              title="本日營位已客滿 (剩餘 0 帳)"
+                            >
+                              0
+                            </span>
+                          ) : (
+                            <span 
+                              className="inline-flex items-center justify-center min-w-[28px] px-1 py-0.5 text-[10px] font-mono font-bold bg-white text-stone-800 rounded border border-stone-300/90 shadow-2xs group-hover/day:border-emerald-400 group-hover/day:text-emerald-700 transition-colors"
+                              title={`本日全區剩餘 ${dayStats.remaining} 帳可預訂`}
+                            >
+                              {dayStats.remaining}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {isToday && <div className="absolute top-0 w-full h-1 bg-amber-400 left-0"></div>}
@@ -740,33 +867,8 @@ export default function InventoryCalendar() {
                     const booked = record?.booked_quantity || 0;
                     const remaining = Math.max(0, totalAvailable - booked);
                     
-                    const isFull = totalAvailable > 0 && remaining === 0;
-                    
-                    let cellContent = (
-                      <div className={`w-full h-full min-h-[32px] md:min-h-[40px] flex items-center justify-center rounded-lg mx-auto text-xs md:text-sm font-bold shadow-sm transition-all duration-200 transform group-hover/cell:scale-110 active:scale-95
-                        ${isFull ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-rose-100/30 font-black' :
-                          isOverridden ? 'bg-amber-50 text-amber-600 border border-amber-300 shadow-amber-100/30' :
-                          booked > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-emerald-100/30' :
-                          'bg-white text-stone-700 border border-stone-200 hover:border-emerald-400 hover:text-emerald-600 hover:shadow-emerald-100/40'
-                        }
-                      `}>
-                        {totalAvailable === 0 ? (
-                          <span className="text-stone-300 font-normal">-</span>
-                        ) : isFull ? (
-                          <div className="flex items-baseline gap-0.5" title={`滿帳 (${booked}/${totalAvailable})`}>
-                            <span className="text-xs md:text-sm font-black text-rose-600">{booked}</span>
-                            <span className="text-[10px] text-rose-400 opacity-60">/</span>
-                            <span className="text-xs md:text-sm font-black text-rose-600">{totalAvailable}</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-baseline gap-0.5">
-                            <span className={`text-[10px] ${booked > 0 ? 'text-emerald-600 font-black text-xs' : 'opacity-60'}`}>{booked}</span>
-                            <span className="text-[10px] opacity-40">/</span>
-                            <span>{totalAvailable}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
+                    const isLocked = (record?.override_quantity !== null && record?.override_quantity !== undefined && record.override_quantity === 0) || totalAvailable === 0;
+                    const isFull = !isLocked && totalAvailable > 0 && remaining === 0;
 
                     const today = new Date();
                     const isToday = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth() && day === today.getDate();
@@ -784,6 +886,51 @@ export default function InventoryCalendar() {
                         return true;
                       });
                     });
+
+                    const q = searchQuery.trim().toLowerCase();
+                    const isMatchingSearch = q ? cellOrders.some(order => 
+                      order.order_no?.toLowerCase().includes(q) ||
+                      order.customer_name?.toLowerCase().includes(q) ||
+                      order.customer_phone?.toLowerCase().includes(q)
+                    ) : false;
+                    
+                    let cellContent = (
+                      <div className={`w-full h-full min-h-[32px] md:min-h-[40px] flex items-center justify-center rounded-lg mx-auto text-xs md:text-sm font-bold shadow-sm transition-all duration-200 transform group-hover/cell:scale-105 active:scale-95
+                        ${isMatchingSearch ? 'bg-indigo-100 text-indigo-950 border-2 border-indigo-500 shadow-md ring-2 ring-indigo-300 scale-105 animate-pulse' :
+                          isLocked ? 'bg-stone-100/90 text-stone-500 border border-stone-200 shadow-2xs' :
+                          isFull ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-rose-100/30 font-black' :
+                          isOverridden ? 'bg-amber-50 text-amber-600 border border-amber-300 shadow-amber-100/30' :
+                          booked > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-emerald-100/30' :
+                          'bg-white text-stone-700 border border-stone-200 hover:border-emerald-400 hover:text-emerald-600 hover:shadow-emerald-100/40'
+                        }
+                      `}>
+                        {isLocked ? (
+                          booked > 0 ? (
+                            <div className="flex items-center justify-center gap-0.5" title={`已鎖定不開放新訂單 (已有預訂 ${booked})`}>
+                              <span className="text-[10px]">🔒</span>
+                              <span className="text-xs font-black text-stone-700">{booked}/0</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center gap-0.5 text-stone-400" title="已手動鎖定（不開放預訂）">
+                              <span className="text-xs">🔒</span>
+                              <span className="text-[10px] font-bold text-stone-500">鎖定</span>
+                            </div>
+                          )
+                        ) : isFull ? (
+                          <div className="flex items-baseline gap-0.5" title={`滿帳 (${booked}/${totalAvailable})`}>
+                            <span className="text-xs md:text-sm font-black text-rose-600">{booked}</span>
+                            <span className="text-[10px] text-rose-400 opacity-60">/</span>
+                            <span className="text-xs md:text-sm font-black text-rose-600">{totalAvailable}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-baseline gap-0.5">
+                            <span className={`text-[10px] ${booked > 0 ? 'text-emerald-600 font-black text-xs' : 'opacity-60'}`}>{booked}</span>
+                            <span className="text-[10px] opacity-40">/</span>
+                            <span>{totalAvailable}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
                     
                     return (
                       <td 
@@ -967,19 +1114,39 @@ export default function InventoryCalendar() {
                     <label className="block text-sm font-bold text-stone-700 mb-2">
                       實際可開放總數 <span className="text-stone-400 font-normal">(留空代表恢復預設)</span>
                     </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newQuota}
-                      onChange={(e) => setNewQuota(e.target.value)}
-                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors text-lg font-mono outline-none"
-                      placeholder={editingCell.item.total_quantity.toString()}
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveQuota();
-                        if (e.key === 'Escape') setEditingCell(null);
-                      }}
-                    />
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        value={newQuota}
+                        onChange={(e) => setNewQuota(e.target.value)}
+                        className="flex-1 px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors text-lg font-mono outline-none"
+                        placeholder={editingCell.item.total_quantity.toString()}
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveQuota();
+                          if (e.key === 'Escape') setEditingCell(null);
+                        }}
+                      />
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setNewQuota('0')}
+                          className="px-3 py-2 text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                          title="一鍵設為 0 (鎖定不開放)"
+                        >
+                          <span>🔒</span> 設為 0 (鎖定)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNewQuota(editingCell.item.total_quantity.toString())}
+                          className="px-3 py-2 text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                          title="設為系統預設數量"
+                        >
+                          <span>🔄</span> 預設 ({editingCell.item.total_quantity})
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1385,55 +1552,72 @@ export default function InventoryCalendar() {
                 })()}
 
                 {/* 分頁 3：修改全天庫存 */}
-                {activeDayTab === 'quota' && (
-                  <div className="space-y-4">
-                    <p className="text-xs text-stone-500 bg-amber-50 p-3 rounded-xl border border-amber-200">
-                      💡 批次修改全天庫存將影響全區商品在 <span className="font-mono font-bold text-stone-800">{summary.dateStr}</span> 的可訂數量。
-                    </p>
+                {activeDayTab === 'quota' && (() => {
+                  const dayStats = getDailyCampsiteStats(summary.dateStr);
 
-                    {/* 當日備忘狀態提示條 */}
-                    <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 truncate text-emerald-950 min-w-0">
-                        <span className="font-bold shrink-0">📝 當日營運備忘：</span>
-                        <span className="truncate">
-                          {calendarNotes[summary.dateStr] ? (
-                            <span className="font-medium text-emerald-800">
-                              {calendarNotes[summary.dateStr].title || calendarNotes[summary.dateStr].content || '已記錄'}
-                            </span>
-                          ) : (
-                            <span className="text-stone-400 italic">尚無備忘紀錄</span>
-                          )}
-                        </span>
+                  return (
+                    <div className="space-y-4">
+                      {/* 當前鎖定狀態提示條 */}
+                      {dayStats.isAllLocked ? (
+                        <div className="p-3 bg-stone-100 border border-stone-300 rounded-xl flex items-center gap-2 text-stone-800 text-xs font-bold shadow-2xs">
+                          <span className="text-base">🔒</span>
+                          <span>目前狀態：全區庫存已鎖定（本日已完全關閉，客人無法預訂）</span>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-emerald-800 text-xs font-bold shadow-2xs">
+                          <span className="text-base">✅</span>
+                          <span>目前狀態：正常開放預訂中（全區營位尚餘 {dayStats.remaining} 帳）</span>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-stone-500 bg-amber-50 p-3 rounded-xl border border-amber-200">
+                        💡 批次修改全天庫存將影響全區商品在 <span className="font-mono font-bold text-stone-800">{summary.dateStr}</span> 的可訂數量。若需包場或公休請使用「一鍵鎖定」。
+                      </p>
+
+                      {/* 當日備忘狀態提示條 */}
+                      <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 truncate text-emerald-950 min-w-0">
+                          <span className="font-bold shrink-0">📝 當日營運備忘：</span>
+                          <span className="truncate">
+                            {calendarNotes[summary.dateStr] ? (
+                              <span className="font-medium text-emerald-800">
+                                {calendarNotes[summary.dateStr].title || calendarNotes[summary.dateStr].content || '已記錄'}
+                              </span>
+                            ) : (
+                              <span className="text-stone-400 italic">尚無備忘紀錄</span>
+                            )}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setActiveDayTab('notes');
+                            if (!calendarNotes[summary.dateStr]) setNoteEditMode(true);
+                          }}
+                          className="text-emerald-700 hover:text-emerald-900 font-bold ml-2 shrink-0 hover:underline cursor-pointer"
+                        >
+                          {calendarNotes[summary.dateStr] ? '查看/修改 ↗' : '+ 新增備忘 ↗'}
+                        </button>
                       </div>
-                      <button
-                        onClick={() => {
-                          setActiveDayTab('notes');
-                          if (!calendarNotes[summary.dateStr]) setNoteEditMode(true);
-                        }}
-                        className="text-emerald-700 hover:text-emerald-900 font-bold ml-2 shrink-0 hover:underline cursor-pointer"
-                      >
-                        {calendarNotes[summary.dateStr] ? '查看/修改 ↗' : '+ 新增備忘 ↗'}
-                      </button>
-                    </div>
 
-                    <div className="space-y-3 pt-1">
-                      <button 
-                        onClick={() => handleBatchSaveQuota(0)}
-                        disabled={adminRole === 'viewer'}
-                        className="w-full py-3.5 px-4 bg-rose-50 text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-100 hover:border-rose-300 disabled:opacity-50 transition-colors font-bold flex items-center justify-center gap-2 shadow-sm text-sm"
-                      >
-                        🚫 一鍵歸零 (關閉本日)
-                      </button>
-                      <button 
-                        onClick={() => handleBatchSaveQuota(null)}
-                        disabled={adminRole === 'viewer'}
-                        className="w-full py-3.5 px-4 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl hover:bg-emerald-100 hover:border-emerald-300 disabled:opacity-50 transition-colors font-bold flex items-center justify-center gap-2 shadow-sm text-sm"
-                      >
-                        ✅ 恢復系統預設
-                      </button>
+                      <div className="space-y-3 pt-1">
+                        <button 
+                          onClick={() => handleBatchSaveQuota(0)}
+                          disabled={adminRole === 'viewer'}
+                          className="w-full py-3.5 px-4 bg-stone-100 text-stone-800 border border-stone-300 rounded-xl hover:bg-stone-200 hover:border-stone-400 disabled:opacity-50 transition-colors font-bold flex items-center justify-center gap-2 shadow-sm text-sm cursor-pointer"
+                        >
+                          🔒 一鍵鎖定本日（全區關閉不售）
+                        </button>
+                        <button 
+                          onClick={() => handleBatchSaveQuota(null)}
+                          disabled={adminRole === 'viewer'}
+                          className="w-full py-3.5 px-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-100 hover:border-emerald-300 disabled:opacity-50 transition-colors font-bold flex items-center justify-center gap-2 shadow-sm text-sm cursor-pointer"
+                        >
+                          🔓 一鍵解除鎖定（恢復預設庫存）
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -1509,7 +1693,7 @@ export default function InventoryCalendar() {
         onSuccess={() => {
           setIsOrderModalOpen(false);
           setBookingPrefill(null);
-          fetchMonthData();
+          fetchData();
         }}
         initialCheckInDate={bookingPrefill?.checkIn}
         initialCheckOutDate={bookingPrefill?.checkOut}
