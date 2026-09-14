@@ -397,11 +397,11 @@ export default function BookingCalendarPicker({
 
                 {/* 節日或客滿標籤 */}
                 {isSoldOut ? (
-                  <span className="text-[9px] font-bold text-rose-400 leading-none mt-1">滿</span>
+                  <span className="text-[9px] font-medium text-slate-400 leading-none mt-1">滿</span>
                 ) : holiday ? (
                   <span
-                    className={`text-[9px] font-bold leading-none mt-1 truncate max-w-[36px] ${
-                      isCheckIn || isCheckOut ? 'text-emerald-100' : 'text-rose-500'
+                    className={`text-[9px] font-black leading-none mt-1 truncate max-w-[36px] ${
+                      isCheckIn || isCheckOut ? 'text-emerald-100' : 'text-rose-600'
                     }`}
                   >
                     {holiday.name}
