@@ -744,9 +744,9 @@ export default function InventoryCalendar() {
       ) : (
         <div ref={scrollContainerRef} className="flex-1 overflow-auto border border-stone-200 rounded-2xl relative shadow-inner bg-stone-50/50">
           <table className="w-full text-center border-collapse text-sm">
-            <thead className="sticky top-0 z-20 bg-stone-100/90 backdrop-blur-md shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+            <thead className="sticky top-0 z-20 bg-stone-100 shadow-[0_2px_4px_rgba(0,0,0,0.04)] border-b border-stone-200">
               <tr>
-                <th className="p-3 border-b border-r border-stone-200/80 bg-stone-100 min-w-[120px] md:min-w-[180px] sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] text-stone-700 font-bold tracking-wider">項目名稱</th>
+                <th className="p-3 border-b border-r border-stone-200 bg-stone-100 min-w-[130px] md:min-w-[190px] sticky left-0 z-30 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] text-stone-800 font-black tracking-wider text-xs md:text-sm">項目名稱</th>
                 {daysArray.map(day => {
                   const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
                   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -766,7 +766,11 @@ export default function InventoryCalendar() {
                       title={dayNote 
                         ? `【備忘事項】${dayNote.title ? dayNote.title + '：' : ''}${dayNote.content || ''}\n點擊直接查看當日營運備忘`
                         : `點擊查看 ${day} 日財務統計、營運備忘與修改庫存`}
-                      className={`relative p-1 md:p-1.5 border-b border-r min-w-[50px] md:min-w-[62px] cursor-pointer hover:bg-stone-200/60 transition-colors group/day ${isToday ? 'bg-amber-100/60 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.5)] z-20' : isHolidayOrWeekend ? 'bg-rose-50/30 border-stone-200/80' : 'border-stone-200/80'}`}
+                      className={`relative p-1 md:p-1.5 border-b border-r min-w-[50px] md:min-w-[62px] cursor-pointer hover:bg-stone-200/80 transition-colors group/day ${
+                        isToday ? 'bg-amber-100/90 border-amber-300 shadow-[inset_0_0_0_2px_rgba(251,191,36,0.6)] z-20' : 
+                        isHolidayOrWeekend ? 'bg-rose-50/70 border-stone-200/90' : 
+                        'bg-stone-100/70 border-stone-200/90 text-stone-700'
+                      }`}
                     >
                       {/* 頂部備忘提示線 */}
                       {dayNote && (
@@ -797,8 +801,8 @@ export default function InventoryCalendar() {
                         <div className="h-4 flex items-center justify-center gap-0.5">
                           <span className={`text-[9px] md:text-[10px] font-semibold px-1 py-0.5 rounded-full ${
                             isToday ? 'bg-amber-200/80 text-amber-800' :
-                            isHolidayOrWeekend ? 'bg-rose-100/70 text-rose-600' :
-                            'bg-stone-200/50 text-stone-500'
+                            isHolidayOrWeekend ? 'bg-rose-100/80 text-rose-600' :
+                            'bg-stone-200/70 text-stone-600'
                           }`}>
                             {['日', '一', '二', '三', '四', '五', '六'][date.getDay()]}
                           </span>
@@ -812,25 +816,25 @@ export default function InventoryCalendar() {
                           )}
                         </div>
 
-                        {/* 第三行：當日全區剩餘營位空位框（仿專業 PMS 徽章，一目瞭然） */}
+                        {/* 第三行：當日全區剩餘營位空位框（淡綠色質感標籤，與下方白格子產生層次對比） */}
                         <div className="pt-0.5 flex items-center justify-center">
                           {dayStats.isAllLocked ? (
                             <span 
-                              className="inline-flex items-center justify-center min-w-[28px] px-1 py-0.5 text-[10px] font-mono font-bold bg-stone-200/90 text-stone-600 rounded border border-stone-300 shadow-2xs"
+                              className="inline-flex items-center justify-center min-w-[28px] px-1.5 py-0.5 text-[10px] font-mono font-bold bg-stone-200/90 text-stone-600 rounded-md border border-stone-300 shadow-2xs"
                               title="本日營位已全區手動鎖定（不開放預訂）"
                             >
                               🔒 0
                             </span>
                           ) : dayStats.isFull ? (
                             <span 
-                              className="inline-flex items-center justify-center min-w-[28px] px-1 py-0.5 text-[10px] font-mono font-bold bg-rose-100 text-rose-700 rounded border border-rose-300 shadow-2xs"
+                              className="inline-flex items-center justify-center min-w-[28px] px-1.5 py-0.5 text-[10px] font-mono font-bold bg-rose-100 text-rose-700 rounded-md border border-rose-300 shadow-2xs"
                               title="本日營位已客滿 (剩餘 0 帳)"
                             >
                               0
                             </span>
                           ) : (
                             <span 
-                              className="inline-flex items-center justify-center min-w-[28px] px-1 py-0.5 text-[10px] font-mono font-bold bg-white text-stone-800 rounded border border-stone-300/90 shadow-2xs group-hover/day:border-emerald-400 group-hover/day:text-emerald-700 transition-colors"
+                              className="inline-flex items-center justify-center min-w-[28px] px-1.5 py-0.5 text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 rounded-md border border-emerald-300 shadow-2xs group-hover/day:bg-emerald-100 group-hover/day:border-emerald-400 transition-colors"
                               title={`本日全區剩餘 ${dayStats.remaining} 帳可預訂`}
                             >
                               {dayStats.remaining}
@@ -848,12 +852,12 @@ export default function InventoryCalendar() {
             <tbody className="bg-white">
               {items.map(item => (
                 <tr key={item.id} className="hover:bg-emerald-50/40 transition-colors group">
-                  <td className="p-2 md:p-3 border-b border-r border-stone-100 font-medium text-stone-800 text-left sticky left-0 bg-white group-hover:bg-[#f0fdf4] z-10 whitespace-normal md:whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)]">
+                  <td className="p-2 md:p-3 border-b border-r border-stone-200/80 font-medium text-stone-800 text-left sticky left-0 bg-stone-50/90 group-hover:bg-stone-100/90 z-10 whitespace-normal md:whitespace-nowrap shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)] transition-colors">
                     <div className="flex flex-col md:flex-row md:items-center gap-1.5">
-                      <span className="text-[10px] text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded-md self-start shrink-0 font-semibold tracking-wide hidden md:inline-block">
+                      <span className="text-[10px] text-stone-600 bg-white border border-stone-200/90 shadow-2xs px-1.5 py-0.5 rounded-md self-start shrink-0 font-bold tracking-wide hidden md:inline-block">
                         {item.category === 'campsite' ? '⛺️ 營位' : item.category === 'equipment' ? '🪑 裝備' : '🍖 服務'}
                       </span>
-                      <span className="leading-tight text-sm md:leading-normal truncate max-w-[120px] md:max-w-none text-stone-700 font-bold" title={item.name}>{item.name}</span>
+                      <span className="leading-tight text-sm md:leading-normal truncate max-w-[120px] md:max-w-none text-stone-800 font-bold" title={item.name}>{item.name}</span>
                     </div>
                     <div className="text-[9px] md:text-[10px] text-stone-400 font-medium mt-1 tracking-wider">預設: {item.total_quantity}</div>
                   </td>
