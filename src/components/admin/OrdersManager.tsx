@@ -905,7 +905,7 @@ export default function OrdersManager() {
               onClick={() => setIsModalOpen(true)}
               className="bg-emerald-700 text-white hover:bg-emerald-800 px-2 sm:px-5 py-2 rounded-lg font-bold text-xs sm:text-sm tracking-tight sm:tracking-wider transition-colors shadow-sm border border-emerald-800 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap cursor-pointer"
             >
-              <span className="text-base leading-none mb-0.5 font-black">+</span> 手動接單
+              <span className="text-base leading-none mb-0.5 font-black text-white">+</span> 手動接單
             </button>
           </div>
         </div>

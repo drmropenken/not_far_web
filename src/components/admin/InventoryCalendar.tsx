@@ -991,10 +991,10 @@ export default function InventoryCalendar() {
                       setEditingCell(null);
                       setIsOrderModalOpen(true);
                     }}
-                    className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 text-xs sm:text-sm cursor-pointer hover:shadow-md border border-emerald-800 whitespace-nowrap"
+                    className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition-all shadow-sm flex items-center justify-center gap-1 sm:gap-1.5 text-xs sm:text-sm tracking-tight sm:tracking-wider cursor-pointer hover:shadow-md border border-emerald-800 whitespace-nowrap"
                     title="以此房型與日期快速開啟手動接單"
                   >
-                    <span>➕</span> 幫客手動接單
+                    <span className="text-base leading-none mb-0.5 font-black text-white">+</span> 手動接單
                   </button>
                 )}
                 <button 
