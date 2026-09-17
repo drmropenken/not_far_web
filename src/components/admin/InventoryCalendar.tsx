@@ -1064,9 +1064,6 @@ export default function InventoryCalendar() {
             <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
               {activeCellTab === 'orders' && editingCell.orders && editingCell.orders.length > 0 ? (
                 <div className="space-y-3">
-                  <div className="text-xs text-stone-500 font-medium flex justify-between items-center bg-emerald-50/60 p-2.5 rounded-lg border border-emerald-100">
-                    <span>💡 點擊下方按鈕可直接跳轉至「訂單管理」查看完整細節與編輯對帳：</span>
-                  </div>
                   {editingCell.orders.map(order => {
                     const qty = order.nf_order_items?.find(oi => oi.item_id === editingCell.item.id)?.quantity || 0;
                     const total = order.total_amount || 0;

@@ -1369,62 +1369,103 @@ export default function OrdersManager() {
       {/* 線上付款 Modal */}
       {onlinePaymentOrderId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm" onClick={() => setOnlinePaymentOrderId(null)}>
-          <div className="bg-white rounded-2xl shadow-xl border border-stone-200 max-w-sm w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2">
-              <span className="text-xl">💳</span>
-              <h3 className="font-black text-stone-800">線上付款 / 匯款紀錄</h3>
+          <div className="bg-white rounded-2xl shadow-xl border border-stone-200 max-w-sm w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
+            {/* 標題欄 */}
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <h3 className="font-bold text-base text-stone-800 flex items-center gap-2">
+                <span>💳</span> 線上付款 / 匯款紀錄
+              </h3>
+              <button 
+                type="button"
+                onClick={() => setOnlinePaymentOrderId(null)}
+                className="w-7 h-7 rounded-full text-stone-400 hover:text-stone-600 hover:bg-stone-100 flex items-center justify-center text-sm transition-colors cursor-pointer"
+                title="關閉"
+              >
+                ✕
+              </button>
             </div>
 
+            {/* 付款方式 */}
             <div>
-              <label className="block text-xs font-bold text-stone-500 mb-1.5">付款方式</label>
-              <div className="flex gap-2">
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">付款方式</label>
+              <div className="grid grid-cols-2 gap-2">
                 <button
+                  type="button"
                   onClick={() => setOnlinePaymentType('credit_card')}
-                  className={`flex-1 py-2.5 text-sm font-bold rounded-xl border-2 transition-all ${onlinePaymentType === 'credit_card' ? 'bg-indigo-50 border-indigo-400 text-indigo-700' : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'}`}
+                  className={`py-2 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    onlinePaymentType === 'credit_card' 
+                      ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-2xs' 
+                      : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+                  }`}
                 >
                   💳 信用卡
                 </button>
                 <button
+                  type="button"
                   onClick={() => setOnlinePaymentType('bank_transfer')}
-                  className={`flex-1 py-2.5 text-sm font-bold rounded-xl border-2 transition-all ${onlinePaymentType === 'bank_transfer' ? 'bg-indigo-50 border-indigo-400 text-indigo-700' : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'}`}
+                  className={`py-2 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    onlinePaymentType === 'bank_transfer' 
+                      ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-2xs' 
+                      : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+                  }`}
                 >
                   🏦 匯款
                 </button>
               </div>
             </div>
 
+            {/* 收款金額 */}
             <div>
-              <label className="block text-xs font-bold text-stone-500 mb-1.5">收款金額 <span className="text-rose-500">*</span></label>
-              <input
-                type="number"
-                value={onlinePaymentAmount}
-                onChange={e => setOnlinePaymentAmount(e.target.value)}
-                placeholder="正數收款、負數沖正（可輸入真實金額）"
-                className="w-full border border-stone-200 rounded-xl p-3 text-lg font-black text-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none"
-              />
-              <p className="text-[11px] text-stone-400 mt-1">💡 正數＝收款（允許超過訂單金額），負數＝沖正退款</p>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-stone-700">收款金額 <span className="text-rose-500">*</span></label>
+                <span className="text-[11px] text-stone-400">退款沖正請輸入負數</span>
+              </div>
+              <div className="relative flex items-center">
+                <span className="absolute left-3 text-stone-400 font-bold text-sm select-none">NT$</span>
+                <input
+                  type="number"
+                  value={onlinePaymentAmount}
+                  onChange={e => setOnlinePaymentAmount(e.target.value)}
+                  placeholder="0"
+                  className="w-full pl-11 pr-3 py-2 bg-stone-50/50 hover:bg-white focus:bg-white border border-stone-200 rounded-xl text-base font-bold text-stone-800 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal"
+                  autoFocus
+                />
+              </div>
             </div>
 
+            {/* 入帳時間 */}
             <div>
-              <label className="block text-xs font-bold text-stone-500 mb-1.5">實際金流時間（匯款/入帳時間）</label>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">入帳時間</label>
               <input
                 type="datetime-local"
                 value={onlinePaymentCollectedAt}
                 onChange={e => setOnlinePaymentCollectedAt(e.target.value)}
-                className="w-full border border-stone-200 rounded-xl p-2.5 text-xs font-bold text-stone-700 focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 bg-stone-50/50 hover:bg-white focus:bg-white border border-stone-200 rounded-xl text-xs font-medium text-stone-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
               />
-              <p className="text-[11px] text-stone-400 mt-1">💡 可調整為顧客實際轉帳或網銀入帳時間</p>
             </div>
 
-            <div className="bg-stone-50 rounded-xl p-3 text-xs text-stone-500 space-y-1">
-              <p>👤 經手人：<span className="font-bold text-stone-700">{adminEmail || '—'}</span></p>
+            {/* 經手人資訊 */}
+            <div className="flex items-center justify-between text-xs text-stone-500 px-1 pt-1">
+              <span>經手人員</span>
+              <span className="font-mono text-stone-700 font-medium">{adminEmail || '—'}</span>
             </div>
 
-            <div className="flex gap-2 pt-2">
-              <button onClick={() => setOnlinePaymentOrderId(null)} disabled={isSubmittingOnline} className="flex-1 py-3 text-sm font-bold text-stone-500 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors">
+            {/* 按鈕區 */}
+            <div className="flex gap-2 pt-2 border-t border-stone-100">
+              <button 
+                type="button"
+                onClick={() => setOnlinePaymentOrderId(null)} 
+                disabled={isSubmittingOnline} 
+                className="flex-1 py-2.5 text-xs font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors cursor-pointer"
+              >
                 取消
               </button>
-              <button onClick={submitOnlinePayment} disabled={isSubmittingOnline || !onlinePaymentAmount || parseInt(onlinePaymentAmount) === 0} className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors">
+              <button 
+                type="button"
+                onClick={submitOnlinePayment} 
+                disabled={isSubmittingOnline || !onlinePaymentAmount || parseInt(onlinePaymentAmount) === 0} 
+                className="flex-1 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors shadow-sm cursor-pointer"
+              >
                 {isSubmittingOnline ? '送出中...' : '確認收款'}
               </button>
             </div>
@@ -1435,55 +1476,86 @@ export default function OrdersManager() {
       {/* 現場收款 Modal */}
       {onsitePaymentOrderId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm" onClick={() => setOnsitePaymentOrderId(null)}>
-          <div className="bg-white rounded-2xl shadow-xl border border-stone-200 max-w-sm w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2">
-              <span className="text-xl">💵</span>
-              <h3 className="font-black text-stone-800">現場收款</h3>
+          <div className="bg-white rounded-2xl shadow-xl border border-stone-200 max-w-sm w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
+            {/* 標題欄 */}
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <h3 className="font-bold text-base text-stone-800 flex items-center gap-2">
+                <span>💵</span> 現場收款紀錄
+              </h3>
+              <button 
+                type="button"
+                onClick={() => setOnsitePaymentOrderId(null)}
+                className="w-7 h-7 rounded-full text-stone-400 hover:text-stone-600 hover:bg-stone-100 flex items-center justify-center text-sm transition-colors cursor-pointer"
+                title="關閉"
+              >
+                ✕
+              </button>
             </div>
 
+            {/* 收款金額 */}
             <div>
-              <label className="block text-xs font-bold text-stone-500 mb-1.5">收款金額 <span className="text-rose-500">*</span></label>
-              <input
-                type="number"
-                value={onsiteAmount}
-                onChange={e => setOnsiteAmount(e.target.value)}
-                placeholder="正數收款、負數沖正（可輸入真實金額）"
-                className="w-full border border-stone-200 rounded-xl p-3 text-lg font-black text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none"
-              />
-              <p className="text-[11px] text-stone-400 mt-1">💡 正數＝收款，負數＝沖正退款</p>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-stone-700">收款金額 <span className="text-rose-500">*</span></label>
+                <span className="text-[11px] text-stone-400">退款沖正請輸入負數</span>
+              </div>
+              <div className="relative flex items-center">
+                <span className="absolute left-3 text-stone-400 font-bold text-sm select-none">NT$</span>
+                <input
+                  type="number"
+                  value={onsiteAmount}
+                  onChange={e => setOnsiteAmount(e.target.value)}
+                  placeholder="0"
+                  className="w-full pl-11 pr-3 py-2 bg-stone-50/50 hover:bg-white focus:bg-white border border-stone-200 rounded-xl text-base font-bold text-stone-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal"
+                  autoFocus
+                />
+              </div>
             </div>
 
+            {/* 備註 */}
             <div>
-              <label className="block text-xs font-bold text-stone-500 mb-1.5">備註（選填）</label>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">備註說明（選填）</label>
               <input
                 type="text"
                 value={onsiteNotes}
                 onChange={e => setOnsiteNotes(e.target.value)}
-                placeholder="現金 / 街口 / 退款原因"
-                className="w-full border border-stone-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                placeholder="例如：現金、街口、LINE Pay、尾款結清"
+                className="w-full px-3 py-2 bg-stone-50/50 hover:bg-white focus:bg-white border border-stone-200 rounded-xl text-xs text-stone-700 placeholder:text-stone-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
               />
             </div>
 
+            {/* 收款時間 */}
             <div>
-              <label className="block text-xs font-bold text-stone-500 mb-1.5">實際金流時間（收款時間）</label>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">收款時間</label>
               <input
                 type="datetime-local"
                 value={onsiteCollectedAt}
                 onChange={e => setOnsiteCollectedAt(e.target.value)}
-                className="w-full border border-stone-200 rounded-xl p-2.5 text-xs font-bold text-stone-700 focus:ring-2 focus:ring-emerald-500 outline-none"
+                className="w-full px-3 py-2 bg-stone-50/50 hover:bg-white focus:bg-white border border-stone-200 rounded-xl text-xs font-medium text-stone-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
               />
-              <p className="text-[11px] text-stone-400 mt-1">💡 可調整為實際收款時間</p>
             </div>
 
-            <div className="bg-stone-50 rounded-xl p-3 text-xs text-stone-500 space-y-1">
-              <p>👤 經手人：<span className="font-bold text-stone-700">{adminEmail || '—'}</span></p>
+            {/* 經手人資訊 */}
+            <div className="flex items-center justify-between text-xs text-stone-500 px-1 pt-1">
+              <span>經手人員</span>
+              <span className="font-mono text-stone-700 font-medium">{adminEmail || '—'}</span>
             </div>
 
-            <div className="flex gap-2 pt-2">
-              <button onClick={() => setOnsitePaymentOrderId(null)} disabled={isSubmittingOnsite} className="flex-1 py-3 text-sm font-bold text-stone-500 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors">
+            {/* 按鈕區 */}
+            <div className="flex gap-2 pt-2 border-t border-stone-100">
+              <button 
+                type="button"
+                onClick={() => setOnsitePaymentOrderId(null)} 
+                disabled={isSubmittingOnsite} 
+                className="flex-1 py-2.5 text-xs font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors cursor-pointer"
+              >
                 取消
               </button>
-              <button onClick={submitOnsitePayment} disabled={isSubmittingOnsite || !onsiteAmount || parseInt(onsiteAmount) === 0} className="flex-1 py-3 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors">
+              <button 
+                type="button"
+                onClick={submitOnsitePayment} 
+                disabled={isSubmittingOnsite || !onsiteAmount || parseInt(onsiteAmount) === 0} 
+                className="flex-1 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors shadow-sm cursor-pointer"
+              >
                 {isSubmittingOnsite ? '送出中...' : '確認收款'}
               </button>
             </div>
@@ -1534,8 +1606,8 @@ export default function OrdersManager() {
                   NT$ {Math.max(0, (parseInt(financialsForm.total_amount) || 0) - (parseInt(financialsForm.deposit_amount) || 0)).toLocaleString()}
                 </span>
               </div>
-              <div className="text-[10px] text-stone-400 text-center leading-relaxed bg-stone-50 p-2 rounded">
-                💡 儲存後，系統會根據訂單金額與 payment_logs 自動計算已收金額
+              <div className="text-xs text-stone-400 text-center leading-relaxed pt-1">
+                儲存後系統將自動依據訂單金額與金流紀錄重新計算尾款
               </div>
             </div>
             <div className="p-4 border-t border-stone-100 flex justify-end gap-2 bg-stone-50">
