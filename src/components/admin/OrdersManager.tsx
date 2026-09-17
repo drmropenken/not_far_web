@@ -823,10 +823,10 @@ export default function OrdersManager() {
   };
 
   return (
-    <div className="bg-white md:rounded-2xl shadow-sm border border-stone-200 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-48px)] w-full">
+    <div className="bg-white md:rounded-2xl shadow-sm border border-stone-200 flex flex-col w-full min-h-full">
       
-      {/* 整個列表、搜尋、時間篩選及統計都放入同一個滾動容器，以實現整體滾動（不置頂） */}
-      <div className="flex-1 overflow-auto bg-stone-50 rounded-2xl flex flex-col">
+      {/* 整個列表、搜尋、時間篩選及統計放入主容器，由外層版面統一平滑滾動 */}
+      <div className="flex-1 bg-stone-50 md:rounded-2xl flex flex-col">
         
         {/* Row 1: 搜尋、時間篩選、手動接單與匯出 */}
         <div className="p-3.5 md:p-6 pb-3 md:pb-3.5 bg-white md:rounded-t-2xl border-b border-stone-100 flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-3 shrink-0">
@@ -1309,7 +1309,7 @@ export default function OrdersManager() {
 
                 {/* 操作按鈕 */}
                 {adminRole !== 'viewer' && (
-                  <div className="px-3.5 sm:px-5 py-2.5 sm:py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                  <div className="px-3.5 sm:px-5 py-2.5 sm:py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
                     {/* 左邊：刪除（僅 dr.mr.openken） */}
                     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                       {adminEmail === 'dr.mr.openken@gmail.com' && (
