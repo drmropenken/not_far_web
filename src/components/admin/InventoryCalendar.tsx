@@ -969,18 +969,43 @@ export default function InventoryCalendar() {
       {editingCell && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setEditingCell(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between gap-2">
-              <div>
-                <h3 className="text-lg font-bold text-stone-800">{editingCell.item.name}</h3>
-                <p className="text-xs text-stone-500 mt-0.5 font-mono">{editingCell.dateStr} 日庫存與訂單資訊</p>
+            <div className="p-4 sm:p-5 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base sm:text-lg font-bold text-stone-800 truncate">{editingCell.item.name}</h3>
+                <p className="text-xs text-stone-500 mt-0.5 font-mono truncate">{editingCell.dateStr} 日庫存與訂單資訊</p>
               </div>
-              <button 
-                onClick={() => setEditingCell(null)} 
-                className="w-8 h-8 rounded-full bg-stone-200/70 hover:bg-stone-200 text-stone-600 font-bold text-sm flex items-center justify-center transition-colors shrink-0"
-                title="關閉"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {adminRole !== 'viewer' && (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const item = editingCell.item;
+                      const checkIn = editingCell.dateStr;
+                      const checkOut = getNextDayString(checkIn);
+                      setBookingPrefill({
+                        checkIn,
+                        checkOut,
+                        item,
+                        quantity: 1
+                      });
+                      setEditingCell(null);
+                      setIsOrderModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 text-xs sm:text-sm cursor-pointer hover:shadow-md border border-emerald-800 whitespace-nowrap"
+                    title="以此房型與日期快速開啟手動接單"
+                  >
+                    <span>➕</span> 幫客手動接單
+                  </button>
+                )}
+                <button 
+                  type="button"
+                  onClick={() => setEditingCell(null)} 
+                  className="w-8 h-8 rounded-full bg-stone-200/70 hover:bg-stone-200 text-stone-600 font-bold text-sm flex items-center justify-center transition-colors shrink-0"
+                  title="關閉"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* 若當日有營運備忘，顯示提示列並提供一鍵跳轉 */}
@@ -1156,38 +1181,24 @@ export default function InventoryCalendar() {
               )}
             </div>
 
-            <div className="p-4 border-t border-stone-100 flex items-center justify-end gap-2 bg-stone-50/50">
-              <div className="flex items-center gap-2">
-                {adminRole !== 'viewer' && (
-                  <button 
-                    onClick={() => {
-                      const item = editingCell.item;
-                      const checkIn = editingCell.dateStr;
-                      const checkOut = getNextDayString(checkIn);
-                      setBookingPrefill({
-                        checkIn,
-                        checkOut,
-                        item,
-                        quantity: 1
-                      });
-                      setEditingCell(null);
-                      setIsOrderModalOpen(true);
-                    }}
-                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 text-xs sm:text-sm cursor-pointer hover:shadow-md border border-emerald-800"
-                  >
-                    <span>➕</span> 幫客手動接單
-                  </button>
-                )}
-                {activeCellTab === 'quota' && (
-                  <button 
-                    onClick={handleSaveQuota}
-                    className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2 text-sm cursor-pointer hover:shadow"
-                  >
-                    儲存容量變更
-                  </button>
-                )}
+            {activeCellTab === 'quota' && (
+              <div className="p-4 border-t border-stone-100 flex items-center justify-end gap-2 bg-stone-50/50">
+                <button
+                  type="button"
+                  onClick={() => setEditingCell(null)}
+                  className="px-4 py-2 text-xs sm:text-sm font-bold text-stone-600 hover:bg-stone-200/60 rounded-xl transition-colors cursor-pointer"
+                >
+                  取消
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleSaveQuota}
+                  className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2 text-xs sm:text-sm cursor-pointer hover:shadow"
+                >
+                  儲存容量變更
+                </button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
