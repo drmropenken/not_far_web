@@ -630,13 +630,21 @@ export default function OrdersManager() {
       matchesStatus = order.status === activeTab;
     }
 
-    // 3. 關鍵字搜尋
-    const matchesSearch = searchTerm === '' || 
-      order.order_no.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer_phone.includes(searchTerm) ||
-      order.check_in_date.includes(searchTerm) ||
-      order.check_out_date.includes(searchTerm);
+    // 3. 關鍵字搜尋 (支援：訂單編號、姓名、電話、入住/退房日期、虛擬帳號、車牌、備註)
+    const term = searchTerm.trim().toLowerCase();
+    const cleanTerm = term.replace(/[\s-]/g, '');
+    const cleanVa = (order.virtual_account || '').replace(/[\s-]/g, '').toLowerCase();
+
+    const matchesSearch = term === '' || 
+      order.order_no.toLowerCase().includes(term) || 
+      order.customer_name.toLowerCase().includes(term) ||
+      order.customer_phone.includes(term) ||
+      order.check_in_date.includes(term) ||
+      order.check_out_date.includes(term) ||
+      (cleanTerm !== '' && cleanVa.includes(cleanTerm)) ||
+      (order.license_plate && order.license_plate.toLowerCase().includes(term)) ||
+      (order.notes && order.notes.toLowerCase().includes(term)) ||
+      (order.admin_notes && order.admin_notes.toLowerCase().includes(term));
       
     return matchesStatus && matchesSearch;
   });
@@ -833,15 +841,25 @@ export default function OrdersManager() {
           {/* 左側：搜尋 + 時間篩選 */}
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 md:gap-2.5 flex-1 min-w-0">
             {/* 搜尋框 */}
-            <div className="relative w-full sm:w-44 lg:w-48 shrink-0">
+            <div className="relative w-full sm:w-52 lg:w-60 shrink-0">
               <input 
                 type="text" 
-                placeholder="搜尋姓名、電話..." 
+                placeholder="搜尋姓名、電話、帳號、車牌..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all h-[36px] md:h-[34px]"
+                className="w-full pl-8 pr-7 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all h-[36px] md:h-[34px]"
               />
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-50 text-xs">🔍</span>
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xs font-bold"
+                  title="清除搜尋"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             {/* 快速時間區間 / 選月 與 自訂日期範圍 */}
