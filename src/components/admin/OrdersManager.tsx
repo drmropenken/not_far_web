@@ -111,6 +111,12 @@ export default function OrdersManager() {
   const [onlinePaymentCollectedAt, setOnlinePaymentCollectedAt] = useState('');
   const [isSubmittingOnline, setIsSubmittingOnline] = useState(false);
 
+  // 📥 匯出設定 Modal 狀態
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportScope, setExportScope] = useState<'future' | 'past' | 'filtered' | 'all'>('future');
+  const [exportExcludeCancelled, setExportExcludeCancelled] = useState(true);
+  const [exportMultiRow, setExportMultiRow] = useState(true);
+
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
@@ -735,16 +741,73 @@ export default function OrdersManager() {
     return `"${str}"`;
   };
 
-  const handleExportCSV = () => {
+  // 預估即時筆數與品項行數
+  const currentExportOrders = useMemo(() => {
+    const now = new Date(new Date().getTime() + 8 * 3600000);
+    const todayStr = now.toISOString().split('T')[0];
+    let list: Order[] = [];
+
+    if (exportScope === 'future') {
+      list = orders.filter(o => o.check_in_date >= todayStr);
+    } else if (exportScope === 'past') {
+      list = orders.filter(o => o.check_in_date < todayStr);
+    } else if (exportScope === 'filtered') {
+      list = filteredOrders;
+    } else {
+      list = orders;
+    }
+
+    if (exportExcludeCancelled) {
+      list = list.filter(o => o.status !== 'cancelled');
+    }
+    return list;
+  }, [orders, filteredOrders, exportScope, exportExcludeCancelled]);
+
+  const estimatedExportRows = useMemo(() => {
+    if (!exportMultiRow) return currentExportOrders.length;
+    return currentExportOrders.reduce((sum, o) => sum + Math.max(1, (o.nf_order_items?.length || 0)), 0);
+  }, [currentExportOrders, exportMultiRow]);
+
+  const exportCounts = useMemo(() => {
+    const now = new Date(new Date().getTime() + 8 * 3600000);
+    const todayStr = now.toISOString().split('T')[0];
+    const filterFn = (o: Order) => !exportExcludeCancelled || o.status !== 'cancelled';
+    return {
+      future: orders.filter(o => o.check_in_date >= todayStr && filterFn(o)).length,
+      past: orders.filter(o => o.check_in_date < todayStr && filterFn(o)).length,
+      filtered: filteredOrders.filter(filterFn).length,
+      all: orders.filter(filterFn).length,
+    };
+  }, [orders, filteredOrders, exportExcludeCancelled]);
+
+  const executeExportCSV = () => {
+    const now = new Date(new Date().getTime() + 8 * 3600000);
+    const todayStr = now.toISOString().split('T')[0];
+
+    let scopeLabel = '未來預訂訂單';
+    if (exportScope === 'past') scopeLabel = '歷史過往訂單';
+    else if (exportScope === 'filtered') scopeLabel = '畫面篩選訂單';
+    else if (exportScope === 'all') scopeLabel = '全時段所有訂單';
+
     const headers = [
       '訂單編號', '訂購人姓名', '聯絡電話', '車牌號碼', '入住日期', '退房日期', '訂單狀態', 
+      '訂購明細',
       '總金額(元)', '已收金額(元)', '未付尾款(元)', 
       '實收-信用卡(元)', '實收-匯款(元)', '實收-現場(元)',
       '金流筆數', '金流交易明細與經手人',
       '虛擬匯款帳號', '客人備註', '營主內部備註', '折扣碼', '折扣金額', '下單時間'
     ];
-    
-    const rows = filteredOrders.map(order => {
+
+    let totalAmountSum = 0;
+    let receivedTotal = 0;
+    let receivableTotal = 0;
+    let creditCardTotal = 0;
+    let bankTransferTotal = 0;
+    let onsiteTotal = 0;
+
+    const rows: (string | number)[][] = [];
+
+    currentExportOrders.forEach(order => {
       let creditCard = 0;
       let bankTransfer = 0;
       let onsite = 0;
@@ -764,8 +827,17 @@ export default function OrdersManager() {
       
       const received = creditCard + bankTransfer + onsite;
       const receivable = order.status === 'cancelled' ? 0 : Math.max(0, order.total_amount - received);
+
+      if (order.status !== 'cancelled') {
+        totalAmountSum += order.total_amount;
+        receivedTotal += received;
+        receivableTotal += receivable;
+        creditCardTotal += creditCard;
+        bankTransferTotal += bankTransfer;
+        onsiteTotal += onsite;
+      }
       
-      const statusText = order.status === 'paid' ? '已付款' : order.status === 'deposit_paid' ? '已付定金' : order.status === 'pending' ? (order.check_in_date < new Date(new Date().getTime() + 8 * 3600000).toISOString().split('T')[0] ? '已逾期' : '待付款') : order.status === 'checked_in' ? '已報到' : '已取消';
+      const statusText = order.status === 'paid' ? '已付款' : order.status === 'deposit_paid' ? '已付定金' : order.status === 'pending' ? (order.check_in_date < todayStr ? '已逾期' : '待付款') : order.status === 'checked_in' ? '已報到' : '已取消';
 
       const logsCountStr = `${logs.length} 筆`;
       const logsDetailStr = logs.length === 0 ? '無收款紀錄' : logs.map((log, idx) => {
@@ -776,40 +848,104 @@ export default function OrdersManager() {
         return `[#${idx + 1}] ${timeStr} ${typeStr} NT$${log.amount} (經手:${collector})${noteStr}`;
       }).join(' | ');
 
-      return [
-        order.order_no,
-        order.customer_name,
-        order.customer_phone,
-        order.license_plate || '',
-        order.check_in_date,
-        order.check_out_date,
-        statusText,
-        order.total_amount,
-        received,
-        receivable,
-        creditCard,
-        bankTransfer,
-        onsite,
-        logsCountStr,
-        logsDetailStr,
-        order.virtual_account || '',
-        order.notes || '',
-        order.admin_notes || '',
-        order.discount_code || '',
-        order.discount_amount || 0,
-        new Date(order.created_at).toLocaleString('zh-TW')
-      ];
+      const orderItems = order.nf_order_items || [];
+
+      if (!exportMultiRow || orderItems.length <= 1) {
+        const itemStr = orderItems.map(it => `${it.nf_items?.name || '未知品項'} x ${it.quantity}`).join('、') || '無明細';
+        rows.push([
+          order.order_no,
+          order.customer_name,
+          order.customer_phone,
+          order.license_plate || '',
+          order.check_in_date,
+          order.check_out_date,
+          statusText,
+          itemStr,
+          order.total_amount,
+          received,
+          receivable,
+          creditCard,
+          bankTransfer,
+          onsite,
+          logsCountStr,
+          logsDetailStr,
+          order.virtual_account || '',
+          order.notes || '',
+          order.admin_notes || '',
+          order.discount_code || '',
+          order.discount_amount || 0,
+          new Date(order.created_at).toLocaleString('zh-TW')
+        ]);
+      } else {
+        // 多列呈現：同一訂單多個品項分別成行
+        orderItems.forEach((it, idx) => {
+          const itemStr = `${it.nf_items?.name || '未知品項'} x ${it.quantity}`;
+          if (idx === 0) {
+            rows.push([
+              order.order_no,
+              order.customer_name,
+              order.customer_phone,
+              order.license_plate || '',
+              order.check_in_date,
+              order.check_out_date,
+              statusText,
+              itemStr,
+              order.total_amount,
+              received,
+              receivable,
+              creditCard,
+              bankTransfer,
+              onsite,
+              logsCountStr,
+              logsDetailStr,
+              order.virtual_account || '',
+              order.notes || '',
+              order.admin_notes || '',
+              order.discount_code || '',
+              order.discount_amount || 0,
+              new Date(order.created_at).toLocaleString('zh-TW')
+            ]);
+          } else {
+            // 後續項目列：保留訂單基本資料以便 Excel 排序/篩選，金額為空避免在 Excel 加總時重複計算
+            rows.push([
+              order.order_no,
+              order.customer_name,
+              order.customer_phone,
+              order.license_plate || '',
+              order.check_in_date,
+              order.check_out_date,
+              statusText,
+              itemStr,
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              ''
+            ]);
+          }
+        });
+      }
     });
 
     // 加上財務匯總報表資訊於底部
     const summaryRows = [
-      ['【篩選區間財務加總報表】'],
-      ['總營業額 (訂單總額)', `${stats.totalAmountSum} 元`],
-      ['已收總額 (實收營收)', `${stats.receivedTotal} 元`],
-      ['未付尾款 (應收帳款)', `${stats.receivableTotal} 元`],
-      ['實收：信用卡 (綠界)', `${stats.creditCardTotal} 元`],
-      ['實收：虛擬匯款', `${stats.bankTransferTotal} 元`],
-      ['實收：現場/現金', `${stats.onsiteTotal} 元`]
+      [`【${scopeLabel} 財務加總報表】`],
+      ['匯出訂單筆數', `${currentExportOrders.length} 筆`],
+      ['總營業額 (訂單總額)', `${totalAmountSum} 元`],
+      ['已收總額 (實收營收)', `${receivedTotal} 元`],
+      ['未付尾款 (應收帳款)', `${receivableTotal} 元`],
+      ['實收：信用卡 (綠界)', `${creditCardTotal} 元`],
+      ['實收：虛擬匯款', `${bankTransferTotal} 元`],
+      ['實收：現場/現金', `${onsiteTotal} 元`]
     ];
 
     const allCsvLines = [
@@ -824,10 +960,12 @@ export default function OrdersManager() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `orders_finance_${new Date().toISOString().split('T')[0].replace(/-/g, '')}.csv`;
+    link.download = `不遠露營_${scopeLabel}_${todayStr.replace(/-/g, '')}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    setShowExportModal(false);
   };
 
   return (
@@ -914,8 +1052,9 @@ export default function OrdersManager() {
               <span>🏦</span> <span className="hidden sm:inline">銀行自動</span>對帳
             </button>
             <button 
-              onClick={handleExportCSV}
+              onClick={() => setShowExportModal(true)}
               className="bg-white text-emerald-700 hover:bg-emerald-50 px-2 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm tracking-tight sm:tracking-wider transition-colors shadow-sm border border-emerald-200 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap cursor-pointer"
+              title="設定並匯出 Excel (CSV)"
             >
               <span>📥</span> 匯出<span className="hidden sm:inline"> Excel</span>
             </button>
@@ -1850,6 +1989,207 @@ export default function OrdersManager() {
         adminEmail={adminEmail}
         campId={typeof window !== 'undefined' ? localStorage.getItem('camp_id') : null}
       />
+
+      {/* 📥 匯出設定 Modal */}
+      {showExportModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200" 
+          onClick={() => setShowExportModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl border border-stone-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200" 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-stone-100 flex justify-between items-center bg-stone-50/70">
+              <div className="flex items-center gap-2.5">
+                <span className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg font-black shadow-2xs">
+                  📥
+                </span>
+                <div>
+                  <h3 className="font-black text-stone-800 text-base leading-tight">匯出訂單 Excel (CSV)</h3>
+                  <p className="text-xs text-stone-500 font-medium mt-0.5">選擇匯出範圍與品項明細格式</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowExportModal(false)}
+                className="w-8 h-8 rounded-full bg-stone-200/60 hover:bg-stone-200 text-stone-500 font-bold text-sm flex items-center justify-center transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* 範圍選擇 */}
+              <div>
+                <label className="block text-xs font-black text-stone-700 uppercase tracking-wider mb-2">
+                  1. 選擇匯出時段範圍
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* 未來訂單 */}
+                  <div
+                    onClick={() => setExportScope('future')}
+                    className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                      exportScope === 'future'
+                        ? 'border-emerald-500 bg-emerald-50/50 shadow-sm ring-1 ring-emerald-500'
+                        : 'border-stone-200 hover:border-stone-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-black text-stone-800 flex items-center gap-1.5">
+                        <span>🔮</span> 未來預訂訂單
+                      </span>
+                      <span className="text-[11px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                        {exportCounts.future} 筆
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500">今日及未來入住（接待排房備料）</p>
+                  </div>
+
+                  {/* 歷史訂單 */}
+                  <div
+                    onClick={() => setExportScope('past')}
+                    className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                      exportScope === 'past'
+                        ? 'border-emerald-500 bg-emerald-50/50 shadow-sm ring-1 ring-emerald-500'
+                        : 'border-stone-200 hover:border-stone-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-black text-stone-800 flex items-center gap-1.5">
+                        <span>📜</span> 歷史過往訂單
+                      </span>
+                      <span className="text-[11px] font-black px-1.5 py-0.5 rounded bg-stone-100 text-stone-700">
+                        {exportCounts.past} 筆
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500">今日前已入住（帳務營收核對）</p>
+                  </div>
+
+                  {/* 畫面篩選結果 */}
+                  <div
+                    onClick={() => setExportScope('filtered')}
+                    className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                      exportScope === 'filtered'
+                        ? 'border-emerald-500 bg-emerald-50/50 shadow-sm ring-1 ring-emerald-500'
+                        : 'border-stone-200 hover:border-stone-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-black text-stone-800 flex items-center gap-1.5">
+                        <span>🎯</span> 目前畫面篩選
+                      </span>
+                      <span className="text-[11px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
+                        {exportCounts.filtered} 筆
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500">依當前月份、關鍵字與分頁</p>
+                  </div>
+
+                  {/* 全時段所有訂單 */}
+                  <div
+                    onClick={() => setExportScope('all')}
+                    className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                      exportScope === 'all'
+                        ? 'border-emerald-500 bg-emerald-50/50 shadow-sm ring-1 ring-emerald-500'
+                        : 'border-stone-200 hover:border-stone-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-black text-stone-800 flex items-center gap-1.5">
+                        <span>🌐</span> 全時段所有訂單
+                      </span>
+                      <span className="text-[11px] font-black px-1.5 py-0.5 rounded bg-stone-100 text-stone-700">
+                        {exportCounts.all} 筆
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500">營區全部完整訂單資料</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 明細格式與進階勾選 */}
+              <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
+                <label className="block text-xs font-black text-stone-700 uppercase tracking-wider">
+                  2. 明細呈現與資料篩選
+                </label>
+
+                {/* 勾選多列呈現 */}
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={exportMultiRow}
+                    onChange={(e) => setExportMultiRow(e.target.checked)}
+                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 mt-0.5 cursor-pointer"
+                  />
+                  <div>
+                    <span className="text-xs font-black text-stone-800">
+                      訂單品項展開為多列（同一訂單多 row 呈現）
+                    </span>
+                    <p className="text-[11px] text-stone-500 mt-0.5 leading-snug">
+                      若一張訂單同時訂購多個營位或加購品項，將分別成列，方便現場備料與點交（金額不重複計算）。
+                    </p>
+                  </div>
+                </label>
+
+                {/* 勾選排除取消單 */}
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={exportExcludeCancelled}
+                    onChange={(e) => setExportExcludeCancelled(e.target.checked)}
+                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 mt-0.5 cursor-pointer"
+                  />
+                  <div>
+                    <span className="text-xs font-black text-stone-800">
+                      排除已取消訂單
+                    </span>
+                    <p className="text-[11px] text-stone-500 mt-0.5 leading-snug">
+                      略過 status 為 cancelled 的已取消訂單，保持報表乾淨。
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {/* 預覽即時筆數卡片 */}
+              <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-3 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📊</span>
+                  <span className="font-bold text-emerald-900">
+                    預計匯出：<strong className="text-emerald-700 text-sm font-black">{currentExportOrders.length}</strong> 筆訂單
+                    {exportMultiRow && (
+                      <span className="text-stone-500 ml-1">
+                        （展開共 <strong className="text-stone-700">{estimatedExportRows}</strong> 列品項）
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-stone-50 border-t border-stone-200 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowExportModal(false)}
+                className="px-4 py-2 bg-white border border-stone-300 text-stone-700 text-xs font-bold rounded-xl hover:bg-stone-100 transition-colors cursor-pointer"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={executeExportCSV}
+                disabled={currentExportOrders.length === 0}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl transition-colors shadow-sm shadow-emerald-600/30 flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <span>📥</span> 下載 Excel (.csv)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
