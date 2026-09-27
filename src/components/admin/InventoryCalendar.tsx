@@ -234,23 +234,9 @@ export default function InventoryCalendar() {
     }
   };
 
-  const quickDates = useMemo(() => {
-    const today = new Date();
-    
-    // 昨天
-    const yesterday = new Date();
-    yesterday.setDate(today.getDate() - 1);
-
-    // 明天
-    const tomorrow = new Date();
-    tomorrow.setDate(today.getDate() + 1);
-
-    return {
-      yesterday,
-      today,
-      tomorrow
-    };
-  }, []);
+  const jumpToToday = () => {
+    jumpToDate(new Date());
+  };
 
   useEffect(() => {
     if (!loading) {
@@ -692,17 +678,17 @@ export default function InventoryCalendar() {
             )}
           </div>
 
-          {/* 月份切換 (單純年月切換，保持單行不換行) */}
-          <div className="flex items-center justify-between sm:justify-end gap-1.5 bg-stone-100/80 p-1 rounded-xl border border-stone-200 shadow-inner shrink-0">
+          {/* 月份切換與今天按鈕 (單一膠囊，強制 flex-nowrap，手機與電腦皆在同一單行不換行) */}
+          <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-1.5 bg-stone-100/80 p-1 rounded-xl border border-stone-200 shadow-inner shrink-0 flex-nowrap whitespace-nowrap">
             <button 
               onClick={handlePrevMonth} 
-              className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-xs rounded-lg transition-all cursor-pointer"
+              className="px-1.5 sm:px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-xs rounded-lg transition-all cursor-pointer shrink-0"
               title="查看上個月"
             >
-              &lt; 上個月
+              &lt; <span className="hidden sm:inline">上個</span><span className="sm:hidden">上</span>月
             </button>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
               {/* 年份選擇 */}
               <select
                 value={currentDate.getFullYear()}
@@ -710,7 +696,7 @@ export default function InventoryCalendar() {
                   const newYear = parseInt(e.target.value, 10);
                   setCurrentDate(new Date(newYear, currentDate.getMonth(), 1));
                 }}
-                className="bg-white border border-stone-200/90 text-stone-800 font-bold text-xs rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs"
+                className="bg-white border border-stone-200/90 text-stone-800 font-bold text-xs rounded-lg px-1 sm:px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs"
               >
                 {yearsList.map(y => (
                   <option key={y} value={y}>{y} 年</option>
@@ -724,7 +710,7 @@ export default function InventoryCalendar() {
                   const newMonth = parseInt(e.target.value, 10) - 1;
                   setCurrentDate(new Date(currentDate.getFullYear(), newMonth, 1));
                 }}
-                className="bg-white border border-stone-200/90 text-stone-800 font-bold text-xs rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs"
+                className="bg-white border border-stone-200/90 text-stone-800 font-bold text-xs rounded-lg px-1 sm:px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs"
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
                   <option key={m} value={m}>{m} 月</option>
@@ -734,77 +720,23 @@ export default function InventoryCalendar() {
 
             <button 
               onClick={handleNextMonth} 
-              className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-xs rounded-lg transition-all cursor-pointer"
+              className="px-1.5 sm:px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-xs rounded-lg transition-all cursor-pointer shrink-0"
               title="查看下個月"
             >
-              下個月 &gt;
+              <span className="hidden sm:inline">下個</span><span className="sm:hidden">下</span>月 &gt;
             </button>
 
-            {/* 電腦版（md: 及以上）：直接在「下個月」右側緊鄰的三個精緻小按鈕 */}
-            <div className="hidden md:flex items-center gap-1 pl-1.5 border-l border-stone-300 ml-0.5">
-              <button
-                type="button"
-                onClick={() => jumpToDate(quickDates.yesterday)}
-                className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-700 hover:shadow-xs rounded-lg transition-all cursor-pointer"
-                title={`快速跳轉到昨天 (${quickDates.yesterday.getMonth() + 1}/${quickDates.yesterday.getDate()}) 並置中`}
-              >
-                昨天
-              </button>
-              <button
-                type="button"
-                onClick={() => jumpToDate(quickDates.today)}
-                className="px-2.5 py-1 text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 rounded-lg transition-all cursor-pointer shadow-2xs flex items-center gap-1"
-                title={`快速跳轉回今天 (${quickDates.today.getMonth() + 1}/${quickDates.today.getDate()}) 並置中`}
-              >
-                <span>📍</span>
-                <span>今天</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => jumpToDate(quickDates.tomorrow)}
-                className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-700 hover:shadow-xs rounded-lg transition-all cursor-pointer"
-                title={`快速跳轉到明天 (${quickDates.tomorrow.getMonth() + 1}/${quickDates.tomorrow.getDate()}) 並置中`}
-              >
-                明天
-              </button>
-            </div>
+            {/* 📍 今天 按鈕（手機與電腦皆整合在下個月旁邊，同一行不換行） */}
+            <button
+              type="button"
+              onClick={jumpToToday}
+              className="px-2 sm:px-2.5 py-1 text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 rounded-lg transition-all cursor-pointer shadow-2xs flex items-center gap-0.5 sm:gap-1 shrink-0 ml-0.5"
+              title="快速跳轉回今天並置中"
+            >
+              <span>📍</span>
+              <span>今天</span>
+            </button>
           </div>
-        </div>
-
-        {/* 手機版（md: 以下）：獨立在第二排的 3 等分快速跳轉列，電腦版自動隱藏不佔空間 */}
-        <div className="grid grid-cols-3 gap-2 w-full md:hidden py-0.5">
-          {/* 👈 昨天 */}
-          <button
-            type="button"
-            onClick={() => jumpToDate(quickDates.yesterday)}
-            className="w-full justify-center px-2 py-1.5 text-xs font-bold text-stone-700 bg-white hover:bg-stone-50 hover:text-emerald-700 border border-stone-200 rounded-lg transition-colors flex items-center gap-1 shadow-2xs cursor-pointer truncate"
-            title={`快速跳轉到昨天 (${quickDates.yesterday.getMonth() + 1}/${quickDates.yesterday.getDate()}) 並置中`}
-          >
-            <span>👈</span>
-            <span>昨天</span>
-          </button>
-
-          {/* 📍 今天 */}
-          <button
-            type="button"
-            onClick={() => jumpToDate(quickDates.today)}
-            className="w-full justify-center px-2 py-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors flex items-center gap-1 shadow-2xs cursor-pointer truncate"
-            title={`快速跳轉回今天 (${quickDates.today.getMonth() + 1}/${quickDates.today.getDate()}) 並置中`}
-          >
-            <span>📍</span>
-            <span>今天</span>
-          </button>
-
-          {/* 👉 明天 */}
-          <button
-            type="button"
-            onClick={() => jumpToDate(quickDates.tomorrow)}
-            className="w-full justify-center px-2 py-1.5 text-xs font-bold text-stone-700 bg-white hover:bg-stone-50 hover:text-emerald-700 border border-stone-200 rounded-lg transition-colors flex items-center gap-1 shadow-2xs cursor-pointer truncate"
-            title={`快速跳轉到明天 (${quickDates.tomorrow.getMonth() + 1}/${quickDates.tomorrow.getDate()}) 並置中`}
-          >
-            <span>👉</span>
-            <span>明天</span>
-          </button>
         </div>
       </div>
 
