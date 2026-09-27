@@ -1181,12 +1181,21 @@ export default function InventoryCalendar() {
                         </div>
 
                         <div className="flex items-center justify-between pt-2 border-t border-stone-200/80">
-                          <span className="text-xs text-stone-400 font-mono">入住人資訊備註已整合</span>
+                          <span className="text-xs text-stone-600 font-mono font-medium flex items-center gap-1">
+                            {order.customer_phone ? (
+                              <>
+                                <span className="text-stone-400">📞</span>
+                                <span>{order.customer_phone}</span>
+                              </>
+                            ) : (
+                              <span className="text-stone-400 text-[11px]">無電話資料</span>
+                            )}
+                          </span>
                           <a
                             href={orderSearchUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 hover:shadow"
+                            className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 hover:shadow shrink-0"
                           >
                             <span>🔍 開啟訂單管理對帳</span>
                             <span className="text-[10px]">↗</span>
