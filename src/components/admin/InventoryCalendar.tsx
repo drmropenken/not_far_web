@@ -739,11 +739,40 @@ export default function InventoryCalendar() {
             >
               下個月 &gt;
             </button>
+
+            {/* 電腦版（md: 及以上）：直接在「下個月」右側緊鄰的三個精緻小按鈕 */}
+            <div className="hidden md:flex items-center gap-1 pl-1.5 border-l border-stone-300 ml-0.5">
+              <button
+                type="button"
+                onClick={() => jumpToDate(quickDates.yesterday)}
+                className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-700 hover:shadow-xs rounded-lg transition-all cursor-pointer"
+                title={`快速跳轉到昨天 (${quickDates.yesterday.getMonth() + 1}/${quickDates.yesterday.getDate()}) 並置中`}
+              >
+                昨天
+              </button>
+              <button
+                type="button"
+                onClick={() => jumpToDate(quickDates.today)}
+                className="px-2.5 py-1 text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 rounded-lg transition-all cursor-pointer shadow-2xs flex items-center gap-1"
+                title={`快速跳轉回今天 (${quickDates.today.getMonth() + 1}/${quickDates.today.getDate()}) 並置中`}
+              >
+                <span>📍</span>
+                <span>今天</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => jumpToDate(quickDates.tomorrow)}
+                className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-700 hover:shadow-xs rounded-lg transition-all cursor-pointer"
+                title={`快速跳轉到明天 (${quickDates.tomorrow.getMonth() + 1}/${quickDates.tomorrow.getDate()}) 並置中`}
+              >
+                明天
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* 第二排：日期快速跳轉列（昨天、今天、明天 3 等分完美均分，手機版完全不超出版面） */}
-        <div className="grid grid-cols-3 gap-2 w-full py-0.5">
+        {/* 手機版（md: 以下）：獨立在第二排的 3 等分快速跳轉列，電腦版自動隱藏不佔空間 */}
+        <div className="grid grid-cols-3 gap-2 w-full md:hidden py-0.5">
           {/* 👈 昨天 */}
           <button
             type="button"
@@ -753,9 +782,6 @@ export default function InventoryCalendar() {
           >
             <span>👈</span>
             <span>昨天</span>
-            <span className="hidden sm:inline font-normal text-[10px] opacity-75">
-              ({quickDates.yesterday.getMonth() + 1}/{quickDates.yesterday.getDate()})
-            </span>
           </button>
 
           {/* 📍 今天 */}
@@ -767,9 +793,6 @@ export default function InventoryCalendar() {
           >
             <span>📍</span>
             <span>今天</span>
-            <span className="hidden sm:inline font-normal text-[10px] opacity-75">
-              ({quickDates.today.getMonth() + 1}/{quickDates.today.getDate()})
-            </span>
           </button>
 
           {/* 👉 明天 */}
@@ -781,9 +804,6 @@ export default function InventoryCalendar() {
           >
             <span>👉</span>
             <span>明天</span>
-            <span className="hidden sm:inline font-normal text-[10px] opacity-75">
-              ({quickDates.tomorrow.getMonth() + 1}/{quickDates.tomorrow.getDate()})
-            </span>
           </button>
         </div>
       </div>
