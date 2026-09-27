@@ -749,53 +749,62 @@ export default function InventoryCalendar() {
           </div>
         </div>
 
-        {/* 第二排：日期快速跳轉列（今天、明天、本週末、下週末） */}
-        <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-0.5" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <span className="text-[11px] font-bold text-stone-400 shrink-0 ml-0.5 mr-0.5 hidden sm:inline">
-            快速跳轉：
-          </span>
+        {/* 第二排：日期快速跳轉列（今天、明天、本週末、下週末，手機版 4 等分完整呈現不超出版面） */}
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full py-0.5">
           {/* 📍 今天 */}
           <button
             type="button"
             onClick={() => jumpToDate(quickDates.today)}
-            className="px-2.5 py-1 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
-            title="快速跳轉回今天並置中"
+            className="w-full justify-center px-1 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors flex items-center gap-0.5 sm:gap-1 shadow-2xs cursor-pointer truncate"
+            title={`快速跳轉回今天 (${quickDates.today.getMonth() + 1}/${quickDates.today.getDate()}) 並置中`}
           >
             <span>📍</span>
-            <span>今天 ({quickDates.today.getMonth() + 1}/{quickDates.today.getDate()})</span>
+            <span>今天</span>
+            <span className="hidden sm:inline font-normal text-[10px] opacity-75">
+              ({quickDates.today.getMonth() + 1}/{quickDates.today.getDate()})
+            </span>
           </button>
 
           {/* 👉 明天 */}
           <button
             type="button"
             onClick={() => jumpToDate(quickDates.tomorrow)}
-            className="px-2.5 py-1 text-xs font-bold text-stone-700 bg-white hover:bg-stone-50 hover:text-emerald-700 border border-stone-200 rounded-lg transition-colors flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
-            title="快速跳轉到明天並置中"
+            className="w-full justify-center px-1 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-bold text-stone-700 bg-white hover:bg-stone-50 hover:text-emerald-700 border border-stone-200 rounded-lg transition-colors flex items-center gap-0.5 sm:gap-1 shadow-2xs cursor-pointer truncate"
+            title={`快速跳轉到明天 (${quickDates.tomorrow.getMonth() + 1}/${quickDates.tomorrow.getDate()}) 並置中`}
           >
             <span>👉</span>
-            <span>明天 ({quickDates.tomorrow.getMonth() + 1}/{quickDates.tomorrow.getDate()})</span>
+            <span>明天</span>
+            <span className="hidden sm:inline font-normal text-[10px] opacity-75">
+              ({quickDates.tomorrow.getMonth() + 1}/{quickDates.tomorrow.getDate()})
+            </span>
           </button>
 
           {/* 🏕️ 本週末 */}
           <button
             type="button"
             onClick={() => jumpToDate(quickDates.thisSat)}
-            className="px-2.5 py-1 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-colors flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
-            title="快速跳轉到本週六並置中"
+            className="w-full justify-center px-1 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-colors flex items-center gap-0.5 sm:gap-1 shadow-2xs cursor-pointer truncate"
+            title={`快速跳轉到本週六 (${quickDates.thisSat.getMonth() + 1}/${quickDates.thisSat.getDate()} 六) 並置中`}
           >
             <span>🏕️</span>
-            <span>本週末 ({quickDates.thisSat.getMonth() + 1}/{quickDates.thisSat.getDate()} 六)</span>
+            <span>本週末</span>
+            <span className="hidden sm:inline font-normal text-[10px] opacity-75">
+              ({quickDates.thisSat.getMonth() + 1}/{quickDates.thisSat.getDate()} 六)
+            </span>
           </button>
 
           {/* ⛺ 下週末 */}
           <button
             type="button"
             onClick={() => jumpToDate(quickDates.nextSat)}
-            className="px-2.5 py-1 text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-300 rounded-lg transition-colors flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
-            title="快速跳轉到下週六並置中"
+            className="w-full justify-center px-1 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-300 rounded-lg transition-colors flex items-center gap-0.5 sm:gap-1 shadow-2xs cursor-pointer truncate"
+            title={`快速跳轉到下週六 (${quickDates.nextSat.getMonth() + 1}/${quickDates.nextSat.getDate()} 六) 並置中`}
           >
             <span>⛺</span>
-            <span>下週末 ({quickDates.nextSat.getMonth() + 1}/{quickDates.nextSat.getDate()} 六)</span>
+            <span>下週末</span>
+            <span className="hidden sm:inline font-normal text-[10px] opacity-75">
+              ({quickDates.nextSat.getMonth() + 1}/{quickDates.nextSat.getDate()} 六)
+            </span>
           </button>
         </div>
       </div>
