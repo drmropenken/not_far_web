@@ -1162,19 +1162,19 @@ export default function OrdersManager() {
                   </div>
 
                   {/* 右側：特約保留切換按鈕 + 下單時間 */}
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 shrink-0">
                     {order.status !== 'cancelled' && (
                       <button
                         onClick={() => togglePinOrder(order)}
-                        title={isOrderPinned(order) ? "目前為特約保留單（永久不逾期），點擊可取消保留" : "點擊設為特約保留（永久不逾期）"}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                        title={isOrderPinned(order) ? "目前為保留單（永久免逾期），點擊可取消保留" : "點擊設為保留單（永久免逾期）"}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 shadow-xs ${
                           isOrderPinned(order)
                             ? 'bg-purple-100 text-purple-800 border border-purple-300 hover:bg-purple-200 shadow-sm'
                             : 'bg-white hover:bg-purple-50 text-stone-500 hover:text-purple-700 border border-stone-300 hover:border-purple-300'
                         }`}
                       >
                         <span>📌</span>
-                        <span>{isOrderPinned(order) ? '特約保留 (免逾期)' : '設為保留'}</span>
+                        <span>{isOrderPinned(order) ? '保留' : '設為保留'}</span>
                       </button>
                     )}
                     <div className="text-xs text-stone-400 hidden sm:block">
