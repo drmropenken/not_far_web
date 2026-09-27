@@ -206,21 +206,72 @@ export default function InventoryCalendar() {
     setAdminRole(localStorage.getItem('admin_role') || 'viewer');
   }, [currentDate]);
 
-  useEffect(() => {
-    // 當月份切換為當月時，自動滾動到今天的日期
-    const today = new Date();
-    if (!loading && currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth()) {
-      setTimeout(() => {
-        const todayCell = document.getElementById('today-col-header');
-        if (todayCell && scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTo({
-            left: Math.max(0, todayCell.offsetLeft - scrollContainerRef.current.clientWidth / 2 + todayCell.clientWidth / 2),
-            behavior: 'smooth'
-          });
-        }
-      }, 100);
+  // 記錄跨月跳轉目標日期 (Day)，待資料載入後自動滾動
+  const [pendingScrollDay, setPendingScrollDay] = useState<number | null>(null);
+
+  const scrollToDayCell = (day: number) => {
+    setTimeout(() => {
+      const cell = document.getElementById(`col-header-${day}`) || document.getElementById('today-col-header');
+      if (cell && scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          left: Math.max(0, cell.offsetLeft - scrollContainerRef.current.clientWidth / 2 + cell.clientWidth / 2),
+          behavior: 'smooth'
+        });
+      }
+    }, 120);
+  };
+
+  const jumpToDate = (targetDate: Date) => {
+    const targetYear = targetDate.getFullYear();
+    const targetMonth = targetDate.getMonth();
+    const targetDay = targetDate.getDate();
+
+    if (currentDate.getFullYear() !== targetYear || currentDate.getMonth() !== targetMonth) {
+      setPendingScrollDay(targetDay);
+      setCurrentDate(new Date(targetYear, targetMonth, 1));
+    } else {
+      scrollToDayCell(targetDay);
     }
-  }, [currentDate, loading]);
+  };
+
+  const quickDates = useMemo(() => {
+    const today = new Date();
+    
+    // 明天
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    // 本週末（最近的週六）
+    const thisSat = new Date();
+    const dayOfWeek = today.getDay(); // 0 是週日, 6 是週六
+    const daysToSat = (6 - dayOfWeek + 7) % 7;
+    thisSat.setDate(today.getDate() + daysToSat);
+
+    // 下週末（本週六再加 7 天）
+    const nextSat = new Date(thisSat);
+    nextSat.setDate(thisSat.getDate() + 7);
+
+    return {
+      today,
+      tomorrow,
+      thisSat,
+      nextSat
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      if (pendingScrollDay !== null) {
+        scrollToDayCell(pendingScrollDay);
+        setPendingScrollDay(null);
+      } else {
+        const today = new Date();
+        if (currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth()) {
+          scrollToDayCell(today.getDate());
+        }
+      }
+    }
+  }, [currentDate, loading, pendingScrollDay]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -623,31 +674,33 @@ export default function InventoryCalendar() {
   return (
     <div className="bg-white md:rounded-2xl shadow-sm border border-stone-200 md:p-5 p-3 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-80px)] w-full relative">
       
-      {/* 頂部控制列（僅保留搜尋與月份切換） */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 shrink-0">
-        {/* 訂單快速搜尋 */}
-        <div className="relative flex items-center w-full sm:w-72 md:w-80">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="🔍 搜尋訂單號 / 姓名 / 電話..."
-            className="w-full text-xs bg-stone-50/80 hover:bg-white focus:bg-white border border-stone-200 rounded-xl px-3 py-2 pr-8 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none shadow-2xs font-sans text-stone-800 placeholder-stone-400"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 text-stone-400 hover:text-stone-600 text-xs w-4 h-4 flex items-center justify-center cursor-pointer"
-              title="清除搜尋"
-            >
-              ✕
-            </button>
-          )}
-        </div>
+      {/* 頂部控制列（搜尋、月份切換與日期快速跳轉列） */}
+      <div className="flex flex-col gap-2 mb-3 shrink-0">
+        {/* 第一排：搜尋框 + 月份切換 */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          {/* 訂單快速搜尋 */}
+          <div className="relative flex items-center w-full sm:w-72 md:w-80">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="🔍 搜尋訂單號 / 姓名 / 電話..."
+              className="w-full text-xs bg-stone-50/80 hover:bg-white focus:bg-white border border-stone-200 rounded-xl px-3 py-2 pr-8 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none shadow-2xs font-sans text-stone-800 placeholder-stone-400"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 text-stone-400 hover:text-stone-600 text-xs w-4 h-4 flex items-center justify-center cursor-pointer"
+                title="清除搜尋"
+              >
+                ✕
+              </button>
+            )}
+          </div>
 
-          {/* 月份切換 (支援直接選年、選月、上一月/下一月與回到今天) */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-stone-100/80 p-1 rounded-xl border border-stone-200 shadow-inner shrink-0">
+          {/* 月份切換 (單純年月切換，保持單行不換行) */}
+          <div className="flex items-center justify-between sm:justify-end gap-1.5 bg-stone-100/80 p-1 rounded-xl border border-stone-200 shadow-inner shrink-0">
             <button 
               onClick={handlePrevMonth} 
               className="px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-white hover:text-emerald-600 hover:shadow-xs rounded-lg transition-all cursor-pointer"
@@ -693,31 +746,59 @@ export default function InventoryCalendar() {
             >
               下個月 &gt;
             </button>
-
-            {/* 📍 今天 按鈕 (自動跳回當月並置中滾動) */}
-            <button
-              onClick={() => {
-                const today = new Date();
-                if (currentDate.getFullYear() !== today.getFullYear() || currentDate.getMonth() !== today.getMonth()) {
-                  setCurrentDate(new Date(today.getFullYear(), today.getMonth(), 1));
-                } else {
-                  const todayCell = document.getElementById('today-col-header');
-                  if (todayCell && scrollContainerRef.current) {
-                    scrollContainerRef.current.scrollTo({
-                      left: Math.max(0, todayCell.offsetLeft - scrollContainerRef.current.clientWidth / 2 + todayCell.clientWidth / 2),
-                      behavior: 'smooth'
-                    });
-                  }
-                }
-              }}
-              className="px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors ml-0.5 flex items-center gap-1 cursor-pointer shadow-2xs"
-              title="快速跳轉回今天並置中"
-            >
-              <span>📍</span>
-              <span>今天</span>
-            </button>
           </div>
         </div>
+
+        {/* 第二排：日期快速跳轉列（今天、明天、本週末、下週末） */}
+        <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-0.5" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <span className="text-[11px] font-bold text-stone-400 shrink-0 ml-0.5 mr-0.5 hidden sm:inline">
+            快速跳轉：
+          </span>
+          {/* 📍 今天 */}
+          <button
+            type="button"
+            onClick={() => jumpToDate(quickDates.today)}
+            className="px-2.5 py-1 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
+            title="快速跳轉回今天並置中"
+          >
+            <span>📍</span>
+            <span>今天 ({quickDates.today.getMonth() + 1}/{quickDates.today.getDate()})</span>
+          </button>
+
+          {/* 👉 明天 */}
+          <button
+            type="button"
+            onClick={() => jumpToDate(quickDates.tomorrow)}
+            className="px-2.5 py-1 text-xs font-bold text-stone-700 bg-white hover:bg-stone-50 hover:text-emerald-700 border border-stone-200 rounded-lg transition-colors flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
+            title="快速跳轉到明天並置中"
+          >
+            <span>👉</span>
+            <span>明天 ({quickDates.tomorrow.getMonth() + 1}/{quickDates.tomorrow.getDate()})</span>
+          </button>
+
+          {/* 🏕️ 本週末 */}
+          <button
+            type="button"
+            onClick={() => jumpToDate(quickDates.thisSat)}
+            className="px-2.5 py-1 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-colors flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
+            title="快速跳轉到本週六並置中"
+          >
+            <span>🏕️</span>
+            <span>本週末 ({quickDates.thisSat.getMonth() + 1}/{quickDates.thisSat.getDate()} 六)</span>
+          </button>
+
+          {/* ⛺ 下週末 */}
+          <button
+            type="button"
+            onClick={() => jumpToDate(quickDates.nextSat)}
+            className="px-2.5 py-1 text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-300 rounded-lg transition-colors flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
+            title="快速跳轉到下週六並置中"
+          >
+            <span>⛺</span>
+            <span>下週末 ({quickDates.nextSat.getMonth() + 1}/{quickDates.nextSat.getDate()} 六)</span>
+          </button>
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex-1 flex flex-col items-center justify-center text-emerald-600/60 space-y-4">
@@ -744,7 +825,7 @@ export default function InventoryCalendar() {
                   return (
                     <th 
                       key={day} 
-                      id={isToday ? 'today-col-header' : undefined} 
+                      id={`col-header-${day}`} 
                       onClick={() => openDayModal(day, dayNote ? 'notes' : 'financial')} 
                       title={dayNote 
                         ? `【備忘事項】${dayNote.title ? dayNote.title + '：' : ''}${dayNote.content || ''}\n點擊直接查看當日營運備忘`
