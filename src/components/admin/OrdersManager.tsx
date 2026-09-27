@@ -2040,8 +2040,13 @@ export default function OrdersManager() {
                       </div>
 
                       {log.notes && (
-                        <div className="text-xs text-stone-600 bg-amber-50/80 p-2 rounded-lg border border-amber-200/60 mt-1">
-                          💬 備註：{log.notes}
+                        <div className="text-xs text-stone-600 bg-amber-50/80 p-2 rounded-lg border border-amber-200/60 mt-1 break-words">
+                          💬 備註：{log.notes
+                            .replace(/[\ufffd\u06e4]+/g, '')
+                            .replace(/\?{2,}/g, '')
+                            .replace(/@{2,}/g, ' ')
+                            .replace(/\s+/g, ' ')
+                            .trim()}
                         </div>
                       )}
                     </div>

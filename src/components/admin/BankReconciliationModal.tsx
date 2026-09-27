@@ -93,7 +93,7 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-// 輔助函式：清理銀行特殊字元（將 Big5 罕見小斜線 ﹧ 轉為正常斜線 /，並將全形數字轉為半形）
+// 輔助函式：清理銀行特殊字元（將 Big5 罕見小斜線 ﹧ 轉為正常斜線 /，並將全形數字轉為半形，過濾無效亂碼符號）
 function cleanBankText(text: string): string {
   if (!text) return '';
   return text
@@ -101,6 +101,9 @@ function cleanBankText(text: string): string {
     .replace(/\uFF0F/g, '/')        // 全形斜線 ／ 轉為 /
     .replace(/[\uFF10-\uFF19]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xfee0)) // 全形數字轉半形
     .replace(/\u3000/g, ' ')        // 全形空格轉半形空格
+    .replace(/[\ufffd\u06e4]/g, '') // 清理 Unicode 替換字元（黑底菱形問號）與異常字元
+    .replace(/@{2,}/g, ' ')         // 清理 Big5 全形空格轉碼異常產生的連續 @ 符號
+    .replace(/\?{2,}/g, '')         // 清理連續無意義問號
     .trim();
 }
 
@@ -257,7 +260,17 @@ export default function BankReconciliationModal({
         }
       }
 
-      rawRemarks = cleanBankText(trimmed.slice(trimmed.lastIndexOf('***') + 3).trim());
+      let cleanRemark = cleanBankText(trimmed.slice(trimmed.lastIndexOf('***') + 3).trim());
+      // 移除開頭已解析之虛擬帳號（例如 0009629481xxxxxxx,）避免備註重複堆疊
+      cleanRemark = cleanRemark.replace(/^(?:000)?9629481\d{7},?\s*/, '');
+      const vMatch = cleanRemark.match(/^V\s+\S+(?:\s+(\S+))?(?:\s+(.*))?$/);
+      if (vMatch) {
+        const extraSeq = vMatch[1] || '';
+        const userMemo = vMatch[2]?.trim() || '';
+        rawRemarks = userMemo || (extraSeq ? `序號: ${extraSeq}` : '');
+      } else {
+        rawRemarks = cleanRemark;
+      }
     }
 
     // 判斷是否為訂單款項
@@ -373,19 +386,37 @@ export default function BankReconciliationModal({
     setCurrentStep('review');
   };
 
-  // 3. 處理檔案上傳
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 3. 處理檔案上傳（支援台灣銀行常見 Big5 / CP950 與標準 UTF-8 智慧自動雙解碼）
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
+    try {
+      const buffer = await file.arrayBuffer();
+      let content = '';
+      try {
+        // 先嘗試以嚴格模式解析 UTF-8，若有非 UTF-8 字節會丟出例外
+        const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+        content = utf8Decoder.decode(buffer);
+      } catch {
+        // 台灣網銀（台銀、彰銀、中信、渣打等）匯出大多為 Big5/CP950 編碼
+        const big5Decoder = new TextDecoder('big5');
+        content = big5Decoder.decode(buffer);
+      }
+
       if (content) {
         setInputText(cleanBankText(content));
       }
-    };
-    reader.readAsText(file);
+    } catch (err) {
+      console.error('File read error:', err);
+      // 回退使用一般 FileReader
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        if (text) setInputText(cleanBankText(text));
+      };
+      reader.readAsText(file);
+    }
   };
 
   // 4. 勾選切換
