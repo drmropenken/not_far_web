@@ -117,6 +117,9 @@ export default function OrdersManager() {
   const [exportExcludeCancelled, setExportExcludeCancelled] = useState(true);
   const [exportMultiRow, setExportMultiRow] = useState(true);
 
+  // 卡片更多功能選單 (⋯)
+  const [activeMenuOrderId, setActiveMenuOrderId] = useState<string | null>(null);
+
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
@@ -1466,49 +1469,133 @@ export default function OrdersManager() {
 
                 {/* 操作按鈕 */}
                 {adminRole !== 'viewer' && (
-                  <div className="px-3.5 sm:px-5 py-2.5 sm:py-3 bg-stone-50 border-t border-stone-100 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
-                    {/* 左邊：刪除（僅 dr.mr.openken） */}
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      {adminEmail === 'dr.mr.openken@gmail.com' && (
-                        <button onClick={() => deleteOrder(order.id)} className="px-2.5 sm:px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-md transition-colors">
-                          刪除
-                        </button>
-                      )}
-                      {/* 左邊：取消訂單 / 恢復訂單 */}
-                      {order.status !== 'cancelled' ? (
-                        <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="px-2.5 sm:px-3 py-1.5 text-xs font-bold text-stone-600 bg-white hover:bg-stone-100 border border-stone-200 rounded-md transition-colors">
-                          取消訂單
-                        </button>
-                      ) : (
-                        <div className="flex gap-1.5">
-                          <button onClick={() => updateOrderStatus(order.id, 'paid')} className="px-2.5 sm:px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors shadow-sm">
-                            🔄 恢復訂單
-                          </button>
-                          <button onClick={() => updateOrderStatus(order.id, 'pending')} className="px-2.5 sm:px-3 py-1.5 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-md transition-colors">
-                            ↩️ 轉待付款
-                          </button>
-                        </div>
+                  <div className="px-3.5 sm:px-5 py-2.5 sm:py-3 bg-stone-50 border-t border-stone-100 flex items-center justify-between gap-1.5 sm:gap-2">
+                    {/* 左側：更多操作 (⋯) 選單 */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuOrderId(activeMenuOrderId === order.id ? null : order.id);
+                        }}
+                        className={`w-8 h-8 rounded-lg border text-sm flex items-center justify-center font-black transition-all cursor-pointer ${
+                          activeMenuOrderId === order.id
+                            ? 'bg-stone-200 border-stone-300 text-stone-800'
+                            : 'bg-white border-stone-200 text-stone-500 hover:text-stone-700 hover:bg-stone-100'
+                        }`}
+                        title="更多訂單操作"
+                      >
+                        ⋯
+                      </button>
+
+                      {/* 更多功能彈出選單 */}
+                      {activeMenuOrderId === order.id && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-30" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuOrderId(null);
+                            }} 
+                          />
+                          <div 
+                            className="absolute bottom-full left-0 mb-1.5 w-40 bg-white rounded-xl shadow-xl border border-stone-200 py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {order.status !== 'cancelled' ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveMenuOrderId(null);
+                                  updateOrderStatus(order.id, 'cancelled');
+                                }}
+                                className="w-full text-left px-3.5 py-2 text-xs font-bold text-stone-700 hover:bg-rose-50 hover:text-rose-600 transition-colors flex items-center gap-2 cursor-pointer"
+                              >
+                                <span>❌</span> 取消訂單
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMenuOrderId(null);
+                                    updateOrderStatus(order.id, 'paid');
+                                  }}
+                                  className="w-full text-left px-3.5 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-colors flex items-center gap-2 cursor-pointer"
+                                >
+                                  <span>🔄</span> 恢復為已付款
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMenuOrderId(null);
+                                    updateOrderStatus(order.id, 'pending');
+                                  }}
+                                  className="w-full text-left px-3.5 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 transition-colors flex items-center gap-2 cursor-pointer"
+                                >
+                                  <span>↩️</span> 轉為待付款
+                                </button>
+                              </>
+                            )}
+
+                            {/* 僅超級管理員可見的永久刪除 */}
+                            {adminEmail === 'dr.mr.openken@gmail.com' && (
+                              <>
+                                <div className="border-t border-stone-100 my-1" />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMenuOrderId(null);
+                                    deleteOrder(order.id);
+                                  }}
+                                  className="w-full text-left px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-2 cursor-pointer"
+                                >
+                                  <span>🗑️</span> 永久刪除
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
-                    {/* 右邊區塊（ml-auto 推到底） */}
-                    <div className="ml-auto flex flex-wrap items-center gap-1.5 sm:gap-2">
+
+                    {/* 右側：主要業務操作（報到、線上付款、現場收款） */}
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       {order.status === 'paid' && (
-                        <button onClick={() => updateOrderStatus(order.id, 'checked_in')} className="whitespace-nowrap px-2.5 sm:px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors shadow-sm">
+                        <button 
+                          onClick={() => updateOrderStatus(order.id, 'checked_in')} 
+                          className="whitespace-nowrap px-2.5 sm:px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors shadow-2xs cursor-pointer"
+                        >
                           ✅ 報到
                         </button>
                       )}
+
                       {/* 線上付款（信用卡／匯款） */}
                       {order.status !== 'cancelled' && (
                         <button
-                          onClick={() => { setOnlinePaymentOrderId(order.id); setOnlinePaymentAmount(''); setOnlinePaymentType('bank_transfer'); setOnlinePaymentCollectedAt(getLocalDateTimeString()); }}
-                          className="whitespace-nowrap px-2.5 sm:px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors"
+                          onClick={() => { 
+                            setOnlinePaymentOrderId(order.id); 
+                            setOnlinePaymentAmount(''); 
+                            setOnlinePaymentType('bank_transfer'); 
+                            setOnlinePaymentCollectedAt(getLocalDateTimeString()); 
+                          }}
+                          className="whitespace-nowrap px-2.5 sm:px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer"
                         >
                           💳 線上付款
                         </button>
                       )}
+
                       {/* 現場收款 */}
                       {order.status !== 'cancelled' && (
-                        <button onClick={() => { setOnsitePaymentOrderId(order.id); setOnsiteAmount(''); setOnsiteNotes(''); setOnsiteCollectedAt(getLocalDateTimeString()); }} className="whitespace-nowrap px-2.5 sm:px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
+                        <button 
+                          onClick={() => { 
+                            setOnsitePaymentOrderId(order.id); 
+                            setOnsiteAmount(''); 
+                            setOnsiteNotes(''); 
+                            setOnsiteCollectedAt(getLocalDateTimeString()); 
+                          }} 
+                          className="whitespace-nowrap px-2.5 sm:px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer"
+                        >
                           💵 現場收款
                         </button>
                       )}
