@@ -391,7 +391,8 @@ CREATE TABLE IF NOT EXISTS "public"."nf_inventory" (
     "item_id" "uuid" NOT NULL,
     "booked_quantity" integer DEFAULT 0 NOT NULL,
     "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
-    "override_quantity" integer
+    "override_quantity" integer,
+    "custom_price" integer
 );
 
 

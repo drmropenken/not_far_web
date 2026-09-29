@@ -40,6 +40,7 @@ type InventoryRecord = {
   date: string;
   override_quantity: number | null;
   booked_quantity: number;
+  custom_price?: number | null;
 };
 
 type PaymentLog = {
@@ -94,12 +95,14 @@ export default function InventoryCalendar() {
     day: number;
     dateStr: string;
     currentOverride: number;
+    currentPrice?: number | null;
     booked: number;
     existingRecordId?: string;
     orders?: MonthOrder[];
   } | null>(null);
   const [activeCellTab, setActiveCellTab] = useState<'orders' | 'quota'>('orders');
   const [newQuota, setNewQuota] = useState<string>('');
+  const [newPrice, setNewPrice] = useState<string>('');
   
   // 批次修改某日的全部庫存 / 財務數據 / 營運記事 Modal 狀態
   const [editingDay, setEditingDay] = useState<number | null>(null);
@@ -372,27 +375,30 @@ export default function InventoryCalendar() {
     
     const existingRecord = inventory.find(i => i.item_id === item.id && i.date === dateStr);
     const currentOverride = existingRecord?.override_quantity ?? item.total_quantity;
+    const currentPrice = existingRecord?.custom_price ?? null;
     
     setEditingCell({
       item,
       day,
       dateStr,
       currentOverride,
+      currentPrice,
       booked: existingRecord?.booked_quantity || 0,
       existingRecordId: existingRecord?.id,
       orders: cellOrders
     });
     setNewQuota(currentOverride.toString());
+    setNewPrice(currentPrice !== null && currentPrice !== undefined ? currentPrice.toString() : '');
     setActiveCellTab(cellOrders && cellOrders.length > 0 ? 'orders' : 'quota');
   };
 
-  // 儲存修改的庫存
+  // 儲存修改的庫存與自訂售價
   const handleSaveQuota = async () => {
     if (!editingCell) return;
     
     let newOverride = newQuota.trim() === '' ? null : parseInt(newQuota);
     if (newOverride !== null && isNaN(newOverride)) {
-      alert('請輸入有效的數字！');
+      alert('請輸入有效的容量數字！');
       return;
     }
 
@@ -401,15 +407,26 @@ export default function InventoryCalendar() {
       newOverride = null;
     }
 
+    let parsedPrice = newPrice.trim() === '' ? null : parseInt(newPrice);
+    if (parsedPrice !== null && (isNaN(parsedPrice) || parsedPrice < 0)) {
+      alert('請輸入有效的自訂價格！');
+      return;
+    }
+
     setLoading(true);
     const savedEditingCell = { ...editingCell };
     setEditingCell(null); // 先關閉 Modal
+
+    const payload: any = {
+      override_quantity: newOverride,
+      custom_price: parsedPrice
+    };
 
     if (savedEditingCell.existingRecordId) {
       // Update
       const { error } = await supabase
         .from('nf_inventory')
-        .update({ override_quantity: newOverride })
+        .update(payload)
         .eq('id', savedEditingCell.existingRecordId);
       if (error) alert('更新失敗: ' + error.message);
     } else {
@@ -419,7 +436,7 @@ export default function InventoryCalendar() {
         .insert([{
           item_id: savedEditingCell.item.id,
           date: savedEditingCell.dateStr,
-          override_quantity: newOverride
+          ...payload
         }]);
       if (error) alert('新增失敗: ' + error.message);
     }
@@ -903,7 +920,7 @@ export default function InventoryCalendar() {
                     ) : false;
                     
                     let cellContent = (
-                      <div className={`w-full h-full min-h-[32px] md:min-h-[40px] flex items-center justify-center rounded-lg mx-auto text-xs md:text-sm font-bold shadow-sm transition-all duration-200 transform group-hover/cell:scale-105 active:scale-95
+                      <div className={`relative w-full h-full min-h-[32px] md:min-h-[40px] flex items-center justify-center rounded-lg mx-auto text-xs md:text-sm font-bold shadow-sm transition-all duration-200 transform group-hover/cell:scale-105 active:scale-95
                         ${isMatchingSearch ? 'bg-indigo-100 text-indigo-950 border-2 border-indigo-500 shadow-md ring-2 ring-indigo-300 scale-105 animate-pulse' :
                           isLocked ? 'bg-stone-100/90 text-stone-500 border border-stone-200 shadow-2xs' :
                           isFull ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-rose-100/30 font-black' :
@@ -912,6 +929,14 @@ export default function InventoryCalendar() {
                           'bg-white text-stone-700 border border-stone-200 hover:border-emerald-400 hover:text-emerald-600 hover:shadow-emerald-100/40'
                         }
                       `}>
+                        {record?.custom_price !== null && record?.custom_price !== undefined && (
+                          <span 
+                            className="absolute -top-1.5 -right-1 text-[8px] font-black bg-amber-500 text-white px-1 py-0.2 rounded-full shadow-xs leading-tight tracking-tight z-10"
+                            title={`當日特價: NT$ ${record.custom_price.toLocaleString()}`}
+                          >
+                            ${record.custom_price >= 1000 ? `${(record.custom_price / 1000).toFixed(1)}k` : record.custom_price}
+                          </span>
+                        )}
                         {isLocked ? (
                           booked > 0 ? (
                             <div className="flex items-center justify-center gap-0.5" title={`已鎖定不開放新訂單 (已有預訂 ${booked})`}>
@@ -1078,7 +1103,7 @@ export default function InventoryCalendar() {
                     : 'text-stone-500 hover:text-stone-800 border-transparent'
                 }`}
               >
-                ⚙️ 修改庫存容量
+                ⚙️ 容量與自訂售價
               </button>
             </div>
 
@@ -1204,6 +1229,66 @@ export default function InventoryCalendar() {
                       </div>
                     </div>
                   </div>
+
+                  {/* 當日自訂售價設定 */}
+                  <div className="pt-3 border-t border-stone-200/70">
+                    <label className="block text-sm font-bold text-stone-700 mb-1.5 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <span>🏷️</span> 當日自訂售價 (元)
+                      </span>
+                      <span className="text-stone-400 font-normal text-xs">
+                        平日 ${editingCell.item.price_weekday} / 假日 ${editingCell.item.price_holiday}
+                      </span>
+                    </label>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 font-bold text-sm">$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={newPrice}
+                          onChange={(e) => setNewPrice(e.target.value)}
+                          className="w-full pl-7 pr-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors text-base font-mono outline-none"
+                          placeholder="留空代表採用商品平日/假日定價"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveQuota();
+                            if (e.key === 'Escape') setEditingCell(null);
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setNewPrice(editingCell.item.price_weekday.toString())}
+                          className="px-2.5 py-2 text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 rounded-lg transition-colors cursor-pointer"
+                          title="帶入平日價"
+                        >
+                          平日價 (${editingCell.item.price_weekday})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNewPrice(editingCell.item.price_holiday.toString())}
+                          className="px-2.5 py-2 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg transition-colors cursor-pointer"
+                          title="帶入假日價"
+                        >
+                          假日價 (${editingCell.item.price_holiday})
+                        </button>
+                        {newPrice !== '' && (
+                          <button
+                            type="button"
+                            onClick={() => setNewPrice('')}
+                            className="px-2.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                            title="清除自訂價，恢復預設"
+                          >
+                            清除
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-stone-400 mt-1.5">
+                      💡 若填寫此金額，客人預訂這一天時將以此價格計費；留空則自動套用平日/假日價格。
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -1222,7 +1307,7 @@ export default function InventoryCalendar() {
                   onClick={handleSaveQuota}
                   className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2 text-xs sm:text-sm cursor-pointer hover:shadow"
                 >
-                  儲存容量變更
+                  儲存容量與價格變更
                 </button>
               </div>
             )}

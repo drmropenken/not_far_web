@@ -59,6 +59,7 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
   const [availableItems, setAvailableItems] = useState<{ item: Item, remaining: number }[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [fetchingItems, setFetchingItems] = useState(false);
+  const [periodInventory, setPeriodInventory] = useState<any[]>([]);
 
   // Discount states
   const [discountCode, setDiscountCode] = useState('');
@@ -264,6 +265,8 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
       .gte('date', startStr)
       .lte('date', endStr);
 
+    setPeriodInventory(inventory || []);
+
     const available: { item: Item, remaining: number }[] = [];
 
     for (const item of items) {
@@ -365,6 +368,14 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
           <span className={item.price_original > 0 ? "text-blue-600 font-black" : ""}>
             平日 ${item.price_weekday} / 假日 ${item.price_holiday}
           </span>
+          {(() => {
+            const { hasCustom } = getItemPriceInfo(item);
+            return hasCustom ? (
+              <span className="bg-amber-100 text-amber-800 text-[11px] font-black px-2 py-0.5 rounded-full border border-amber-200 inline-flex items-center gap-1">
+                <span>🏷️</span> 當期含自訂特價
+              </span>
+            ) : null;
+          })()}
         </div>
 
         <div className={`flex items-center justify-between border-t border-opacity-50 pt-3 mt-1 ${qty > 0 ? catStyle.border : 'border-slate-100'}`}>
@@ -387,16 +398,45 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
     );
   };
 
+  const getItemPriceInfo = (item: Item) => {
+    if (!dates.checkIn || !dates.checkOut) return { totalStayPrice: 0, hasCustom: false };
+    const start = new Date(dates.checkIn);
+    const end = new Date(dates.checkOut);
+    let totalStayPrice = 0;
+    let hasCustom = false;
+
+    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+      const record = periodInventory.find(i => i.item_id === item.id && i.date === dateStr);
+      const customPrice = record?.custom_price;
+      if (customPrice !== null && customPrice !== undefined) {
+        hasCustom = true;
+        totalStayPrice += customPrice;
+      } else {
+        totalStayPrice += isWeekend ? item.price_holiday : item.price_weekday;
+      }
+    }
+    return { totalStayPrice, hasCustom };
+  };
+
   const calculateOriginalTotal = () => {
     let total = 0;
     const start = new Date(dates.checkIn);
     const end = new Date(dates.checkOut);
 
     for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
       const isWeekend = d.getDay() === 0 || d.getDay() === 6;
       selectedItems.forEach(({ item, quantity }) => {
         if (item.category === 'campsite' || item.category === 'equipment') {
-          total += (isWeekend ? item.price_holiday : item.price_weekday) * quantity;
+          const record = periodInventory.find(i => i.item_id === item.id && i.date === dateStr);
+          const customPrice = record?.custom_price;
+          const unitPrice = (customPrice !== null && customPrice !== undefined)
+            ? customPrice
+            : (isWeekend ? item.price_holiday : item.price_weekday);
+
+          total += unitPrice * quantity;
         }
       });
     }
@@ -923,6 +963,7 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
                   let itemTotal = 0;
                   let weekdays = 0;
                   let holidays = 0;
+                  let customNights = 0;
 
                   if (isSingleTime) {
                     itemTotal = item.price_weekday * quantity;
@@ -932,13 +973,22 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
                     const start = new Date(dates.checkIn);
                     const end = new Date(dates.checkOut);
                     for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-                      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                      if (isWeekend) {
-                        holidays++;
-                        itemTotal += item.price_holiday * quantity;
+                      const dateStr = d.toISOString().split('T')[0];
+                      const record = periodInventory.find(i => i.item_id === item.id && i.date === dateStr);
+                      const customPrice = record?.custom_price;
+
+                      if (customPrice !== null && customPrice !== undefined) {
+                        customNights++;
+                        itemTotal += customPrice * quantity;
                       } else {
-                        weekdays++;
-                        itemTotal += item.price_weekday * quantity;
+                        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                        if (isWeekend) {
+                          holidays++;
+                          itemTotal += item.price_holiday * quantity;
+                        } else {
+                          weekdays++;
+                          itemTotal += item.price_weekday * quantity;
+                        }
                       }
                     }
                   }
@@ -957,6 +1007,8 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
                             `NT$ ${item.price_weekday} × ${quantity} ${unit}`
                           ) : item.category === 'service' ? (
                             `NT$ ${item.price_weekday} × ${quantity} ${unit} × ${nights} 晚`
+                          ) : customNights > 0 ? (
+                            `含 ${customNights} 晚當期自訂特價 (共 ${nights} 晚 × ${quantity} ${unit})`
                           ) : (
                             holidays > 0 && weekdays > 0
                               ? `(平日 NT$ ${item.price_weekday} × ${weekdays}晚 + 假日 NT$ ${item.price_holiday} × ${holidays}晚) × ${quantity}${unit}`

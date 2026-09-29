@@ -53,6 +53,7 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [availabilityMap, setAvailabilityMap] = useState<Record<string, number>>({});
+  const [inventoryRecords, setInventoryRecords] = useState<any[]>([]);
   
   // Array of currently selected items
   const [selectedItems, setSelectedItems] = useState<{item: Item, quantity: number}[]>([]);
@@ -113,6 +114,10 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
       .select('*')
       .in('item_id', itemIds)
       .in('date', dates);
+
+    if (inventoryData) {
+      setInventoryRecords(inventoryData);
+    }
 
     const oldItemsMap = new Map(currentOrder.nf_order_items.map(oi => [oi.item_id, oi.quantity]));
     const minMap: Record<string, number> = {};
@@ -184,8 +189,13 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
         total += si.item.price_weekday * si.quantity * nights;
       } else {
         for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+          const dateStr = d.toISOString().split('T')[0];
+          const record = inventoryRecords.find(i => i.item_id === si.item.id && i.date === dateStr);
+          const customPrice = record?.custom_price;
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-          const price = isWeekend ? si.item.price_holiday : si.item.price_weekday;
+          const price = (customPrice !== null && customPrice !== undefined)
+            ? customPrice
+            : (isWeekend ? si.item.price_holiday : si.item.price_weekday);
           total += price * si.quantity;
         }
       }
@@ -361,6 +371,7 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
                     let itemTotal = 0;
                     let weekdays = 0;
                     let holidays = 0;
+                    let customNights = 0;
                     
                     if (isSingleTime) {
                       itemTotal = item.price_weekday * quantity;
@@ -372,16 +383,27 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
                       const start = new Date(order.check_in_date);
                       const end = new Date(order.check_out_date);
                       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-                        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                        if (isWeekend) {
-                          holidays++;
-                          itemTotal += item.price_holiday * quantity;
+                        const dateStr = d.toISOString().split('T')[0];
+                        const record = inventoryRecords.find(i => i.item_id === item.id && i.date === dateStr);
+                        const customPrice = record?.custom_price;
+
+                        if (customPrice !== null && customPrice !== undefined) {
+                          customNights++;
+                          itemTotal += customPrice * quantity;
                         } else {
-                          weekdays++;
-                          itemTotal += item.price_weekday * quantity;
+                          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                          if (isWeekend) {
+                            holidays++;
+                            itemTotal += item.price_holiday * quantity;
+                          } else {
+                            weekdays++;
+                            itemTotal += item.price_weekday * quantity;
+                          }
                         }
                       }
-                      if (holidays > 0 && weekdays > 0) {
+                      if (customNights > 0) {
+                        breakdownText = `含 ${customNights} 晚當期自訂特價 (共 ${nights} 晚 × ${quantity}${unit})`;
+                      } else if (holidays > 0 && weekdays > 0) {
                         breakdownText = `(平日 $${item.price_weekday.toLocaleString()} × ${weekdays}晚 + 假日 $${item.price_holiday.toLocaleString()} × ${holidays}晚) × ${quantity}${unit}`;
                       } else if (holidays > 0) {
                         breakdownText = `假日 $${item.price_holiday.toLocaleString()} × ${holidays}晚 × ${quantity}${unit}`;
