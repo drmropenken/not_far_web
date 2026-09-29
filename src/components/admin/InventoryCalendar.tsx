@@ -9,6 +9,8 @@ type Item = {
   category: string;
   total_quantity: number;
   image_url?: string | null;
+  price_weekday?: number;
+  price_holiday?: number;
 };
 
 const getNextDayString = (dateStr: string) => {
@@ -262,7 +264,7 @@ export default function InventoryCalendar() {
     // 1. 取得此營區的營位、裝備與服務
     const { data: itemsData } = await supabase
       .from('nf_items')
-      .select('id, name, category, total_quantity')
+      .select('id, name, category, total_quantity, price_weekday, price_holiday')
       .eq('camp_id', campId)
       .order('sort_order', { ascending: true });
 
@@ -411,6 +413,17 @@ export default function InventoryCalendar() {
     if (parsedPrice !== null && (isNaN(parsedPrice) || parsedPrice < 0)) {
       alert('請輸入有效的自訂價格！');
       return;
+    }
+
+    // 計算該格子的原本定價，若輸入的價格跟原本定價相同，就存成 null (恢復預設)
+    const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), editingCell.day);
+    const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
+    const defaultDayPrice = isWeekend 
+      ? (editingCell.item.price_holiday ?? 0) 
+      : (editingCell.item.price_weekday ?? 0);
+
+    if (parsedPrice === defaultDayPrice) {
+      parsedPrice = null;
     }
 
     setLoading(true);
@@ -1231,64 +1244,60 @@ export default function InventoryCalendar() {
                   </div>
 
                   {/* 當日自訂售價設定 */}
-                  <div className="pt-3 border-t border-stone-200/70">
-                    <label className="block text-sm font-bold text-stone-700 mb-1.5 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <span>🏷️</span> 當日自訂售價 (元)
-                      </span>
-                      <span className="text-stone-400 font-normal text-xs">
-                        平日 ${editingCell.item.price_weekday} / 假日 ${editingCell.item.price_holiday}
-                      </span>
-                    </label>
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <div className="relative flex-1">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 font-bold text-sm">$</span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={newPrice}
-                          onChange={(e) => setNewPrice(e.target.value)}
-                          className="w-full pl-7 pr-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors text-base font-mono outline-none"
-                          placeholder="留空代表採用商品平日/假日定價"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSaveQuota();
-                            if (e.key === 'Escape') setEditingCell(null);
-                          }}
-                        />
+                  {(() => {
+                    const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), editingCell.day);
+                    const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
+                    const defaultDayPrice = isWeekend 
+                      ? (editingCell.item.price_holiday ?? 0) 
+                      : (editingCell.item.price_weekday ?? 0);
+                    const dayTypeLabel = isWeekend ? '假日' : '平日';
+
+                    return (
+                      <div className="pt-3 border-t border-stone-200/70">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm font-bold text-stone-700 flex items-center gap-1.5">
+                            <span>🏷️</span> 當日售價調整 (元)
+                          </label>
+                          <span className="text-xs text-stone-600 bg-stone-100 px-2.5 py-0.5 rounded-md border border-stone-200 font-medium">
+                            原本定價：<strong className="text-stone-800 font-bold">${defaultDayPrice.toLocaleString()}</strong> ({dayTypeLabel})
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 font-bold text-sm">$</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={newPrice}
+                              onChange={(e) => setNewPrice(e.target.value)}
+                              className="w-full pl-7 pr-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors text-base font-mono outline-none"
+                              placeholder={`留空採用原本定價 ($${defaultDayPrice.toLocaleString()})`}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveQuota();
+                                if (e.key === 'Escape') setEditingCell(null);
+                              }}
+                            />
+                          </div>
+
+                          {newPrice !== '' && (
+                            <button
+                              type="button"
+                              onClick={() => setNewPrice('')}
+                              className="px-3 py-2 text-xs font-bold text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-300 rounded-lg transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+                              title="清除自訂價，恢復預設定價"
+                            >
+                              <span>↺</span> 恢復原價 (${defaultDayPrice.toLocaleString()})
+                            </button>
+                          )}
+                        </div>
+
+                        <p className="text-[11px] text-stone-400 mt-1.5 leading-relaxed">
+                          💡 此日期原本定價為 NT$ {defaultDayPrice.toLocaleString()} ({dayTypeLabel})。若欲微調請直接輸入新售價；若想恢復預設，直接留空或點「恢復原價」即可。
+                        </p>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => setNewPrice(editingCell.item.price_weekday.toString())}
-                          className="px-2.5 py-2 text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 rounded-lg transition-colors cursor-pointer"
-                          title="帶入平日價"
-                        >
-                          平日價 (${editingCell.item.price_weekday})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setNewPrice(editingCell.item.price_holiday.toString())}
-                          className="px-2.5 py-2 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg transition-colors cursor-pointer"
-                          title="帶入假日價"
-                        >
-                          假日價 (${editingCell.item.price_holiday})
-                        </button>
-                        {newPrice !== '' && (
-                          <button
-                            type="button"
-                            onClick={() => setNewPrice('')}
-                            className="px-2.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors cursor-pointer"
-                            title="清除自訂價，恢復預設"
-                          >
-                            清除
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-stone-400 mt-1.5">
-                      💡 若填寫此金額，客人預訂這一天時將以此價格計費；留空則自動套用平日/假日價格。
-                    </p>
-                  </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
