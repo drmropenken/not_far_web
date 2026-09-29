@@ -219,17 +219,38 @@ export default function BookingCalendarPicker({
     return days;
   }, [viewYear, viewMonth, todayStr, maxDateStr, availability]);
 
+  // 檢查某日是否可作為當前入住日 (checkIn) 的退房日
+  // 退房日只需保證 checkIn 到 targetStr 之間的所有夜數都未客滿，targetStr 本身當晚客滿/包場並不影響退房！
+  const isValidCheckoutDate = (targetStr: string): boolean => {
+    if (!checkIn || targetStr <= checkIn) return false;
+    const cur = new Date(checkIn);
+    const target = new Date(targetStr);
+    while (cur < target) {
+      const curStr = formatDateStr(cur);
+      if (availability[curStr]?.isSoldOut) {
+        return false;
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+    return true;
+  };
+
   // 點選日期邏輯
   const handleDateClick = (dateStr: string, isSoldOut: boolean, isPast: boolean) => {
     if (isPast) return;
-    if (isSoldOut) {
-      setErrorMessage(`⚠️ ${dateStr} 全區已客滿或不開放，請選擇其他日期`);
+
+    // 當處於「選擇退房日」階段（已有 checkIn 且點選 checkIn 之後的日期）
+    const isSelectingCheckOut = Boolean(checkIn && !checkOut && dateStr > checkIn);
+
+    // 如果是選入住日，而該日已客滿，則阻止選取
+    if (!isSelectingCheckOut && isSoldOut) {
+      setErrorMessage(`⚠️ ${dateStr} 全區已客滿或不開放入住，請選擇其他日期`);
       return;
     }
 
     setErrorMessage('');
 
-    // 情境 1: 尚未選擇入住日，或已經完整選完入住+退房（重新開始選）
+    // 情境 1: 尚未選擇入住日，或已經完整選完入住+退房（重新開始選入住）
     if (!checkIn || (checkIn && checkOut)) {
       onChange(dateStr, '');
       return;
@@ -239,6 +260,10 @@ export default function BookingCalendarPicker({
     if (checkIn && !checkOut) {
       if (dateStr <= checkIn) {
         // 點選比入住日早或同一天：改為新的入住日
+        if (isSoldOut) {
+          setErrorMessage(`⚠️ ${dateStr} 全區已客滿或不開放入住，請選擇其他日期`);
+          return;
+        }
         onChange(dateStr, '');
         return;
       }
@@ -269,13 +294,14 @@ export default function BookingCalendarPicker({
     }
   };
 
-  // 快速選擇 1 晚捷徑（點選入住日後若隔天有空可一鍵設定）
+  // 快速選擇 1 晚捷徑（點選入住日後一鍵設定隔天退房）
+  // 只要入住日當晚有空，隔天就可以退房（即使隔天當晚客滿/包場也不影響隔天中午退房！）
   const canQuickOneNight = useMemo(() => {
     if (!checkIn || checkOut) return false;
     const nextD = new Date(checkIn);
     nextD.setDate(nextD.getDate() + 1);
     const nextDStr = formatDateStr(nextD);
-    return !availability[checkIn]?.isSoldOut && !availability[nextDStr]?.isSoldOut && nextDStr <= maxDateStr;
+    return !availability[checkIn]?.isSoldOut && nextDStr <= maxDateStr;
   }, [checkIn, checkOut, availability, maxDateStr]);
 
   const handleQuickOneNight = () => {
@@ -354,7 +380,12 @@ export default function BookingCalendarPicker({
             }
 
             const { dateStr, dayNum, isPast, isFutureMax, isSoldOut, isToday, holiday } = item;
-            const isDisabled = isPast || isFutureMax || isSoldOut;
+            
+            // 是否處於選退房日狀態
+            const isSelectingCheckOut = Boolean(checkIn && !checkOut);
+            // 判斷此格是否可作為退房日
+            const canBeCheckOut = isSelectingCheckOut && dateStr > checkIn && isValidCheckoutDate(dateStr);
+            const isDisabled = isPast || isFutureMax || (isSoldOut && !canBeCheckOut);
 
             const isCheckIn = checkIn === dateStr;
             const isCheckOut = checkOut === dateStr;
@@ -373,6 +404,9 @@ export default function BookingCalendarPicker({
               cellStyle = 'bg-emerald-600 text-white font-black rounded-r-xl rounded-l-none shadow-md z-10 scale-105';
             } else if (isInRange) {
               cellStyle = 'bg-emerald-100/80 text-emerald-900 font-bold rounded-none';
+            } else if (canBeCheckOut && isSoldOut) {
+              // 雖然當晚客滿/包場，但可作為退房日！
+              cellStyle = 'bg-emerald-50/50 hover:bg-emerald-100/70 text-slate-800 cursor-pointer border border-emerald-300/80 shadow-xs font-semibold';
             } else if (isSoldOut) {
               cellStyle = 'bg-slate-100 text-slate-300 line-through cursor-not-allowed border-dashed border-slate-200';
             } else if (isPast || isFutureMax) {
@@ -397,7 +431,9 @@ export default function BookingCalendarPicker({
 
                 {/* 節日或客滿標籤 */}
                 {isSoldOut ? (
-                  <span className="text-[9px] font-medium text-slate-400 leading-none mt-1">滿</span>
+                  <span className={`text-[9px] font-medium leading-none mt-1 ${canBeCheckOut ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}>
+                    {canBeCheckOut ? '可退房' : '滿'}
+                  </span>
                 ) : holiday ? (
                   <span
                     className={`text-[9px] font-black leading-none mt-1 truncate max-w-[36px] ${

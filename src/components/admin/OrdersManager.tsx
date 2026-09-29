@@ -120,9 +120,11 @@ export default function OrdersManager() {
   // 卡片更多功能選單 (⋯)
   const [activeMenuOrderId, setActiveMenuOrderId] = useState<string | null>(null);
 
-  const [startDate, setStartDate] = useState<string>('');
+  const getInitialTodayStr = () => new Date(new Date().getTime() + 8 * 3600000).toISOString().split('T')[0];
+
+  const [selectedMonth, setSelectedMonth] = useState<string>('future');
+  const [startDate, setStartDate] = useState<string>(getInitialTodayStr());
   const [endDate, setEndDate] = useState<string>('');
-  const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
   const getMonthsList = () => {
     const list = [];
@@ -142,21 +144,21 @@ export default function OrdersManager() {
     setSelectedMonth(monthVal);
     const now = new Date(new Date().getTime() + 8 * 3600000);
     const todayStr = now.toISOString().split('T')[0];
-    const tomorrow = new Date(new Date().getTime() + 8 * 3600000);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const yesterday = new Date(new Date().getTime() + 8 * 3600000);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
 
     if (monthVal === 'all') {
       setStartDate('');
       setEndDate('');
     } else if (monthVal === 'future') {
-      // 未來：明天之後的所有訂單
-      setStartDate(tomorrowStr);
+      // 未來：今日及未來所有訂單（接待、備料、排房）
+      setStartDate(todayStr);
       setEndDate('');
     } else if (monthVal === 'past') {
-      // 過去：今天以前的所有訂單
+      // 過去：昨天以前的所有歷史訂單（查帳、對帳）
       setStartDate('');
-      setEndDate(todayStr);
+      setEndDate(yesterdayStr);
     } else {
       const [yearStr, monthStr] = monthVal.split('-');
       const year = parseInt(yearStr, 10);
@@ -225,10 +227,14 @@ export default function OrdersManager() {
 
     if (searchParam) {
       setSearchTerm(searchParam);
+      setSelectedMonth('all');
+      setStartDate('');
+      setEndDate('');
     }
     if (dateParam) {
       setStartDate(dateParam);
       setEndDate(dateParam);
+      setSelectedMonth('custom');
     }
   }, []);
 
@@ -702,6 +708,11 @@ export default function OrdersManager() {
   const sortedOrders = useMemo(() => {
     const todayStr = new Date(new Date().getTime() + 8 * 3600000).toISOString().split('T')[0];
     return [...filteredOrders].sort((a, b) => {
+      // 若是在「過去/歷史訂單」檢視模式，由新到舊 (DESC) 排序，最靠近昨天的在最上方
+      if (selectedMonth === 'past') {
+        return b.check_in_date.localeCompare(a.check_in_date);
+      }
+
       const aIsOverdue = a.status === 'pending' && a.check_in_date < todayStr;
       const bIsOverdue = b.status === 'pending' && b.check_in_date < todayStr;
       const aIsCancelled = a.status === 'cancelled';
@@ -715,7 +726,7 @@ export default function OrdersManager() {
       
       return a.check_in_date.localeCompare(b.check_in_date);
     });
-  }, [filteredOrders]);
+  }, [filteredOrders, selectedMonth]);
 
   const getStatusBadge = (status: string, checkInDate: string, order?: Order) => {
     const todayStr = new Date(new Date().getTime() + 8 * 3600000).toISOString().split('T')[0];
@@ -1010,9 +1021,9 @@ export default function OrdersManager() {
                 onChange={(e) => handleMonthChange(e.target.value)}
                 className="flex-1 sm:flex-initial bg-stone-50 border border-stone-200 rounded-lg text-xs px-2.5 py-1.5 font-bold text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-500/50 h-[36px] md:h-[34px] cursor-pointer min-w-0 truncate"
               >
+                <option value="future">🔮 未來訂單 (包括今天)</option>
                 <option value="all">🌐 全部訂單 (所有月份)</option>
-                <option value="future">🔮 未來訂單 (明天之後)</option>
-                <option value="past">📜 過去訂單 (今天以前)</option>
+                <option value="past">📜 過去訂單 (昨天以前)</option>
                 <option value="custom" disabled hidden>自訂區間</option>
                 <optgroup label="── 📅 指定月份 ──">
                   {getMonthsList().map(m => (
