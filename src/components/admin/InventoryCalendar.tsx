@@ -36,6 +36,19 @@ export type CalendarNote = {
   updated_at?: string;
 };
 
+export type DateRule = {
+  id?: string;
+  camp_id: string;
+  date: string;
+  no_checkout: boolean;
+  no_checkin: boolean;
+  applies_to_all: boolean;
+  item_ids: string[];
+  note?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
 type InventoryRecord = {
   id?: string;
   item_id: string;
@@ -106,10 +119,24 @@ export default function InventoryCalendar() {
   const [newQuota, setNewQuota] = useState<string>('');
   const [newPrice, setNewPrice] = useState<string>('');
   
-  // 批次修改某日的全部庫存 / 財務數據 / 營運記事 Modal 狀態
+  // 批次修改某日的全部庫存 / 財務數據 / 營運記事 / 進退房管制 Modal 狀態
   const [editingDay, setEditingDay] = useState<number | null>(null);
-  const [activeDayTab, setActiveDayTab] = useState<'financial' | 'notes' | 'quota'>('financial');
+  const [activeDayTab, setActiveDayTab] = useState<'financial' | 'notes' | 'quota' | 'rules'>('financial');
   const [dayOrderFilter, setDayOrderFilter] = useState<'check_in' | 'active'>('check_in');
+
+  // 連假進退房管制規則狀態
+  const [dateRules, setDateRules] = useState<Record<string, DateRule>>({});
+  const [ruleNoCheckout, setRuleNoCheckout] = useState(false);
+  const [ruleNoCheckin, setRuleNoCheckin] = useState(false);
+  const [ruleAppliesToAll, setRuleAppliesToAll] = useState(true);
+  const [ruleItemIds, setRuleItemIds] = useState<string[]>([]);
+  const [ruleNote, setRuleNote] = useState('');
+  const [isSavingRule, setIsSavingRule] = useState(false);
+
+  // 管制清單 Modal 狀態
+  const [showRulesListModal, setShowRulesListModal] = useState(false);
+  const [allDateRules, setAllDateRules] = useState<DateRule[]>([]);
+  const [loadingAllRules, setLoadingAllRules] = useState(false);
 
   // 行事曆營運備忘 / 注意事項狀態
   const [calendarNotes, setCalendarNotes] = useState<Record<string, CalendarNote>>({});
@@ -118,7 +145,7 @@ export default function InventoryCalendar() {
   const [noteEditMode, setNoteEditMode] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
 
-  const openDayModal = (day: number, initialTab: 'financial' | 'notes' | 'quota' = 'financial') => {
+  const openDayModal = (day: number, initialTab: 'financial' | 'notes' | 'quota' | 'rules' = 'financial') => {
     setEditingDay(day);
     setActiveDayTab(initialTab);
 
@@ -134,6 +161,21 @@ export default function InventoryCalendar() {
       setNoteTitle('');
       setNoteContent('');
       setNoteEditMode(true);
+    }
+
+    const existingRule = dateRules[dateStr];
+    if (existingRule) {
+      setRuleNoCheckout(existingRule.no_checkout || false);
+      setRuleNoCheckin(existingRule.no_checkin || false);
+      setRuleAppliesToAll(existingRule.applies_to_all ?? true);
+      setRuleItemIds(existingRule.item_ids || []);
+      setRuleNote(existingRule.note || '');
+    } else {
+      setRuleNoCheckout(false);
+      setRuleNoCheckin(false);
+      setRuleAppliesToAll(true);
+      setRuleItemIds([]);
+      setRuleNote('');
     }
   };
 
@@ -354,6 +396,28 @@ export default function InventoryCalendar() {
       }
     } catch (err) {
       console.error('Fetch calendar notes exception:', err);
+    }
+
+    // 6. 撈取當月進退房管制規則 (nf_date_rules)
+    try {
+      const { data: rulesData, error: rulesError } = await supabase
+        .from('nf_date_rules')
+        .select('*')
+        .eq('camp_id', campId)
+        .gte('date', startDate)
+        .lte('date', endDate);
+
+      if (rulesError) {
+        console.warn('Fetch date rules warning:', rulesError.message);
+      } else if (rulesData) {
+        const rulesMap: Record<string, DateRule> = {};
+        rulesData.forEach((r: any) => {
+          rulesMap[r.date] = r;
+        });
+        setDateRules(rulesMap);
+      }
+    } catch (err) {
+      console.warn('Fetch date rules exception:', err);
     }
 
     setLoading(false);
@@ -619,6 +683,145 @@ export default function InventoryCalendar() {
     }
   };
 
+  // 儲存當日進退房管制規則
+  const handleSaveDateRule = async () => {
+    if (editingDay === null) return;
+    const campId = localStorage.getItem('camp_id');
+    if (!campId) {
+      alert('找不到營區 ID，請重新登入');
+      return;
+    }
+
+    const year = currentDate.getFullYear();
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+    const dateStr = `${year}-${month}-${editingDay.toString().padStart(2, '0')}`;
+
+    if (!ruleNoCheckout && !ruleNoCheckin) {
+      await handleDeleteDateRule(dateStr);
+      return;
+    }
+
+    if (!ruleAppliesToAll && ruleItemIds.length === 0) {
+      alert('請至少勾選一個受管制的營位/商品項目！');
+      return;
+    }
+
+    setIsSavingRule(true);
+    try {
+      const payload = {
+        camp_id: campId,
+        date: dateStr,
+        no_checkout: ruleNoCheckout,
+        no_checkin: ruleNoCheckin,
+        applies_to_all: ruleAppliesToAll,
+        item_ids: ruleAppliesToAll ? [] : ruleItemIds,
+        note: ruleNote.trim() || null,
+        updated_at: new Date().toISOString()
+      };
+
+      const existing = dateRules[dateStr];
+      let res;
+      if (existing?.id) {
+        res = await supabase
+          .from('nf_date_rules')
+          .update(payload)
+          .eq('id', existing.id)
+          .select()
+          .single();
+      } else {
+        res = await supabase
+          .from('nf_date_rules')
+          .insert([payload])
+          .select()
+          .single();
+      }
+
+      if (res.error) {
+        alert('儲存管制失敗：' + res.error.message);
+      } else if (res.data) {
+        setDateRules(prev => ({
+          ...prev,
+          [dateStr]: res.data as DateRule
+        }));
+        alert('✅ 已成功儲存進退房管制規則！');
+      }
+    } catch (err: any) {
+      alert('儲存過程發生異常：' + (err?.message || err));
+    } finally {
+      setIsSavingRule(false);
+    }
+  };
+
+  // 解除某日進退房管制
+  const handleDeleteDateRule = async (targetDateStr: string) => {
+    const existing = dateRules[targetDateStr];
+    if (!existing?.id) {
+      setDateRules(prev => {
+        const next = { ...prev };
+        delete next[targetDateStr];
+        return next;
+      });
+      setRuleNoCheckout(false);
+      setRuleNoCheckin(false);
+      setRuleAppliesToAll(true);
+      setRuleItemIds([]);
+      setRuleNote('');
+      return;
+    }
+
+    setIsSavingRule(true);
+    try {
+      const { error } = await supabase
+        .from('nf_date_rules')
+        .delete()
+        .eq('id', existing.id);
+
+      if (error) {
+        alert('解除管制失敗：' + error.message);
+      } else {
+        setDateRules(prev => {
+          const next = { ...prev };
+          delete next[targetDateStr];
+          return next;
+        });
+        setRuleNoCheckout(false);
+        setRuleNoCheckin(false);
+        setRuleAppliesToAll(true);
+        setRuleItemIds([]);
+        setRuleNote('');
+        alert('✅ 已解除該日進退房管制！');
+      }
+    } catch (err: any) {
+      alert('解除管制過程發生異常：' + (err?.message || err));
+    } finally {
+      setIsSavingRule(false);
+    }
+  };
+
+  // 取得營區所有設定過的管制日期列表
+  const fetchAllDateRules = async () => {
+    setLoadingAllRules(true);
+    const campId = localStorage.getItem('camp_id');
+    if (!campId) {
+      setLoadingAllRules(false);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('nf_date_rules')
+        .select('*')
+        .eq('camp_id', campId)
+        .order('date', { ascending: true });
+      if (!error && data) {
+        setAllDateRules(data as DateRule[]);
+      }
+    } catch (e) {
+      console.warn('Error fetching all date rules:', e);
+    } finally {
+      setLoadingAllRules(false);
+    }
+  };
+
   // 當日財務與訂單資料計算
   const getDayFinancialSummary = (day: number) => {
     const year = currentDate.getFullYear();
@@ -687,25 +890,40 @@ export default function InventoryCalendar() {
       <div className="flex flex-col gap-2 mb-3 shrink-0">
         {/* 第一排：搜尋框 + 月份切換 */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          {/* 訂單快速搜尋 */}
-          <div className="relative flex items-center w-full sm:w-72 md:w-80">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="🔍 搜尋訂單號 / 姓名 / 電話..."
-              className="w-full text-xs bg-stone-50/80 hover:bg-white focus:bg-white border border-stone-200 rounded-xl px-3 py-2 pr-8 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none shadow-2xs font-sans text-stone-800 placeholder-stone-400"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 text-stone-400 hover:text-stone-600 text-xs w-4 h-4 flex items-center justify-center cursor-pointer"
-                title="清除搜尋"
-              >
-                ✕
-              </button>
-            )}
+          {/* 搜尋框與連假管制清單快捷鍵 */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex items-center flex-1 sm:w-72 md:w-80">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="🔍 搜尋訂單號 / 姓名 / 電話..."
+                className="w-full text-xs bg-stone-50/80 hover:bg-white focus:bg-white border border-stone-200 rounded-xl px-3 py-2 pr-8 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none shadow-2xs font-sans text-stone-800 placeholder-stone-400"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 text-stone-400 hover:text-stone-600 text-xs w-4 h-4 flex items-center justify-center cursor-pointer"
+                  title="清除搜尋"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowRulesListModal(true);
+                fetchAllDateRules();
+              }}
+              className="px-2.5 sm:px-3 py-2 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 hover:text-stone-900 border border-stone-300 rounded-xl transition-all flex items-center gap-1.5 shadow-2xs shrink-0 cursor-pointer"
+              title="查看與管理所有已設定的連假進退房管制"
+            >
+              <span>🚫</span>
+              <span className="hidden sm:inline">連假</span><span>進退管制</span>
+            </button>
           </div>
 
           {/* 月份切換與今天按鈕 (單一膠囊，強制 flex-nowrap，手機與電腦皆在同一單行不換行) */}
@@ -827,9 +1045,29 @@ export default function InventoryCalendar() {
 
                       <div className="flex flex-col items-center justify-between min-h-[60px] py-0.5 group-hover/day:scale-105 transition-transform">
                         {/* 第一行：日期數字 */}
-                        <span className={`font-bold text-sm md:text-base leading-tight ${isToday ? 'text-amber-700' : isHolidayOrWeekend ? 'text-rose-600' : 'text-stone-800'}`}>
-                          {day}
-                        </span>
+                        <div className="flex items-center justify-center gap-1">
+                          <span className={`font-bold text-sm md:text-base leading-tight ${isToday ? 'text-amber-700' : isHolidayOrWeekend ? 'text-rose-600' : 'text-stone-800'}`}>
+                            {day}
+                          </span>
+                          {dateRules[dateStr] && (dateRules[dateStr].no_checkout || dateRules[dateStr].no_checkin) && (
+                            <span 
+                              className={`text-[8px] font-black px-1 py-0.2 rounded leading-tight shadow-2xs shrink-0 ${
+                                dateRules[dateStr].no_checkout && dateRules[dateStr].no_checkin
+                                  ? 'bg-rose-600 text-white'
+                                  : dateRules[dateStr].no_checkout
+                                    ? 'bg-rose-500 text-white'
+                                    : 'bg-amber-600 text-white'
+                              }`}
+                              title={`連假進退管制：${dateRules[dateStr].applies_to_all ? '全區' : '指定品項'}${dateRules[dateStr].no_checkout ? ' [禁退]' : ''}${dateRules[dateStr].no_checkin ? ' [禁住]' : ''}${dateRules[dateStr].note ? ` (${dateRules[dateStr].note})` : ''}`}
+                            >
+                              {dateRules[dateStr].no_checkout && dateRules[dateStr].no_checkin
+                                ? '🚫管制'
+                                : dateRules[dateStr].no_checkout
+                                  ? '🚫禁退'
+                                  : '🚫禁住'}
+                            </span>
+                          )}
+                        </div>
 
                         {/* 第二行：星期 + 國定假日標記（固定高度維持全月平齊） */}
                         <div className="h-4 flex items-center justify-center gap-0.5">
@@ -1353,18 +1591,18 @@ export default function InventoryCalendar() {
                 </button>
               </div>
 
-              {/* Modal Tabs - 手機版自動平分 3 等份塞在同一行，免左右滑動 */}
-              <div className="grid grid-cols-3 border-b border-stone-200 bg-stone-100/60 px-2 md:px-4 pt-2 gap-1 md:gap-2 text-xs md:text-sm font-bold">
+              {/* Modal Tabs - 自動平分 4 等份 */}
+              <div className="grid grid-cols-4 border-b border-stone-200 bg-stone-100/60 px-1 md:px-4 pt-2 gap-1 text-[11px] sm:text-xs md:text-sm font-bold">
                 <button
                   onClick={() => setActiveDayTab('financial')}
-                  className={`py-2 px-1 md:px-3 rounded-t-lg transition-all border-t border-x text-center flex items-center justify-center gap-1 ${
+                  className={`py-2 px-1 md:px-2 rounded-t-lg transition-all border-t border-x text-center flex items-center justify-center gap-1 ${
                     activeDayTab === 'financial'
                       ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px shadow-xs'
                       : 'text-stone-500 hover:text-stone-800 border-transparent'
                   }`}
                 >
                   <span>💰</span>
-                  <span className="hidden sm:inline">當日</span><span>財務數據</span>
+                  <span className="hidden sm:inline">當日</span><span>財務</span>
                 </button>
                 <button
                   onClick={() => {
@@ -1373,28 +1611,42 @@ export default function InventoryCalendar() {
                       setNoteEditMode(true);
                     }
                   }}
-                  className={`py-2 px-1 md:px-3 rounded-t-lg transition-all border-t border-x text-center flex items-center justify-center gap-1 ${
+                  className={`py-2 px-1 md:px-2 rounded-t-lg transition-all border-t border-x text-center flex items-center justify-center gap-1 ${
                     activeDayTab === 'notes'
                       ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px shadow-xs'
                       : 'text-stone-500 hover:text-stone-800 border-transparent'
                   }`}
                 >
                   <span>📝</span>
-                  <span className="hidden sm:inline">當日</span><span>營運備忘</span>
+                  <span className="hidden sm:inline">當日</span><span>備忘</span>
                   {calendarNotes[summary.dateStr] && (
-                    <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                   )}
                 </button>
                 <button
                   onClick={() => setActiveDayTab('quota')}
-                  className={`py-2 px-1 md:px-3 rounded-t-lg transition-all border-t border-x text-center flex items-center justify-center gap-1 ${
+                  className={`py-2 px-1 md:px-2 rounded-t-lg transition-all border-t border-x text-center flex items-center justify-center gap-1 ${
                     activeDayTab === 'quota'
                       ? 'bg-white text-emerald-700 border-stone-200 border-b-white -mb-px shadow-xs'
                       : 'text-stone-500 hover:text-stone-800 border-transparent'
                   }`}
                 >
                   <span>⚙️</span>
-                  <span className="hidden sm:inline">修改</span><span>全天庫存</span>
+                  <span className="hidden sm:inline">全天</span><span>庫存</span>
+                </button>
+                <button
+                  onClick={() => setActiveDayTab('rules')}
+                  className={`py-2 px-1 md:px-2 rounded-t-lg transition-all border-t border-x text-center flex items-center justify-center gap-1 ${
+                    activeDayTab === 'rules'
+                      ? 'bg-white text-rose-700 border-stone-200 border-b-white -mb-px shadow-xs'
+                      : 'text-stone-500 hover:text-stone-800 border-transparent'
+                  }`}
+                >
+                  <span>🚫</span>
+                  <span className="hidden sm:inline">進退</span><span>管制</span>
+                  {dateRules[summary.dateStr] && (dateRules[summary.dateStr].no_checkout || dateRules[summary.dateStr].no_checkin) && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                  )}
                 </button>
               </div>
 
@@ -1759,6 +2011,203 @@ export default function InventoryCalendar() {
                     </div>
                   );
                 })()}
+
+                {/* Tab 4: 連假進退房管制規則 */}
+                {activeDayTab === 'rules' && (
+                  <div className="space-y-4">
+                    {/* 說明提示卡 */}
+                    <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 space-y-1">
+                      <div className="font-bold flex items-center gap-1.5 text-amber-950">
+                        <span>💡</span> 連假進退房管制說明
+                      </div>
+                      <p className="leading-relaxed text-amber-800/90">
+                        設定此日期是否限制客人辦理入住或退房。若為全營區連假（如跨年、連假中間日），建議將「禁止退房」與「禁止入住」同時勾選，即可強制連假期間同進同出、避免破碎單日訂單。
+                      </p>
+                    </div>
+
+                    {/* 開關選項卡片 */}
+                    <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 space-y-3">
+                      <div className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">
+                        管制項目設定
+                      </div>
+
+                      {/* 禁止退房 (CTD) */}
+                      <label className="flex items-start gap-3 p-3 bg-white rounded-lg border border-stone-200 hover:border-rose-300 transition-colors cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={ruleNoCheckout}
+                          onChange={(e) => setRuleNoCheckout(e.target.checked)}
+                          className="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 mt-0.5 cursor-pointer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-bold text-stone-800 flex items-center gap-1.5">
+                            <span>🚫</span> 當日禁止退房 (No Check-out)
+                          </div>
+                          <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">
+                            客人預訂時，無法將此日選為退房日（例如前一日入住者，必須預訂至隔日或之後退房）。
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* 禁止入住 (CTA) */}
+                      <label className="flex items-start gap-3 p-3 bg-white rounded-lg border border-stone-200 hover:border-rose-300 transition-colors cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={ruleNoCheckin}
+                          onChange={(e) => setRuleNoCheckin(e.target.checked)}
+                          className="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 mt-0.5 cursor-pointer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-bold text-stone-800 flex items-center gap-1.5">
+                            <span>🚫</span> 當日禁止入住 (No Check-in)
+                          </div>
+                          <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">
+                            客人無法將此日選為第一天入住日（避免插隊單訂連假後半段）。
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* 適用對象 */}
+                    <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 space-y-3">
+                      <div className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">
+                        管制適用範圍
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setRuleAppliesToAll(true)}
+                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                            ruleAppliesToAll
+                              ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-200 text-emerald-950 font-bold'
+                              : 'bg-white border-stone-200 hover:border-stone-300 text-stone-700'
+                          }`}
+                        >
+                          <div className="text-xs font-bold flex items-center gap-1.5">
+                            <span>🏕️</span> 全營區適用 (推薦)
+                          </div>
+                          <div className="text-[11px] text-stone-500 font-normal mt-0.5">
+                            全場所有營位與房型皆受此限制
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setRuleAppliesToAll(false)}
+                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                            !ruleAppliesToAll
+                              ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-200 text-emerald-950 font-bold'
+                              : 'bg-white border-stone-200 hover:border-stone-300 text-stone-700'
+                          }`}
+                        >
+                          <div className="text-xs font-bold flex items-center gap-1.5">
+                            <span>🎯</span> 僅指定特定品項
+                          </div>
+                          <div className="text-[11px] text-stone-500 font-normal mt-0.5">
+                            僅限制部分高價帳型或包區
+                          </div>
+                        </button>
+                      </div>
+
+                      {/* 當選僅指定特定品項時，展開品項勾選清單 */}
+                      {!ruleAppliesToAll && (
+                        <div className="mt-3 pt-3 border-t border-stone-200 space-y-2">
+                          <div className="text-xs font-bold text-stone-700 flex items-center justify-between">
+                            <span>請勾選受管制的營位/商品：</span>
+                            <div className="flex gap-2 text-[11px]">
+                              <button
+                                type="button"
+                                onClick={() => setRuleItemIds(items.filter(i => i.category === 'campsite').map(i => i.id))}
+                                className="text-emerald-600 hover:underline"
+                              >
+                                全選營位
+                              </button>
+                              <span className="text-stone-300">|</span>
+                              <button
+                                type="button"
+                                onClick={() => setRuleItemIds([])}
+                                className="text-stone-500 hover:underline"
+                              >
+                                清除勾選
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
+                            {items.map((item) => {
+                              const isChecked = ruleItemIds.includes(item.id);
+                              return (
+                                <label
+                                  key={item.id}
+                                  className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer select-none transition-colors ${
+                                    isChecked
+                                      ? 'bg-emerald-50/80 border-emerald-400 text-emerald-950 font-bold'
+                                      : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setRuleItemIds(prev => [...prev, item.id]);
+                                      } else {
+                                        setRuleItemIds(prev => prev.filter(id => id !== item.id));
+                                      }
+                                    }}
+                                    className="w-3.5 h-3.5 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
+                                  />
+                                  <span className="truncate">{item.name}</span>
+                                  <span className="text-[10px] text-stone-400 ml-auto shrink-0">
+                                    {item.category === 'campsite' ? '營位' : '商品'}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 備註說明（選填） */}
+                    <div>
+                      <label className="block text-xs font-bold text-stone-700 mb-1">
+                        管制原因備註 (選填，如：元旦連假同進同出)
+                      </label>
+                      <input
+                        type="text"
+                        value={ruleNote}
+                        onChange={(e) => setRuleNote(e.target.value)}
+                        placeholder="例：元旦連假、跨年檔期、春節同進同出..."
+                        className="w-full text-xs px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                      />
+                    </div>
+
+                    {/* 動作按鈕 */}
+                    <div className="flex items-center justify-between pt-2">
+                      {dateRules[summary.dateStr] ? (
+                        <button
+                          type="button"
+                          disabled={isSavingRule}
+                          onClick={() => handleDeleteDateRule(summary.dateStr)}
+                          className="px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          <span>🗑️</span> 解除此日管制
+                        </button>
+                      ) : <div />}
+
+                      <button
+                        type="button"
+                        disabled={isSavingRule}
+                        onClick={handleSaveDateRule}
+                        className="px-5 py-2 text-xs sm:text-sm font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                      >
+                        {isSavingRule ? '儲存中...' : '💾 儲存管制規則'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1841,6 +2290,119 @@ export default function InventoryCalendar() {
         initialItemId={bookingPrefill?.item.id}
         initialItemQuantity={bookingPrefill?.quantity || 1}
       />
+
+      {/* 連假進退房管制清單 Modal */}
+      {showRulesListModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden border border-stone-200 flex flex-col max-h-[85vh]">
+            {/* Header */}
+            <div className="p-4 border-b border-stone-200 flex items-center justify-between bg-stone-50">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">📋</span>
+                <div>
+                  <h3 className="font-bold text-stone-800 text-base">連假與特殊日期進退房管制清單</h3>
+                  <p className="text-xs text-stone-500">已在此營區設定的特殊管制日期總覽</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRulesListModal(false)}
+                className="w-8 h-8 rounded-full bg-stone-200/70 hover:bg-stone-200 text-stone-600 font-bold text-sm flex items-center justify-center transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* List Body */}
+            <div className="p-4 overflow-y-auto flex-1 divide-y divide-stone-100">
+              {loadingAllRules ? (
+                <div className="text-center py-8 text-xs text-stone-500">載入管制清單中...</div>
+              ) : allDateRules.length === 0 ? (
+                <div className="text-center py-12 text-stone-400 space-y-2">
+                  <div className="text-3xl">🏖️</div>
+                  <div className="text-sm font-bold text-stone-600">目前沒有設定任何進退房管制日期</div>
+                  <div className="text-xs text-stone-400">在日曆上點擊任意日期的表頭，即可設定連假禁止退房或禁止入住。</div>
+                </div>
+              ) : (
+                allDateRules.map((r) => {
+                  const ruleDate = new Date(r.date);
+                  const dayOfWeek = ['日', '一', '二', '三', '四', '五', '六'][ruleDate.getDay()];
+                  return (
+                    <div key={r.id || r.date} className="py-3 flex items-center justify-between gap-3 hover:bg-stone-50/80 px-2 rounded-lg transition-colors">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-bold text-sm text-stone-800">{r.date}</span>
+                          <span className="text-xs text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
+                            週{dayOfWeek}
+                          </span>
+                          {r.no_checkout && (
+                            <span className="text-[10px] font-black bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded border border-rose-200">
+                              🚫 禁退
+                            </span>
+                          )}
+                          {r.no_checkin && (
+                            <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">
+                              🚫 禁住
+                            </span>
+                          )}
+                          <span className="text-xs text-stone-600 font-medium">
+                            {r.applies_to_all ? '（全營區）' : `（指定 ${r.item_ids?.length || 0} 個品項）`}
+                          </span>
+                        </div>
+                        {r.note && (
+                          <div className="text-xs text-stone-500 flex items-center gap-1">
+                            <span>📝</span> {r.note}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowRulesListModal(false);
+                            jumpToDate(new Date(r.date));
+                            setTimeout(() => {
+                              openDayModal(new Date(r.date).getDate(), 'rules');
+                            }, 250);
+                          }}
+                          className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                        >
+                          前往日曆 ↗
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (confirm(`確定要解除 ${r.date} 的進退房管制嗎？`)) {
+                              await handleDeleteDateRule(r.date);
+                              fetchAllDateRules();
+                            }
+                          }}
+                          className="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                          title="解除管制"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 bg-stone-50 border-t border-stone-200 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowRulesListModal(false)}
+                className="px-4 py-1.5 text-xs font-bold text-stone-600 hover:bg-stone-200 rounded-lg transition-colors cursor-pointer"
+              >
+                關閉
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

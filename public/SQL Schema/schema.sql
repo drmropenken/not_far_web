@@ -1293,3 +1293,18 @@ ALTER TABLE "public"."nf_admins"
 -- nf_discount_codes（可選，折扣碼可跨營區）
 ALTER TABLE "public"."nf_discount_codes"
   ADD COLUMN IF NOT EXISTS "camp_id" "uuid" REFERENCES "public"."nf_campgrounds"("id");
+
+-- nf_date_rules (連假/特殊日期進退房管制規則)
+CREATE TABLE IF NOT EXISTS "public"."nf_date_rules" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL PRIMARY KEY,
+    "camp_id" "text" NOT NULL,
+    "date" "date" NOT NULL,
+    "no_checkout" boolean DEFAULT false NOT NULL,
+    "no_checkin" boolean DEFAULT false NOT NULL,
+    "applies_to_all" boolean DEFAULT true NOT NULL,
+    "item_ids" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
+    "note" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "nf_date_rules_camp_date_unique" UNIQUE ("camp_id", "date")
+);

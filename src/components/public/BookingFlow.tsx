@@ -56,7 +56,7 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
   // Form states
   const [dates, setDates] = useState({ checkIn: '', checkOut: '' });
   const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '', email: '', license_plate: '', adults: '2', children: '0', notes: '' });
-  const [availableItems, setAvailableItems] = useState<{ item: Item, remaining: number }[]>([]);
+  const [availableItems, setAvailableItems] = useState<{ item: Item, remaining: number, restrictionNote?: string }[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [fetchingItems, setFetchingItems] = useState(false);
   const [periodInventory, setPeriodInventory] = useState<any[]>([]);
@@ -267,7 +267,20 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
 
     setPeriodInventory(inventory || []);
 
-    const available: { item: Item, remaining: number }[] = [];
+    // 3. 取得入住與退房日的進退房管制規則 (nf_date_rules)
+    let dateRulesForPeriod: any[] = [];
+    try {
+      const { data: rules } = await supabase
+        .from('nf_date_rules')
+        .select('*')
+        .eq('camp_id', campId)
+        .in('date', [dates.checkIn, dates.checkOut]);
+      if (rules) dateRulesForPeriod = rules;
+    } catch (e) {
+      console.warn('Error fetching date rules in BookingFlow:', e);
+    }
+
+    const available: { item: Item, remaining: number, restrictionNote?: string }[] = [];
 
     for (const item of items) {
       let minRemaining = item.total_quantity;
@@ -290,7 +303,26 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
           minRemaining = remaining;
         }
       }
-      available.push({ item, remaining: minRemaining });
+
+      // 檢查此特定營位項目是否受進退房管制 (例如指定品項禁退或禁住)
+      const checkInRule = dateRulesForPeriod.find(r => r.date === dates.checkIn);
+      const isCheckInRestricted = Boolean(checkInRule?.no_checkin && (checkInRule.applies_to_all || checkInRule.item_ids?.includes(item.id)));
+
+      const checkOutRule = dateRulesForPeriod.find(r => r.date === dates.checkOut);
+      const isCheckOutRestricted = Boolean(checkOutRule?.no_checkout && (checkOutRule.applies_to_all || checkOutRule.item_ids?.includes(item.id)));
+
+      let restrictionNote = '';
+      if (isCheckInRestricted) {
+        restrictionNote = `此營位於 ${dates.checkIn} 不開放辦理入住${checkInRule?.note ? `（${checkInRule.note}）` : '（連假管制）'}`;
+      } else if (isCheckOutRestricted) {
+        restrictionNote = `此營位於 ${dates.checkOut} 不開放退房${checkOutRule?.note ? `（${checkOutRule.note}）` : '（連假管制，需預訂更多晚數）'}`;
+      }
+
+      available.push({ 
+        item, 
+        remaining: restrictionNote ? 0 : minRemaining,
+        restrictionNote: restrictionNote || undefined
+      });
     }
 
     available.sort((a, b) => {
@@ -318,7 +350,7 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
     });
   };
 
-  const renderItemCard = ({ item, remaining }: { item: Item, remaining: number }) => {
+  const renderItemCard = ({ item, remaining, restrictionNote }: { item: Item, remaining: number, restrictionNote?: string }) => {
     const selected = selectedItems.find(s => s.item.id === item.id);
     const qty = selected?.quantity || 0;
     const catStyle = getCategoryStyle(item.category);
@@ -335,7 +367,9 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
             <h3 className="font-black text-slate-800 text-lg leading-tight">{item.name}</h3>
           </div>
           <div className="text-right shrink-0 ml-2">
-            {remaining > 0 ? (
+            {restrictionNote ? (
+              <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 block w-max">管制不開放</span>
+            ) : remaining > 0 ? (
               remaining === 1 ? (
                 <span className="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-200 animate-pulse shadow-sm block w-max">🔥 僅剩最後 1 {unit}</span>
               ) : (
@@ -346,6 +380,13 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
             )}
           </div>
         </div>
+
+        {restrictionNote && (
+          <div className="mb-3 px-3 py-2 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-700 flex items-center gap-1.5 shadow-2xs">
+            <span>🚫</span>
+            <span>{restrictionNote}</span>
+          </div>
+        )}
 
         {(() => {
           const dbImages = item.image_url ? item.image_url.split(',').map(u => u.trim()).filter(Boolean) : [];

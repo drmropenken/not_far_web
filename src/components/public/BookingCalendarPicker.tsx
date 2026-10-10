@@ -43,6 +43,7 @@ export default function BookingCalendarPicker({
 
   const [loading, setLoading] = useState(false);
   const [availability, setAvailability] = useState<Record<string, ItemInventoryInfo>>({});
+  const [dateRules, setDateRules] = useState<Record<string, any>>({});
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   // 今天字串 (YYYY-MM-DD)
@@ -131,8 +132,26 @@ export default function BookingCalendarPicker({
           curDate.setDate(curDate.getDate() + 1);
         }
 
+        // 4. 取得營區設定的特殊日期進退房管制規則 (nf_date_rules)
+        let dateRulesMap: Record<string, any> = {};
+        try {
+          const { data: dateRulesData } = await supabase
+            .from('nf_date_rules')
+            .select('*')
+            .eq('camp_id', campId)
+            .gte('date', todayStr);
+          if (dateRulesData) {
+            dateRulesData.forEach((r: any) => {
+              dateRulesMap[r.date] = r;
+            });
+          }
+        } catch (e) {
+          console.warn('Fetch date rules in BookingCalendarPicker warning:', e);
+        }
+
         if (isMounted) {
           setAvailability(availMap);
+          setDateRules(dateRulesMap);
         }
       } catch (err) {
         console.error('Calendar load error:', err);
@@ -223,6 +242,13 @@ export default function BookingCalendarPicker({
   // 退房日只需保證 checkIn 到 targetStr 之間的所有夜數都未客滿，targetStr 本身當晚客滿/包場並不影響退房！
   const isValidCheckoutDate = (targetStr: string): boolean => {
     if (!checkIn || targetStr <= checkIn) return false;
+
+    // 檢查目標退房日是否被全區設定為「禁止退房」
+    const targetRule = dateRules[targetStr];
+    if (targetRule?.no_checkout && targetRule?.applies_to_all) {
+      return false;
+    }
+
     const cur = new Date(checkIn);
     const target = new Date(targetStr);
     while (cur < target) {
@@ -242,6 +268,13 @@ export default function BookingCalendarPicker({
     // 當處於「選擇退房日」階段（已有 checkIn 且點選 checkIn 之後的日期）
     const isSelectingCheckOut = Boolean(checkIn && !checkOut && dateStr > checkIn);
 
+    // 如果是選入住日，而該日設定全區禁止入住
+    const currentRule = dateRules[dateStr];
+    if (!isSelectingCheckOut && currentRule?.no_checkin && currentRule?.applies_to_all) {
+      setErrorMessage(`⚠️ ${dateStr} 此日不開放辦理入住${currentRule.note ? `（${currentRule.note}）` : '（連假管制）'}，請選擇其他入住日期`);
+      return;
+    }
+
     // 如果是選入住日，而該日已客滿，則阻止選取
     if (!isSelectingCheckOut && isSoldOut) {
       setErrorMessage(`⚠️ ${dateStr} 全區已客滿或不開放入住，請選擇其他日期`);
@@ -260,11 +293,21 @@ export default function BookingCalendarPicker({
     if (checkIn && !checkOut) {
       if (dateStr <= checkIn) {
         // 點選比入住日早或同一天：改為新的入住日
+        if (currentRule?.no_checkin && currentRule?.applies_to_all) {
+          setErrorMessage(`⚠️ ${dateStr} 此日不開放辦理入住${currentRule.note ? `（${currentRule.note}）` : '（連假管制）'}，請選擇其他入住日期`);
+          return;
+        }
         if (isSoldOut) {
           setErrorMessage(`⚠️ ${dateStr} 全區已客滿或不開放入住，請選擇其他日期`);
           return;
         }
         onChange(dateStr, '');
+        return;
+      }
+
+      // 檢查目標退房日是否為全區禁止退房
+      if (currentRule?.no_checkout && currentRule?.applies_to_all) {
+        setErrorMessage(`⚠️ ${dateStr} 此日不開放辦理退房${currentRule.note ? `（${currentRule.note}）` : '（連假管制，需預訂更多晚數）'}，請選擇其他退房日期`);
         return;
       }
 
@@ -301,8 +344,10 @@ export default function BookingCalendarPicker({
     const nextD = new Date(checkIn);
     nextD.setDate(nextD.getDate() + 1);
     const nextDStr = formatDateStr(nextD);
+    const nextRule = dateRules[nextDStr];
+    if (nextRule?.no_checkout && nextRule?.applies_to_all) return false;
     return !availability[checkIn]?.isSoldOut && nextDStr <= maxDateStr;
-  }, [checkIn, checkOut, availability, maxDateStr]);
+  }, [checkIn, checkOut, availability, maxDateStr, dateRules]);
 
   const handleQuickOneNight = () => {
     if (!checkIn) return;
@@ -381,11 +426,16 @@ export default function BookingCalendarPicker({
 
             const { dateStr, dayNum, isPast, isFutureMax, isSoldOut, isToday, holiday } = item;
             
+            const rule = dateRules[dateStr];
+            const isNoCheckinAll = Boolean(rule?.no_checkin && rule?.applies_to_all);
+            const isNoCheckoutAll = Boolean(rule?.no_checkout && rule?.applies_to_all);
+
             // 是否處於選退房日狀態
             const isSelectingCheckOut = Boolean(checkIn && !checkOut);
             // 判斷此格是否可作為退房日
             const canBeCheckOut = isSelectingCheckOut && dateStr > checkIn && isValidCheckoutDate(dateStr);
-            const isDisabled = isPast || isFutureMax || (isSoldOut && !canBeCheckOut);
+            const isRestrictedTarget = isSelectingCheckOut ? (dateStr > checkIn && isNoCheckoutAll) : isNoCheckinAll;
+            const isDisabled = isPast || isFutureMax || isRestrictedTarget || (isSelectingCheckOut ? !canBeCheckOut : isSoldOut);
 
             const isCheckIn = checkIn === dateStr;
             const isCheckOut = checkOut === dateStr;
@@ -404,6 +454,10 @@ export default function BookingCalendarPicker({
               cellStyle = 'bg-emerald-600 text-white font-black rounded-r-xl rounded-l-none shadow-md z-10 scale-105';
             } else if (isInRange) {
               cellStyle = 'bg-emerald-100/80 text-emerald-900 font-bold rounded-none';
+            } else if (isSelectingCheckOut && isNoCheckoutAll && dateStr > checkIn) {
+              cellStyle = 'bg-rose-50/60 text-rose-300 border border-dashed border-rose-200 cursor-not-allowed';
+            } else if (!isSelectingCheckOut && isNoCheckinAll) {
+              cellStyle = 'bg-amber-50/60 text-amber-300 border border-dashed border-amber-200 cursor-not-allowed';
             } else if (canBeCheckOut && isSoldOut) {
               // 雖然當晚客滿/包場，但可作為退房日！
               cellStyle = 'bg-emerald-50/50 hover:bg-emerald-100/70 text-slate-800 cursor-pointer border border-emerald-300/80 shadow-xs font-semibold';
@@ -429,8 +483,12 @@ export default function BookingCalendarPicker({
                 {/* 日期數字 */}
                 <span className="text-sm font-bold leading-none">{dayNum}</span>
 
-                {/* 節日或客滿標籤 */}
-                {isSoldOut ? (
+                {/* 節日、管制或客滿標籤 */}
+                {isSelectingCheckOut && isNoCheckoutAll && dateStr > checkIn ? (
+                  <span className="text-[9px] font-bold text-rose-500 leading-none mt-1">禁退</span>
+                ) : !isSelectingCheckOut && isNoCheckinAll ? (
+                  <span className="text-[9px] font-bold text-amber-600 leading-none mt-1">禁住</span>
+                ) : isSoldOut ? (
                   <span className={`text-[9px] font-medium leading-none mt-1 ${canBeCheckOut ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}>
                     {canBeCheckOut ? '可退房' : '滿'}
                   </span>
