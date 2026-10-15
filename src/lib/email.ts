@@ -24,19 +24,45 @@ export const sendOrderNotification = async (orderData: any, actionType: EmailAct
     }
   }
 
-  // 營主名單 (使用密件抄送 Bcc，從資料庫動態抓取)
-  let adminEmails = 'dr.mr.openken@gmail.com'; // Fallback
+  // 要排除接收通知信的信箱（因寄件者本身在寄件備份已能看到，或特定不需收信的帳號）
+  const EXCLUDED_EMAILS = [
+    'dr.mr.openken@gmail.com',
+    'd97941005@ntu.edu.tw'
+  ].map(e => e.toLowerCase());
+
+  // 若客人留的信箱剛好是排除名單（例如自己測試下單），也清空以防寄入該信箱收件匣
+  if (customerEmail && EXCLUDED_EMAILS.includes(customerEmail.toLowerCase())) {
+    customerEmail = '';
+  }
+
+  // 營主名單 (使用密件抄送 Bcc，從資料庫動態抓取，並過濾掉排除名單)
+  let adminEmails: string[] = [];
   try {
     const { data: adminList } = await supabase.from('nf_admins').select('email');
     if (adminList && adminList.length > 0) {
-      adminEmails = adminList.map(a => a.email).join(',');
+      adminEmails = adminList
+        .map(a => a.email?.trim().toLowerCase())
+        .filter((email): email is string => Boolean(email) && !EXCLUDED_EMAILS.includes(email));
+      adminEmails = Array.from(new Set(adminEmails));
     }
   } catch (e) {
     console.error('Failed to fetch admin emails for BCC', e);
   }
 
-  // 如果客人沒有留信箱，就直接寄給第一順位營主作為主要收件者
-  const toAddress = customerEmail || 'dr.mr.openken@gmail.com';
+  // 如果管理員清單為空，提供非排除的安全預設營主信箱
+  if (adminEmails.length === 0) {
+    adminEmails = ['close2.tw@gmail.com'];
+  }
+
+  // 主要收件者：以客人 Email 為優先
+  // 若客人沒有留信箱（例如 LINE 登入），則以第一位非排除管理員作為主要收件者，其餘放 BCC
+  let toAddress = customerEmail;
+  let bccList = [...adminEmails];
+
+  if (!toAddress) {
+    toAddress = bccList[0] || 'close2.tw@gmail.com';
+    bccList = bccList.slice(1);
+  }
   
   let subject = '';
   let title = '';
@@ -177,13 +203,18 @@ export const sendOrderNotification = async (orderData: any, actionType: EmailAct
   `;
 
   try {
-    await transporter.sendMail({
+    const mailOptions: any = {
       from: '"不遠露營系統" <' + user + '>',
       to: toAddress,
-      bcc: adminEmails,
       subject,
       html
-    });
+    };
+
+    if (bccList.length > 0) {
+      mailOptions.bcc = bccList.join(',');
+    }
+
+    await transporter.sendMail(mailOptions);
     return { success: true };
   } catch (err) {
     console.error('Email send error:', err);
