@@ -76,10 +76,9 @@ export const TAIWAN_HOLIDAYS: Record<string, TaiwanHoliday> = {
   '2027-02-10': { name: '補假', fullName: '春節初五補假', isHoliday: true, isCompensatory: true },
   '2027-02-28': { name: '和平', fullName: '和平紀念日', isHoliday: true },
   '2027-03-01': { name: '補假', fullName: '和平紀念日補假', isHoliday: true, isCompensatory: true },
-  '2027-04-02': { name: '補假', fullName: '兒童節補假', isHoliday: true, isCompensatory: true },
   '2027-04-04': { name: '兒童', fullName: '兒童節', isHoliday: true },
   '2027-04-05': { name: '清明', fullName: '民族掃墓節', isHoliday: true },
-  '2027-04-06': { name: '補假', fullName: '清明節補假', isHoliday: true, isCompensatory: true },
+  '2027-04-06': { name: '補假', fullName: '兒童節補假', isHoliday: true, isCompensatory: true },
   '2027-04-30': { name: '補假', fullName: '勞動節補假', isHoliday: true, isCompensatory: true },
   '2027-05-01': { name: '勞動', fullName: '勞動節', isHoliday: true },
   '2027-06-09': { name: '端午', fullName: '端午節', isHoliday: true },
@@ -89,7 +88,27 @@ export const TAIWAN_HOLIDAYS: Record<string, TaiwanHoliday> = {
   '2027-10-11': { name: '補假', fullName: '國慶日補假', isHoliday: true, isCompensatory: true },
   '2027-10-25': { name: '臺灣', fullName: '臺灣光復紀念日', isHoliday: true },
   '2027-12-24': { name: '補假', fullName: '行憲紀念日補假', isHoliday: true, isCompensatory: true },
-  '2027-12-25': { name: '行憲', fullName: '行憲紀念日', isHoliday: true }
+  '2027-12-25': { name: '行憲', fullName: '行憲紀念日', isHoliday: true },
+  '2027-12-31': { name: '跨年', fullName: '開國紀念日補假', isHoliday: true, isCompensatory: true },
+
+  // ── 2028 年 ──
+  '2028-01-01': { name: '元旦', fullName: '開國紀念日', isHoliday: true },
+  '2028-01-24': { name: '小年夜', fullName: '春節小年夜', isHoliday: true },
+  '2028-01-25': { name: '除夕', fullName: '農曆除夕', isHoliday: true },
+  '2028-01-26': { name: '春節', fullName: '春節初一', isHoliday: true },
+  '2028-01-27': { name: '初二', fullName: '春節初二', isHoliday: true },
+  '2028-01-28': { name: '初三', fullName: '春節初三', isHoliday: true },
+  '2028-02-28': { name: '和平', fullName: '和平紀念日', isHoliday: true },
+  '2028-04-03': { name: '兒童', fullName: '兒童節（提前放假）', isHoliday: true },
+  '2028-04-04': { name: '清明', fullName: '民族掃墓節', isHoliday: true },
+  '2028-05-01': { name: '勞動', fullName: '勞動節', isHoliday: true },
+  '2028-05-28': { name: '端午', fullName: '端午節', isHoliday: true },
+  '2028-05-29': { name: '補假', fullName: '端午節補假', isHoliday: true, isCompensatory: true },
+  '2028-09-28': { name: '教師', fullName: '教師節', isHoliday: true },
+  '2028-10-03': { name: '中秋', fullName: '中秋節', isHoliday: true },
+  '2028-10-10': { name: '國慶', fullName: '國慶日', isHoliday: true },
+  '2028-10-25': { name: '臺灣', fullName: '臺灣光復紀念日', isHoliday: true },
+  '2028-12-25': { name: '行憲', fullName: '行憲紀念日', isHoliday: true }
 };
 
 /**
