@@ -49,14 +49,14 @@ export default function BookingCalendarPicker({
   // 今天字串 (YYYY-MM-DD)
   const todayStr = useMemo(() => formatDateStr(new Date()), []);
 
-  // 最大允許預訂日期（6 個月後）
+  // 最大允許預訂日期（3 個月後）
   const maxDateStr = useMemo(() => {
     const d = new Date();
-    d.setMonth(d.getMonth() + 6);
+    d.setMonth(d.getMonth() + 3);
     return formatDateStr(d);
   }, []);
 
-  // 載入營位項目與未來 6 個月庫存
+  // 載入營位項目與未來 3 個月庫存
   useEffect(() => {
     if (!campId) return;
 
@@ -79,7 +79,7 @@ export default function BookingCalendarPicker({
 
         const itemIds = items.map(i => i.id);
 
-        // 2. 取得今日起到 6 個月後的所有庫存覆寫與已訂資料
+        // 2. 取得今日起到 3 個月後的所有庫存覆寫與已訂資料
         const { data: invRecords, error: invErr } = await supabase
           .from('nf_inventory')
           .select('item_id, date, override_quantity, booked_quantity')
@@ -109,7 +109,7 @@ export default function BookingCalendarPicker({
         const availMap: Record<string, ItemInventoryInfo> = {};
         const curDate = new Date();
         const endDate = new Date();
-        endDate.setMonth(endDate.getMonth() + 6);
+        endDate.setMonth(endDate.getMonth() + 3);
 
         while (curDate <= endDate) {
           const dStr = formatDateStr(curDate);
@@ -177,8 +177,7 @@ export default function BookingCalendarPicker({
   }, [viewDate]);
 
   const canGoNext = useMemo(() => {
-    const maxMonthStart = new Date();
-    maxMonthStart.setMonth(maxMonthStart.getMonth() + 5);
+    const maxMonthStart = new Date(new Date().getFullYear(), new Date().getMonth() + 3, 1);
     return viewDate < maxMonthStart;
   }, [viewDate]);
 
