@@ -343,7 +343,7 @@ export default function InventoryCalendar() {
     const { data: ordersData } = await supabase
       .from('nf_orders')
       .select(`
-        id, order_no, customer_name, customer_phone, check_in_date, check_out_date, status, total_amount, deposit_amount, payment_method, notes, admin_notes,
+        id, order_no, customer_name, customer_phone, check_in_date, check_out_date, status, total_amount, deposit_amount, payment_method, notes, admin_notes, created_at,
         nf_order_items (
           item_id, quantity,
           nf_items ( category, name )
@@ -1766,8 +1766,15 @@ export default function InventoryCalendar() {
                                       {order.order_no}
                                     </span>
                                   </div>
-                                  <div className="text-[11px] text-stone-500 mt-1 flex items-center gap-2 font-mono">
+                                  <div className="text-[11px] text-stone-500 mt-1 flex items-center gap-2 font-mono flex-wrap">
                                     <span>📅 {order.check_in_date.slice(5)} ～ {order.check_out_date.slice(5)}</span>
+                                    {order.created_at && (
+                                      <span className="text-stone-400">
+                                        • 下單: {new Date(order.created_at.endsWith('Z') || order.created_at.includes('+') ? order.created_at : order.created_at + 'Z').toLocaleString('zh-TW', {
+                                          month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
+                                        })}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="text-right shrink-0">

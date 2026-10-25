@@ -1164,12 +1164,21 @@ export default function OrdersManager() {
               <div key={order.id} className={`bg-white rounded-xl border ${order.status === 'cancelled' ? 'border-rose-100 opacity-75' : 'border-stone-200'} shadow-sm overflow-hidden flex flex-col group transition-all hover:shadow-md`}>
                 {/* 訂單表頭 */}
                 <div className={`bg-stone-100/70 border-b ${order.status === 'cancelled' ? 'border-rose-100' : 'border-stone-200'} px-4 sm:px-5 py-2.5 flex flex-wrap justify-between items-center gap-2`}>
-                  {/* 左側：訂單編號 + 狀態標籤 */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-xs text-stone-600 bg-stone-200/80 px-2 py-0.5 rounded font-medium">
-                      {order.order_no}
-                    </span>
-                    {getStatusBadge(order.status, order.check_in_date, order)}
+                  {/* 左側：訂單編號 + 狀態標籤 + 手機版下單時間 */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-xs text-stone-600 bg-stone-200/80 px-2 py-0.5 rounded font-medium">
+                        {order.order_no}
+                      </span>
+                      {getStatusBadge(order.status, order.check_in_date, order)}
+                    </div>
+                    <div className="text-[11px] text-stone-400 sm:hidden">
+                      下單時間：{new Date(order.created_at.endsWith('Z') || order.created_at.includes('+') ? order.created_at : order.created_at + 'Z').toLocaleString('zh-TW', {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        hour12: false
+                      })}
+                    </div>
                   </div>
 
                   {/* 右側：特約保留切換按鈕 + 下單時間 */}
