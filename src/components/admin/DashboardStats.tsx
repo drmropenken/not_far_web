@@ -49,7 +49,7 @@ export default function DashboardStats() {
       .neq('status', 'cancelled');
       
     if (data) {
-      setOrders(data);
+      setOrders(data as unknown as Order[]);
     }
     setLoading(false);
   };

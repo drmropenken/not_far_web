@@ -7,7 +7,7 @@ type Item = {
   category: string;
   price_weekday: number;
   price_holiday: number;
-  total_quantity: number;
+  total_quantity?: number;
   image_url?: string | null;
 };
 
@@ -28,6 +28,7 @@ type Order = {
   total_amount: number;
   deposit_amount?: number;
   status: string;
+  camp_id?: string;
   discount_amount?: number;
   nf_order_items: OrderItem[];
 };
@@ -90,7 +91,7 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
     setLoading(false);
   };
 
-  const fetchAvailability = async (currentOrder: MonthOrder) => {
+  const fetchAvailability = async (currentOrder: Order) => {
     if (!currentOrder?.check_in_date || !currentOrder?.check_out_date) return;
     const campId = currentOrder.camp_id || localStorage.getItem('camp_id');
 

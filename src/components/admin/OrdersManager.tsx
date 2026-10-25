@@ -8,6 +8,7 @@ type Item = {
   id: string;
   name: string;
   category: 'campsite' | 'equipment' | 'service';
+  total_quantity?: number;
   price_weekday: number;
   price_holiday: number;
   price_original: number;
@@ -33,6 +34,7 @@ type Order = {
   total_amount: number;
   status: 'pending' | 'deposit_paid' | 'paid' | 'checked_in' | 'cancelled';
   deposit_amount?: number;
+  created_at: string;
   notes: string | null;
   admin_notes: string | null;
   discount_code: string | null;
@@ -40,6 +42,7 @@ type Order = {
   ecpay_trade_no: string | null;
   payment_method: string | null;
   virtual_account: string | null;
+  camp_id?: string;
   nf_order_items: OrderItem[];
 };
 
@@ -47,7 +50,7 @@ type PaymentLog = {
   id: string;
   order_id: string;
   amount: number;
-  payment_type: 'bank_transfer' | 'onsite';
+  payment_type: 'bank_transfer' | 'onsite' | 'credit_card';
   collected_by: string;
   collected_at: string;
   notes: string | null;
@@ -76,7 +79,7 @@ export default function OrdersManager() {
   const [editingFinancialsId, setEditingFinancialsId] = useState<string | null>(null);
   const [financialsForm, setFinancialsForm] = useState({ total_amount: '', deposit_amount: '' });
   const [editingOrderItemsOrder, setEditingOrderItemsOrder] = useState<Order | null>(null);
-  const [replyingToOrderId, setReplyingToOrderId] = useState<number | null>(null);
+  const [replyingToOrderId, setReplyingToOrderId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const [editingAdminNoteOrderId, setEditingAdminNoteOrderId] = useState<string | null>(null);
@@ -382,7 +385,7 @@ export default function OrdersManager() {
     }
   };
 
-  const submitReply = async (orderId: number, currentNote: string | null) => {
+  const submitReply = async (orderId: string, currentNote: string | null) => {
     if (!replyText.trim()) return;
     setIsSubmittingReply(true);
     const newNote = (currentNote || '') + (currentNote ? '\n\n' : '') + '[店家回覆]：' + replyText.trim();
@@ -1315,13 +1318,13 @@ export default function OrdersManager() {
                             />
                             <div className="flex justify-end gap-1 mt-1">
                               <button className="text-[11px] px-2 py-1 bg-stone-200 rounded text-stone-600 hover:bg-stone-300 transition-colors font-bold" onClick={(e) => { e.stopPropagation(); setReplyingToOrderId(null); }}>取消</button>
-                              <button className="text-[11px] px-3 py-1 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors font-bold shadow-sm disabled:opacity-50" disabled={isSubmittingReply || !replyText.trim()} onClick={(e) => { e.stopPropagation(); submitReply(order.id as unknown as number, order.notes); }}>
+                              <button className="text-[11px] px-3 py-1 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors font-bold shadow-sm disabled:opacity-50" disabled={isSubmittingReply || !replyText.trim()} onClick={(e) => { e.stopPropagation(); submitReply(order.id, order.notes); }}>
                                 {isSubmittingReply ? '送出中...' : '送出回覆'}
                               </button>
                             </div>
                           </div>
                         ) : (
-                          <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note relative flex flex-col justify-center min-h-[36px]" onClick={() => { setReplyingToOrderId(order.id as unknown as number); setReplyText(''); }}>
+                          <div className="mt-2 p-2 bg-stone-100/50 hover:bg-stone-100 rounded text-xs text-stone-600 border border-stone-200 cursor-pointer transition-colors group/note relative flex flex-col justify-center min-h-[36px]" onClick={() => { setReplyingToOrderId(order.id); setReplyText(''); }}>
                             {!parsed.notes ? (
                               <div className="flex items-center justify-center gap-1 opacity-60 group-hover/note:opacity-100 font-medium">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" /></svg>
@@ -2015,13 +2018,16 @@ export default function OrdersManager() {
                 <div className="bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
                   <span className="text-stone-500 text-[11px] block">目前狀態</span>
                   <span className="font-bold text-sm">
-                    {viewingLogsOrder.deposit_amount > viewingLogsOrder.total_amount ? (
-                      <span className="text-rose-600">🚨 溢繳 {(viewingLogsOrder.deposit_amount - viewingLogsOrder.total_amount).toLocaleString()}</span>
-                    ) : viewingLogsOrder.deposit_amount >= viewingLogsOrder.total_amount ? (
-                      <span className="text-emerald-600">✅ 已結清</span>
-                    ) : (
-                      <span className="text-amber-600">待收 {(viewingLogsOrder.total_amount - viewingLogsOrder.deposit_amount).toLocaleString()}</span>
-                    )}
+                    {(() => {
+                      const deposit = viewingLogsOrder.deposit_amount || 0;
+                      if (deposit > viewingLogsOrder.total_amount) {
+                        return <span className="text-rose-600">🚨 溢繳 {(deposit - viewingLogsOrder.total_amount).toLocaleString()}</span>;
+                      } else if (deposit >= viewingLogsOrder.total_amount) {
+                        return <span className="text-emerald-600">✅ 已結清</span>;
+                      } else {
+                        return <span className="text-amber-600">待收 {(viewingLogsOrder.total_amount - deposit).toLocaleString()}</span>;
+                      }
+                    })()}
                   </span>
                 </div>
               </div>
