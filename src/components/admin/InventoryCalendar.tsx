@@ -24,6 +24,34 @@ const getNextDayString = (dateStr: string) => {
   return `${y}-${m}-${dayNum}`;
 };
 
+const getOrderCreatedAtText = (order: { created_at?: string; order_no?: string }) => {
+  if (order.created_at) {
+    const raw = order.created_at;
+    const date = new Date(raw.endsWith('Z') || raw.includes('+') ? raw : raw + 'Z');
+    return date.toLocaleString('zh-TW', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    });
+  }
+  if (order.order_no && order.order_no.startsWith('N') && order.order_no.length >= 13) {
+    const s = order.order_no;
+    const y = '20' + s.slice(1, 3);
+    const m = s.slice(3, 5);
+    const d = s.slice(5, 7);
+    const hh = s.slice(7, 9);
+    const mm = s.slice(9, 11);
+    const ss = s.slice(11, 13);
+    const date = new Date(`${y}-${m}-${d}T${hh}:${mm}:${ss}Z`);
+    return date.toLocaleString('zh-TW', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    });
+  }
+  return '';
+};
+
 export type CalendarNote = {
   id: string;
   camp_id: string;
@@ -1376,7 +1404,7 @@ export default function InventoryCalendar() {
                               <span>{order.customer_name}</span>
                               <span className="text-xs font-mono text-stone-400 bg-white px-2 py-0.5 rounded border border-stone-200">{order.order_no}</span>
                             </div>
-                            <div className="text-xs text-stone-500 mt-1 flex items-center gap-3">
+                            <div className="text-xs text-stone-500 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                               <span>📅 {order.check_in_date.slice(5)} ～ {order.check_out_date.slice(5)}</span>
                               <span>
                                 {order.status === 'paid' ? <span className="text-emerald-600 font-bold">💰 已付款</span> :
@@ -1384,6 +1412,11 @@ export default function InventoryCalendar() {
                                  order.status === 'checked_in' ? <span className="text-blue-600 font-bold">✅ 已報到</span> :
                                  <span className="text-rose-500 font-bold">⏳ 待付款</span>}
                               </span>
+                              {getOrderCreatedAtText(order) && (
+                                <span className="text-stone-400 font-mono text-[11px]">
+                                  ⏰ 下單: {getOrderCreatedAtText(order)}
+                                </span>
+                              )}
                             </div>
                             <div className="flex flex-wrap items-center gap-3 text-xs mt-2 font-mono text-stone-600 bg-white px-2.5 py-1.5 rounded-lg border border-stone-200/80 shadow-2xs">
                               <span>總額: <strong className="text-stone-800 font-bold">NT$ {total.toLocaleString()}</strong></span>
@@ -1768,11 +1801,9 @@ export default function InventoryCalendar() {
                                   </div>
                                   <div className="text-[11px] text-stone-500 mt-1 flex items-center gap-2 font-mono flex-wrap">
                                     <span>📅 {order.check_in_date.slice(5)} ～ {order.check_out_date.slice(5)}</span>
-                                    {order.created_at && (
+                                    {getOrderCreatedAtText(order) && (
                                       <span className="text-stone-400">
-                                        • 下單: {new Date(order.created_at.endsWith('Z') || order.created_at.includes('+') ? order.created_at : order.created_at + 'Z').toLocaleString('zh-TW', {
-                                          month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
-                                        })}
+                                        • 下單: {getOrderCreatedAtText(order)}
                                       </span>
                                     )}
                                   </div>
