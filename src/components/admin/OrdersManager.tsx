@@ -1488,6 +1488,14 @@ export default function OrdersManager() {
 
 
                             {(() => {
+                              if (order.status === 'cancelled') {
+                                return (
+                                  <div className="flex justify-end items-end gap-2 mt-1 pt-1 border-t border-stone-200 border-dashed">
+                                    <span className="text-xl font-bold tracking-tight text-stone-400">已取消</span>
+                                  </div>
+                                );
+                              }
+
                               const deposit = order.deposit_amount || 0;
 
                               if (deposit > order.total_amount) {
@@ -1538,16 +1546,6 @@ export default function OrdersManager() {
                                 </div>
                               );
                             })()}
-                          {(!order.deposit_amount || order.deposit_amount === 0) && order.status !== 'cancelled' && (
-                            <div className="text-2xl font-bold tracking-tight mt-1 text-emerald-600">
-                              NT$ {order.total_amount?.toLocaleString()}
-                            </div>
-                          )}
-                          {order.status === 'cancelled' && (
-                            <div className="text-2xl font-bold tracking-tight mt-1 text-stone-400">
-                              已取消
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
