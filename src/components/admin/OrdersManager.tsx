@@ -69,6 +69,78 @@ const parseOrderNotes = (notesStr: string | null) => {
   return { email, people, notes };
 };
 
+const formatOrderCompactTime = (raw?: string, orderNo?: string) => {
+  if (raw) {
+    const d = new Date(raw.endsWith('Z') || raw.includes('+') ? raw : raw + 'Z');
+    if (!isNaN(d.getTime())) {
+      const currentYear = new Date().getFullYear();
+      const year = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      if (year !== currentYear) {
+        return `${year.toString().slice(-2)}/${m}/${day} ${hh}:${mm}`;
+      }
+      return `${m}/${day} ${hh}:${mm}`;
+    }
+  }
+  if (orderNo && orderNo.startsWith('N') && orderNo.length >= 13) {
+    const s = orderNo;
+    const y = '20' + s.slice(1, 3);
+    const m = s.slice(3, 5);
+    const d = s.slice(5, 7);
+    const hh = s.slice(7, 9);
+    const mm = s.slice(9, 11);
+    const ss = s.slice(11, 13);
+    const date = new Date(`${y}-${m}-${d}T${hh}:${mm}:${ss}Z`);
+    if (!isNaN(date.getTime())) {
+      const currentYear = new Date().getFullYear();
+      const year = date.getFullYear();
+      const mStr = String(date.getMonth() + 1).padStart(2, '0');
+      const dayStr = String(date.getDate()).padStart(2, '0');
+      const hhStr = String(date.getHours()).padStart(2, '0');
+      const mmStr = String(date.getMinutes()).padStart(2, '0');
+      if (year !== currentYear) {
+        return `${year.toString().slice(-2)}/${mStr}/${dayStr} ${hhStr}:${mmStr}`;
+      }
+      return `${mStr}/${dayStr} ${hhStr}:${mmStr}`;
+    }
+  }
+  return '';
+};
+
+const formatOrderFullTime = (raw?: string, orderNo?: string) => {
+  if (raw) {
+    const d = new Date(raw.endsWith('Z') || raw.includes('+') ? raw : raw + 'Z');
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleString('zh-TW', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+      });
+    }
+  }
+  if (orderNo && orderNo.startsWith('N') && orderNo.length >= 13) {
+    const s = orderNo;
+    const y = '20' + s.slice(1, 3);
+    const m = s.slice(3, 5);
+    const d = s.slice(5, 7);
+    const hh = s.slice(7, 9);
+    const mm = s.slice(9, 11);
+    const ss = s.slice(11, 13);
+    const date = new Date(`${y}-${m}-${d}T${hh}:${mm}:${ss}Z`);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleString('zh-TW', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+      });
+    }
+  }
+  return '';
+};
+
 export default function OrdersManager() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1166,26 +1238,17 @@ export default function OrdersManager() {
               return (
               <div key={order.id} className={`bg-white rounded-xl border ${order.status === 'cancelled' ? 'border-rose-100 opacity-75' : 'border-stone-200'} shadow-sm overflow-hidden flex flex-col group transition-all hover:shadow-md`}>
                 {/* 訂單表頭 */}
-                <div className={`bg-stone-100/70 border-b ${order.status === 'cancelled' ? 'border-rose-100' : 'border-stone-200'} px-4 sm:px-5 py-2.5 flex flex-wrap justify-between items-center gap-2`}>
-                  {/* 左側：訂單編號 + 狀態標籤 + 手機版下單時間 */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs text-stone-600 bg-stone-200/80 px-2 py-0.5 rounded font-medium">
-                        {order.order_no}
-                      </span>
-                      {getStatusBadge(order.status, order.check_in_date, order)}
-                    </div>
-                    <div className="text-[11px] text-stone-400 sm:hidden">
-                      下單時間：{new Date(order.created_at.endsWith('Z') || order.created_at.includes('+') ? order.created_at : order.created_at + 'Z').toLocaleString('zh-TW', {
-                        year: 'numeric', month: '2-digit', day: '2-digit',
-                        hour: '2-digit', minute: '2-digit', second: '2-digit',
-                        hour12: false
-                      })}
-                    </div>
+                <div className={`bg-stone-100/70 border-b ${order.status === 'cancelled' ? 'border-rose-100' : 'border-stone-200'} px-3.5 sm:px-5 py-2 sm:py-2.5 flex flex-wrap sm:flex-nowrap justify-between items-center gap-2`}>
+                  {/* 左側：訂單編號 + 狀態標籤 */}
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
+                    <span className="font-mono text-xs text-stone-600 bg-stone-200/80 px-2 py-0.5 rounded font-medium">
+                      {order.order_no}
+                    </span>
+                    {getStatusBadge(order.status, order.check_in_date, order)}
                   </div>
 
-                  {/* 右側：特約保留切換按鈕 + 下單時間 */}
-                  <div className="flex items-center gap-2.5 shrink-0">
+                  {/* 右側：特約保留切換按鈕 + 下單時間膠囊標籤 */}
+                  <div className="flex items-center gap-2 shrink-0">
                     {order.status !== 'cancelled' && (
                       <button
                         onClick={() => togglePinOrder(order)}
@@ -1200,13 +1263,15 @@ export default function OrdersManager() {
                         <span>{isOrderPinned(order) ? '保留' : '設為保留'}</span>
                       </button>
                     )}
-                    <div className="text-xs text-stone-400 hidden sm:block">
-                      下單時間: {new Date(order.created_at.endsWith('Z') || order.created_at.includes('+') ? order.created_at : order.created_at + 'Z').toLocaleString('zh-TW', {
-                        year: 'numeric', month: '2-digit', day: '2-digit',
-                        hour: '2-digit', minute: '2-digit', second: '2-digit',
-                        hour12: false
-                      })}
-                    </div>
+                    {formatOrderCompactTime(order.created_at, order.order_no) && (
+                      <span
+                        title={`下單時間：${formatOrderFullTime(order.created_at, order.order_no)}`}
+                        className="inline-flex items-center gap-1 text-[11px] font-mono text-stone-500 bg-white/90 hover:bg-white px-2 py-1 rounded-lg border border-stone-200 shadow-2xs whitespace-nowrap cursor-default transition-all"
+                      >
+                        <span className="opacity-60 text-[10px]">🕒</span>
+                        <span>{formatOrderCompactTime(order.created_at, order.order_no)}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
                 
