@@ -71,6 +71,8 @@ export default function OrderModal({
 
   const [selectedItems, setSelectedItems] = useState<{item: Item, quantity: number}[]>([]);
   const [discountPercent, setDiscountPercent] = useState<number>(1);
+  const [discountFixedAmount, setDiscountFixedAmount] = useState<number>(0);
+  const [discountAppliedCode, setDiscountAppliedCode] = useState<string>('');
   const [discountError, setDiscountError] = useState('');
   const [manualTotal, setManualTotal] = useState<string>('');
   const [depositAmount, setDepositAmount] = useState<string>('');
@@ -98,6 +100,8 @@ export default function OrderModal({
       });
       setSelectedItems([]);
       setDiscountPercent(1);
+      setDiscountFixedAmount(0);
+      setDiscountAppliedCode('');
       setDiscountError('');
       setManualTotal('');
       setDepositAmount('');
@@ -118,6 +122,7 @@ export default function OrderModal({
       .from('nf_items')
       .select('*')
       .eq('camp_id', campId)
+      .eq('is_active', true)
       .order('sort_order', { ascending: true });
     
     if (data) {
@@ -144,11 +149,12 @@ export default function OrderModal({
     if (!checkIn || !checkOut) return;
     const campId = localStorage.getItem('camp_id');
     
-    // 先取得此營區的所有商品
+    // 先取得此營區啟用中的所有商品
     const { data: campItems } = await supabase
       .from('nf_items')
       .select('*')
-      .eq('camp_id', campId);
+      .eq('camp_id', campId)
+      .eq('is_active', true);
     if (!campItems || campItems.length === 0) return;
     const itemIds = campItems.map(i => i.id);
 
@@ -203,8 +209,11 @@ export default function OrderModal({
   };
 
   const handleVerifyDiscount = async () => {
-    if (!formData.discount_code) {
+    const code = formData.discount_code.trim().toUpperCase();
+    if (!code) {
       setDiscountPercent(1);
+      setDiscountFixedAmount(0);
+      setDiscountAppliedCode('');
       setDiscountError('');
       return;
     }
@@ -212,17 +221,21 @@ export default function OrderModal({
     const { data } = await supabase
       .from('nf_discount_codes')
       .select('*')
-      .eq('code', formData.discount_code)
+      .eq('code', code)
       .eq('is_active', true)
       .or(`camp_id.eq.${campId},camp_id.is.null`)
       .single();
       
     if (data) {
-      setDiscountPercent(data.discount_percent);
+      setDiscountPercent(data.discount_percent || 1);
+      setDiscountFixedAmount(data.discount_fixed_amount || 0);
+      setDiscountAppliedCode(data.code);
       setDiscountError('');
     } else {
       setDiscountPercent(1);
-      setDiscountError('無效的折扣碼或已過期');
+      setDiscountFixedAmount(0);
+      setDiscountAppliedCode('');
+      setDiscountError('無效的折扣碼或已停用');
     }
   };
 
@@ -279,11 +292,19 @@ export default function OrderModal({
   };
 
   const calculateTotal = () => {
-    return Math.floor(calculateOriginalTotal() * discountPercent);
+    const original = calculateOriginalTotal();
+    if (discountFixedAmount > 0) {
+      return Math.max(0, original - discountFixedAmount);
+    }
+    return Math.round(original * discountPercent);
   };
 
   const calculateDiscountAmount = () => {
-    return Math.floor(calculateOriginalTotal() * (1 - discountPercent));
+    const original = calculateOriginalTotal();
+    if (discountFixedAmount > 0) {
+      return Math.min(original, discountFixedAmount);
+    }
+    return Math.round(original * (1 - discountPercent));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -347,7 +368,7 @@ export default function OrderModal({
       check_out_date: formData.check_out_date,
       notes: `[Email: ${formData.customer_email}] [人數: ${formData.adults}大 ${formData.children}小] ${formData.notes}`,
       total_amount: finalTotal,
-      discount_code: formData.discount_code || null,
+      discount_code: discountAppliedCode || null,
       discount_amount: discountAmount,
       deposit_amount: deposit,
       status: finalStatus,
@@ -512,7 +533,11 @@ export default function OrderModal({
                     <button type="button" onClick={handleVerifyDiscount} className="bg-emerald-700 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-stone-700 transition-colors whitespace-nowrap">套用</button>
                   </div>
                   {discountError && <p className="text-rose-500 text-xs mt-1 font-bold">{discountError}</p>}
-                  {discountPercent < 1 && <p className="text-emerald-600 text-xs mt-1 font-bold">成功套用 {discountPercent * 10} 折！</p>}
+                  {discountFixedAmount > 0 ? (
+                    <p className="text-emerald-600 text-xs mt-1 font-bold">成功套用折抵 NT$ {discountFixedAmount.toLocaleString()}！</p>
+                  ) : discountPercent < 1 ? (
+                    <p className="text-emerald-600 text-xs mt-1 font-bold">成功套用 {(discountPercent * 10).toFixed(1).replace('.0', '')} 折！</p>
+                  ) : null}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-stone-600 mb-1.5">訂單備註 (選填)</label>
@@ -657,7 +682,7 @@ export default function OrderModal({
                     <span>原價總計</span>
                     <span>NT$ {calculateOriginalTotal().toLocaleString()}</span>
                   </div>
-                  {discountPercent < 1 && (
+                  {(discountFixedAmount > 0 || discountPercent < 1) && (
                     <div className="flex justify-between items-center text-sm text-rose-500 font-bold">
                       <span>折扣金額</span>
                       <span>- NT$ {calculateDiscountAmount().toLocaleString()}</span>

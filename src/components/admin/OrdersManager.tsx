@@ -349,10 +349,20 @@ export default function OrdersManager() {
         }
       }
     } else if (orderToUpdate && orderToUpdate.status === 'cancelled') {
-      // 從「已取消」恢復成有效訂單，重新扣回庫存 (加上 booked_quantity)
+      // 從「已取消」恢復成有效訂單前，先檢查庫存是否足夠
       const start = new Date(orderToUpdate.check_in_date);
       const end = new Date(orderToUpdate.check_out_date);
-      
+      const campId = localStorage.getItem('camp_id');
+
+      const { data: campItems } = await supabase
+        .from('nf_items')
+        .select('id, name, total_quantity')
+        .eq('camp_id', campId);
+      const itemTotalMap = new Map((campItems || []).map(i => [i.id, i]));
+
+      const shortageWarnings: string[] = [];
+      const restorePlan: { dateStr: string; itemId: string; quantity: number; existingInvId: string | null; existingBooked: number }[] = [];
+
       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0];
         const isFirstNight = d.getTime() === start.getTime();
@@ -363,17 +373,54 @@ export default function OrdersManager() {
 
           const { data: inv } = await supabase
             .from('nf_inventory')
-            .select('id, booked_quantity')
+            .select('id, booked_quantity, override_quantity')
             .eq('date', dateStr)
             .eq('item_id', oi.item_id)
-            .single();
-            
-          if (inv) {
-            await supabase
-              .from('nf_inventory')
-              .update({ booked_quantity: inv.booked_quantity + oi.quantity })
-              .eq('id', inv.id);
+            .maybeSingle();
+
+          const itemInfo = itemTotalMap.get(oi.item_id);
+          const capacity = (inv?.override_quantity !== null && inv?.override_quantity !== undefined)
+            ? inv.override_quantity
+            : (itemInfo?.total_quantity ?? oi.nf_items?.total_quantity ?? 0);
+          const currentBooked = inv?.booked_quantity || 0;
+          const remaining = capacity - currentBooked;
+
+          if (oi.quantity > remaining) {
+            shortageWarnings.push(`・${dateStr}「${oi.nf_items?.name || itemInfo?.name || '項目'}」剩餘 ${Math.max(0, remaining)}，需恢復 ${oi.quantity}`);
           }
+
+          restorePlan.push({
+            dateStr,
+            itemId: oi.item_id,
+            quantity: oi.quantity,
+            existingInvId: inv?.id || null,
+            existingBooked: currentBooked,
+          });
+        }
+      }
+
+      if (shortageWarnings.length > 0) {
+        const forceRestore = confirm(
+          `⚠️ 庫存不足警告！以下日期恢復此訂單將會超賣：\n\n${shortageWarnings.join('\n')}\n\n確定仍要強制恢復訂單並扣回庫存嗎？`
+        );
+        if (!forceRestore) return;
+      }
+
+      // 重新扣回庫存（若當日尚無紀錄則新建）
+      for (const step of restorePlan) {
+        if (step.existingInvId) {
+          await supabase
+            .from('nf_inventory')
+            .update({ booked_quantity: step.existingBooked + step.quantity })
+            .eq('id', step.existingInvId);
+        } else {
+          await supabase
+            .from('nf_inventory')
+            .insert([{
+              date: step.dateStr,
+              item_id: step.itemId,
+              booked_quantity: step.quantity,
+            }]);
         }
       }
     }

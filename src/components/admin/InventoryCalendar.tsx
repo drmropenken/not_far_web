@@ -331,11 +331,12 @@ export default function InventoryCalendar() {
     setLoading(true);
     const campId = localStorage.getItem('camp_id');
     
-    // 1. 取得此營區的營位、裝備與服務
+    // 1. 取得此營區啟用中的營位、裝備與服務
     const { data: itemsData } = await supabase
       .from('nf_items')
       .select('id, name, category, total_quantity, price_weekday, price_holiday')
       .eq('camp_id', campId)
+      .eq('is_active', true)
       .order('sort_order', { ascending: true });
 
     // 先計算當月日期範圍

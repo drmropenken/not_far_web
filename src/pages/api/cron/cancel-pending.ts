@@ -84,7 +84,7 @@ export const GET: APIRoute = async () => {
       }
 
       // 2. 將訂單狀態標記為已取消
-      const timeoutReason = order.payment_method === 'bank_transfer' ? '超過10天未付款' : '超過1小時未付款';
+      const timeoutReason = order.payment_method === 'bank_transfer' ? '超過30天未付款' : '超過1小時未付款';
       await supabase
         .from('nf_orders')
         .update({ status: 'cancelled', notes: `系統自動取消：${timeoutReason}` })

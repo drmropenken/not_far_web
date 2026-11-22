@@ -29,6 +29,7 @@ type Order = {
   deposit_amount?: number;
   status: string;
   camp_id?: string;
+  discount_code?: string | null;
   discount_amount?: number;
   nf_order_items: OrderItem[];
 };
@@ -55,14 +56,16 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
   const [saving, setSaving] = useState(false);
   const [availabilityMap, setAvailabilityMap] = useState<Record<string, number>>({});
   const [inventoryRecords, setInventoryRecords] = useState<any[]>([]);
+  const [orderDiscountRule, setOrderDiscountRule] = useState<{ discount_percent: number; discount_fixed_amount: number } | null>(null);
   
   // Array of currently selected items
   const [selectedItems, setSelectedItems] = useState<{item: Item, quantity: number}[]>([]);
 
   useEffect(() => {
     if (isOpen && order) {
-      fetchItems();
+      fetchItems(order);
       fetchAvailability(order);
+      fetchOrderDiscountRule(order);
       const initialSelected = order.nf_order_items.map(oi => ({
         item: oi.nf_items,
         quantity: oi.quantity
@@ -71,22 +74,50 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
     }
   }, [isOpen, order]);
 
-  const fetchItems = async () => {
+  const fetchOrderDiscountRule = async (currentOrder: Order) => {
+    if (!currentOrder.discount_code) {
+      setOrderDiscountRule(null);
+      return;
+    }
+    const campId = currentOrder.camp_id || localStorage.getItem('camp_id');
+    const { data } = await supabase
+      .from('nf_discount_codes')
+      .select('discount_percent, discount_fixed_amount')
+      .eq('code', currentOrder.discount_code)
+      .or(`camp_id.eq.${campId},camp_id.is.null`)
+      .maybeSingle();
+
+    if (data) {
+      setOrderDiscountRule({
+        discount_percent: data.discount_percent || 1,
+        discount_fixed_amount: data.discount_fixed_amount || 0,
+      });
+    } else {
+      setOrderDiscountRule(null);
+    }
+  };
+
+  const fetchItems = async (currentOrder: Order) => {
     setLoading(true);
+    const campId = currentOrder.camp_id || localStorage.getItem('camp_id');
+    const existingItemIds = new Set(currentOrder.nf_order_items.map(oi => oi.item_id));
     const { data } = await supabase
       .from('nf_items')
       .select('*')
+      .eq('camp_id', campId)
       .order('sort_order', { ascending: true });
     
     if (data) {
+      // 只顯示上架中項目，或此訂單原本就已預訂的歷史項目
+      const visibleItems = data.filter(item => item.is_active !== false || existingItemIds.has(item.id));
       const categoryWeight: Record<string, number> = { campsite: 1, equipment: 2, service: 3 };
-      data.sort((a, b) => {
+      visibleItems.sort((a, b) => {
         if (categoryWeight[a.category] !== categoryWeight[b.category]) {
           return (categoryWeight[a.category] || 99) - (categoryWeight[b.category] || 99);
         }
         return a.sort_order - b.sort_order;
       });
-      setItems(data);
+      setItems(visibleItems);
     }
     setLoading(false);
   };
@@ -204,8 +235,22 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
     return total;
   };
 
+  const calculateDiscountAmount = () => {
+    const original = calculateOriginalTotal();
+    if (orderDiscountRule) {
+      if (orderDiscountRule.discount_fixed_amount > 0) {
+        return Math.min(original, orderDiscountRule.discount_fixed_amount);
+      }
+      if (orderDiscountRule.discount_percent < 1) {
+        return Math.round(original * (1 - orderDiscountRule.discount_percent));
+      }
+      return 0;
+    }
+    return Math.min(original, order?.discount_amount || 0);
+  };
+
   const calculateTotal = () => {
-    return Math.max(0, calculateOriginalTotal() - (order?.discount_amount || 0));
+    return Math.max(0, calculateOriginalTotal() - calculateDiscountAmount());
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -226,6 +271,7 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
 
     setSaving(true);
     const finalTotal = calculateTotal();
+    const finalDiscountAmount = calculateDiscountAmount();
     
     // 1. Calculate inventory deltas
     const oldItemsMap = new Map(order.nf_order_items.map(oi => [oi.item_id, oi.quantity]));
@@ -305,11 +351,24 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
       historicalPaid = order.total_amount;
     }
 
-    // 3. Update nf_orders total_amount and ensure deposit_amount reflects what they paid
-    await supabase.from('nf_orders').update({ 
+    // 3. Update nf_orders total_amount, discount_amount, deposit_amount and sync status
+    const updatePayload: Record<string, any> = {
       total_amount: finalTotal,
-      deposit_amount: historicalPaid
-    }).eq('id', order.id);
+      discount_amount: finalDiscountAmount,
+      deposit_amount: historicalPaid,
+    };
+
+    if (order.status !== 'cancelled' && order.status !== 'checked_in') {
+      if (historicalPaid >= finalTotal) {
+        updatePayload.status = 'paid';
+      } else if (historicalPaid > 0) {
+        updatePayload.status = 'deposit_paid';
+      } else {
+        updatePayload.status = 'pending';
+      }
+    }
+
+    await supabase.from('nf_orders').update(updatePayload).eq('id', order.id);
 
     setSaving(false);
     onSuccess();
