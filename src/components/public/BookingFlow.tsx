@@ -283,7 +283,7 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
     const available: { item: Item, remaining: number, restrictionNote?: string }[] = [];
 
     for (const item of items) {
-      let minRemaining = item.total_quantity;
+      let minRemaining = Infinity;
       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
         const isFirstNight = d.getTime() === start.getTime();
         const isSingleTime = item.name.includes('單次') || item.name.includes('次計費');
@@ -304,6 +304,8 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
         }
       }
 
+      const resolvedRemaining = minRemaining === Infinity ? item.total_quantity : minRemaining;
+
       // 檢查此特定營位項目是否受進退房管制 (例如指定品項禁退或禁住)
       const checkInRule = dateRulesForPeriod.find(r => r.date === dates.checkIn);
       const isCheckInRestricted = Boolean(checkInRule?.no_checkin && (checkInRule.applies_to_all || checkInRule.item_ids?.includes(item.id)));
@@ -320,7 +322,7 @@ export default function BookingFlow({ campId: propCampId, campName: propCampName
 
       available.push({ 
         item, 
-        remaining: restrictionNote ? 0 : minRemaining,
+        remaining: restrictionNote ? 0 : resolvedRemaining,
         restrictionNote: restrictionNote || undefined
       });
     }

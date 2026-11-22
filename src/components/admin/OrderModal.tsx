@@ -172,7 +172,7 @@ export default function OrderModal({
     const minMap: Record<string, number> = {};
 
     for (const item of campItems) {
-      let minRemaining = item.total_quantity;
+      let minRemaining = Infinity;
       for (const dateStr of dates) {
         const isFirstNight = dateStr === dates[0];
         const isSingleTime = item.name.includes('單次') || item.name.includes('次計費');
@@ -190,7 +190,7 @@ export default function OrderModal({
           minRemaining = remaining;
         }
       }
-      minMap[item.id] = minRemaining;
+      minMap[item.id] = minRemaining === Infinity ? item.total_quantity : minRemaining;
     }
 
     setAvailabilityMap(minMap);

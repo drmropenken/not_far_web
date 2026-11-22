@@ -124,7 +124,7 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
     const minMap: Record<string, number> = {};
 
     for (const item of campItems) {
-      let minRemaining = item.total_quantity;
+      let minRemaining = Infinity;
       const orderCurrentQty = oldItemsMap.get(item.id) || 0;
 
       for (const dateStr of dates) {
@@ -145,7 +145,7 @@ export default function EditOrderItemsModal({ isOpen, onClose, onSuccess, order 
           minRemaining = remainingForThisOrder;
         }
       }
-      minMap[item.id] = minRemaining;
+      minMap[item.id] = minRemaining === Infinity ? item.total_quantity : minRemaining;
     }
 
     setAvailabilityMap(minMap);
